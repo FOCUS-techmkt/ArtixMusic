@@ -40,17 +40,18 @@ export default function SignupPage() {
     }
 
     // If Supabase returned a session immediately (email confirmation off) → go straight to onboarding
-    if (authData.session) {
+    if (authData.session && authData.user) {
+      const userId = authData.user.id
       // Try to create artist row now (will succeed since we have a session)
       await supabase.from('artists').insert({
-        user_id: authData.user.id,
+        user_id: userId,
         slug,
         artist_name: artistName,
       }).then(({ error: e }) => {
         if (e && e.code !== '23505') {
           // slug collision — append suffix
           supabase.from('artists').insert({
-            user_id: authData.user.id,
+            user_id: userId,
             slug: `${slug}-${Math.random().toString(36).slice(2, 6)}`,
             artist_name: artistName,
           })
