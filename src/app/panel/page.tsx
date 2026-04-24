@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import DashboardClient from '@/components/panel/DashboardClient'
 
 export default async function PanelPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) redirect('/login')
