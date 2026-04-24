@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRESSKIT.PRO — Demo Temas</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: #030303; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+  /* ── NAV ─────────────────────────────────────── */
+  nav {
+    position: fixed; top: 0; inset-inline: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 2rem;
+    background: rgba(3,3,3,0.85); backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem; letter-spacing: .15em; color: #fff; }
+  .logo span { color: #C026D3; }
+  .nav-pills { display: flex; gap: .5rem; }
+  .nav-pill {
+    padding: .4rem 1rem; border-radius: 999px; font-size: .75rem;
+    font-family: 'JetBrains Mono', monospace; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.5);
+    text-decoration: none; transition: all .2s;
+  }
+  .nav-pill:hover, .nav-pill.active { border-color: #C026D3; color: #E879F9; background: rgba(192,38,211,0.1); }
+
+  /* ── HERO SELECTOR ───────────────────────────── */
+  .theme-selector {
+    padding: 8rem 2rem 4rem;
+    text-align: center;
+  }
+  .theme-selector h1 {
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    color: #fff; line-height: 1; margin-bottom: 1rem;
+  }
+  .theme-selector p { color: rgba(255,255,255,0.4); margin-bottom: 3rem; font-size: 1.1rem; }
+
+  /* ── THEME PICKER (new enhanced) ─────────────── */
+  .theme-picker {
+    max-width: 860px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  @media (min-width: 768px) {
+    .theme-picker { grid-template-columns: 1fr 1fr; align-items: start; }
+  }
+
+  /* Live preview panel */
+  .live-preview {
+    border-radius: 1.5rem; overflow: hidden;
+    height: 280px; position: relative;
+    border: 1px solid rgba(255,255,255,0.08);
+    transition: border-color .3s;
+  }
+  .live-preview-inner {
+    position: absolute; inset: 0;
+    transition: opacity .25s ease;
+  }
+
+  /* Fake presskit inside preview */
+  .pk-fake {
+    width: 100%; height: 100%;
+    padding: 1.25rem;
+    display: flex; flex-direction: column; justify-content: space-between;
+    position: relative;
+  }
+  .pk-gradient-wash {
+    position: absolute; inset: 0; opacity: .35;
+    transition: background .3s;
+  }
+  .pk-top { position: relative; display: flex; flex-direction: column; gap: .5rem; margin-top: .5rem; }
+  .pk-bar { border-radius: 999px; transition: background .3s; }
+  .pk-tag { border-radius: 999px; height: 16px; width: 38%; transition: background .3s; }
+  .pk-stats { position: relative; display: flex; gap: .5rem; }
+  .pk-stat-card { flex: 1; border-radius: .5rem; height: 36px; transition: background .3s, border-color .3s; }
+  .pk-tracks { position: relative; display: flex; flex-direction: column; gap: .4rem; }
+  .pk-track { border-radius: .5rem; height: 26px; display: flex; align-items: center; gap: .5rem; padding: 0 .6rem; transition: background .3s, border-color .3s; }
+  .pk-track-dot { width: 10px; height: 10px; border-radius: .25rem; flex-shrink: 0; transition: background .3s; }
+  .pk-track-bar { height: 6px; border-radius: 999px; flex: 1; transition: background .3s; }
+  .pk-selected-ring {
+    position: absolute; inset: 0; border-radius: 1.5rem;
+    pointer-events: none; transition: box-shadow .3s, border-color .3s;
+    border: 2px solid transparent;
+  }
+
+  /* Theme cards strip */
+  .theme-cards-strip { display: flex; flex-direction: column; gap: .75rem; }
+  .theme-card-new {
+    display: flex; align-items: center; gap: 1rem;
+    padding: .875rem 1rem; border-radius: 1rem; cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: all .2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative; overflow: hidden;
+  }
+  .theme-card-new:hover { transform: translateX(4px); border-color: rgba(255,255,255,0.15); }
+  .theme-card-new.selected { border-color: var(--card-accent); }
+  .theme-card-new .swatch {
+    width: 44px; height: 44px; border-radius: .625rem; flex-shrink: 0;
+    position: relative; overflow: hidden;
+    transition: transform .2s;
+  }
+  .theme-card-new:hover .swatch { transform: scale(1.08); }
+  .theme-card-new .swatch-gradient { position: absolute; inset: 0; opacity: .6; }
+  .theme-card-new .card-info { flex: 1; text-align: left; }
+  .theme-card-new .card-name {
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: .875rem; transition: color .2s;
+  }
+  .theme-card-new .card-sub {
+    font-family: 'JetBrains Mono', monospace; font-size: .65rem;
+    color: rgba(255,255,255,0.3); margin-top: .1rem;
+  }
+  .theme-card-new .check-badge {
+    width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .65rem; font-weight: 700; color: #fff;
+    opacity: 0; transform: scale(0);
+    transition: all .2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .theme-card-new.selected .check-badge { opacity: 1; transform: scale(1); }
+
+  /* Keep old card styles for fallback compat */
+  .theme-card { display: none; }
+  .badge-selected { display: none; }
+
+  /* ── PRESSKIT PREVIEW ────────────────────────── */
+  .presskit-preview {
+    position: relative;
+    transition: all .5s ease;
+  }
+
+  /* ══ SECTION: HERO ════════════════════════════ */
+  .hero {
+    min-height: 100vh; display: flex; align-items: center;
+    justify-content: center; text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; inset: -20%;
+    background-size: cover; background-position: center;
+    transition: all .6s ease;
+  }
+  .hero-bg img { width: 100%; height: 100%; object-fit: cover; }
+  .hero-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,.55) 0%, rgba(0,0,0,.15) 40%, var(--bg) 100%);
+  }
+  .hero-content { position: relative; z-index: 2; padding: 2rem; max-width: 900px; }
+
+  .hero-name {
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: clamp(4rem, 12vw, 9rem);
+    line-height: .95; letter-spacing: -.03em;
+    color: var(--text);
+    text-shadow: 0 0 60px var(--glow), 0 0 120px var(--accent);
+    animation: letterReveal .8s ease both;
+  }
+  @keyframes letterReveal {
+    from { opacity: 0; transform: translateY(40px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .tags { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; margin-top: 1.5rem; }
+  .tag {
+    padding: .3rem .9rem; border-radius: 999px; font-size: .7rem;
+    font-family: 'JetBrains Mono', monospace; letter-spacing: .1em;
+    border: 1px solid var(--accent);
+    color: var(--glow);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    animation: floatUp .6s ease both;
+  }
+  .tag:nth-child(2) { animation-delay: .1s; }
+  .tag:nth-child(3) { animation-delay: .2s; }
+  .tag:nth-child(4) { animation-delay: .3s; }
+  @keyframes floatUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .scroll-hint {
+    position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: .4rem;
+    z-index: 2;
+  }
+  .scroll-hint span {
+    font-family: 'JetBrains Mono', monospace; font-size: .65rem;
+    letter-spacing: .2em; color: var(--muted);
+  }
+  .scroll-line {
+    width: 1px; height: 2.5rem;
+    background: var(--accent);
+    animation: scrollPulse 1.5s ease-in-out infinite;
+  }
+  @keyframes scrollPulse {
+    0%,100% { transform: scaleY(1); opacity: 1; }
+    50% { transform: scaleY(.5); opacity: .4; }
+  }
+
+  /* ── CANVAS WAVEFORM ─────────────────────────── */
+  canvas.waveform {
+    position: absolute; bottom: 0; left: 0; width: 100%; height: 100px;
+    pointer-events: none; z-index: 2;
+  }
+
+  /* ══ SECTION: BIO ═════════════════════════════ */
+  .section { padding: 6rem 2rem; max-width: 860px; margin: 0 auto; }
+  .section-label {
+    font-family: 'JetBrains Mono', monospace; font-size: .7rem;
+    letter-spacing: .2em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 1rem;
+  }
+  .section-title {
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.1;
+    color: var(--text); margin-bottom: 2rem;
+  }
+  .bio-text {
+    font-size: 1.05rem; line-height: 1.75;
+    color: var(--muted); margin-bottom: 3rem;
+  }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 3rem; }
+  .stat-card {
+    padding: 1.5rem; border-radius: 1rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface) 80%, transparent);
+    text-align: center;
+  }
+  .stat-number {
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: 2rem; color: var(--accent);
+  }
+  .stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .65rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); margin-top: .25rem;
+  }
+
+  .achievements { display: flex; flex-direction: column; gap: 1rem; }
+  .achievement {
+    display: flex; gap: 1rem; align-items: flex-start;
+    padding: 1rem 1.25rem; border-radius: .875rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface) 60%, transparent);
+    transition: border-color .2s, transform .2s;
+  }
+  .achievement:hover { border-color: var(--accent); transform: translateX(4px); }
+  .ach-num {
+    font-family: 'JetBrains Mono', monospace; font-size: .7rem;
+    color: var(--accent); margin-top: .1rem; min-width: 1.5rem;
+  }
+  .ach-title { font-weight: 600; color: var(--text); font-size: .95rem; }
+  .ach-desc { color: var(--muted); font-size: .85rem; margin-top: .2rem; }
+
+  /* ══ SECTION: MUSIC ═══════════════════════════ */
+  .music-section { padding: 6rem 2rem; }
+  .music-inner { max-width: 860px; margin: 0 auto; }
+  .track-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-top: 2rem; }
+  @media (max-width: 600px) { .track-grid { grid-template-columns: 1fr; } }
+
+  .track-card {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 1rem 1.25rem; border-radius: 1rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface) 60%, transparent);
+    cursor: pointer; position: relative; overflow: hidden;
+    transition: transform .2s, border-color .2s;
+  }
+  .track-card:hover { transform: scale(1.02) translateY(-2px); border-color: var(--accent); }
+  .track-card::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, color-mix(in srgb, var(--accent) 8%, transparent), transparent 70%);
+    opacity: 0; transition: opacity .3s;
+  }
+  .track-card:hover::before { opacity: 1; }
+  .track-play {
+    width: 2.5rem; height: 2.5rem; border-radius: .75rem; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent); font-size: .9rem;
+  }
+  .track-name { font-weight: 600; color: var(--text); font-size: .9rem; }
+  .track-num { font-family: 'JetBrains Mono', monospace; font-size: .65rem; color: var(--muted); }
+
+  /* ══ SECTION: TIMELINE ════════════════════════ */
+  .timeline-section { padding: 6rem 2rem; }
+  .timeline-inner { max-width: 700px; margin: 0 auto; position: relative; }
+  .timeline-line {
+    position: absolute; left: 50%; top: 0; bottom: 0;
+    width: 1px; background: var(--border); transform: translateX(-50%);
+  }
+  .timeline-progress {
+    position: absolute; left: 0; top: 0; width: 100%;
+    background: var(--accent);
+    animation: growLine 2s ease-out both;
+    transform-origin: top;
+  }
+  @keyframes growLine { from { height: 0; } to { height: 100%; } }
+
+  .timeline-items { display: flex; flex-direction: column; gap: 2rem; position: relative; }
+  .timeline-item { display: flex; align-items: center; gap: 1.5rem; }
+  .timeline-item:nth-child(even) { flex-direction: row-reverse; }
+  .timeline-item:nth-child(even) .timeline-card { text-align: right; }
+
+  .timeline-card {
+    flex: 1; padding: 1rem 1.25rem; border-radius: 1rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface) 80%, transparent);
+    animation: fadeInCard .5s ease both;
+  }
+  .timeline-card:nth-child(1) { animation-delay: .1s; }
+  @keyframes fadeInCard {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .tl-venue { font-weight: 700; color: var(--text); font-size: .95rem; }
+  .tl-meta { font-family: 'JetBrains Mono', monospace; font-size: .65rem; color: var(--muted); margin-top: .25rem; }
+  .timeline-dot {
+    width: .75rem; height: .75rem; border-radius: 50%; flex-shrink: 0;
+    background: var(--accent); box-shadow: 0 0 8px var(--glow);
+  }
+  .timeline-spacer { flex: 1; }
+
+  /* ══ SECTION: GALLERY ═════════════════════════ */
+  .gallery-section { padding: 6rem 2rem; }
+  .gallery-inner { max-width: 960px; margin: 0 auto; }
+  .masonry { columns: 3; column-gap: .75rem; }
+  @media (max-width: 600px) { .masonry { columns: 2; } }
+  .masonry-item {
+    break-inside: avoid; margin-bottom: .75rem;
+    border-radius: .875rem; overflow: hidden;
+    position: relative; cursor: pointer;
+  }
+  .masonry-item img {
+    width: 100%; display: block;
+    transition: transform .4s ease, filter .4s ease;
+    filter: brightness(.85) saturate(.8);
+  }
+  .masonry-item:hover img { transform: scale(1.04); filter: brightness(1) saturate(1.1); }
+  .masonry-item::after {
+    content: '⊕'; position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; color: #fff; opacity: 0;
+    background: rgba(0,0,0,.4);
+    transition: opacity .3s;
+  }
+  .masonry-item:hover::after { opacity: 1; }
+
+  /* ══ SECTION: CONTACT ═════════════════════════ */
+  .contact-section { padding: 6rem 2rem; text-align: center; }
+  .contact-inner { max-width: 600px; margin: 0 auto; }
+  .contact-name { color: var(--accent); }
+  .email-btn {
+    display: inline-flex; align-items: center; gap: .75rem;
+    padding: 1rem 2rem; border-radius: 1rem; margin: 2rem 0 1.5rem;
+    border: 1px solid var(--accent);
+    color: var(--text); font-family: 'JetBrains Mono', monospace;
+    font-size: .95rem; cursor: pointer;
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    transition: all .2s; position: relative; overflow: hidden;
+  }
+  .email-btn:hover {
+    transform: scale(1.04);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 30%, transparent);
+  }
+  .social-links { display: flex; justify-content: center; gap: .75rem; flex-wrap: wrap; }
+  .social-link {
+    padding: .6rem 1.2rem; border-radius: .875rem;
+    border: 1px solid var(--border);
+    color: var(--muted); font-size: .8rem; text-decoration: none;
+    background: var(--surface); transition: all .2s;
+  }
+  .social-link:hover { border-color: var(--accent); color: var(--glow); transform: translateY(-2px); }
+
+  /* ── FIXED CTA ───────────────────────────────── */
+  .cta-fixed {
+    position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 50;
+    padding: .75rem 1.5rem; border-radius: 999px;
+    font-weight: 600; font-size: .875rem; cursor: pointer;
+    background: var(--accent); color: #fff;
+    box-shadow: 0 4px 24px color-mix(in srgb, var(--accent) 50%, transparent);
+    animation: ctaPulse 2.5s ease-in-out infinite;
+    transition: background .3s;
+  }
+  @keyframes ctaPulse {
+    0%,100% { box-shadow: 0 4px 24px color-mix(in srgb, var(--accent) 40%, transparent); }
+    50% { box-shadow: 0 4px 40px color-mix(in srgb, var(--accent) 70%, transparent); }
+  }
+
+  /* ── DIVIDER ─────────────────────────────────── */
+  .divider {
+    height: 1px; background: var(--border); margin: 0 2rem;
+    opacity: .5;
+  }
+
+  /* ══ THEMES ════════════════════════════════════ */
+  /* Each theme sets CSS variables on :root via JS */
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">PRESSKIT<span>.PRO</span></div>
+  <div class="nav-pills">
+    <a class="nav-pill active" data-theme="dark_rave" href="#">Rave Oscuro</a>
+    <a class="nav-pill" data-theme="minimal_pro" href="#">Minimal Pro</a>
+    <a class="nav-pill" data-theme="cyber_neon" href="#">Cyber Neón</a>
+    <a class="nav-pill" data-theme="editorial_clean" href="#">Editorial</a>
+  </div>
+</nav>
+
+<!-- THEME SELECTOR CARDS -->
+<div class="theme-selector">
+  <h1>Elige tu estética</h1>
+  <p>Haz click en cualquier tema para ver el press kit en vivo</p>
+  <div class="theme-picker">
+
+    <!-- Live mini-preview panel -->
+    <div class="live-preview" id="livePreview">
+      <div class="live-preview-inner" id="livePreviewInner">
+        <div class="pk-fake" id="pkFake">
+          <div class="pk-gradient-wash" id="pkGradient"></div>
+          <!-- Top: name bars + tag -->
+          <div class="pk-top">
+            <div class="pk-bar" id="pkBar1" style="height:12px;width:60%"></div>
+            <div class="pk-bar" id="pkBar2" style="height:8px;width:38%;opacity:.45"></div>
+            <div class="pk-tag" id="pkTag"></div>
+          </div>
+          <!-- Mid: stat cards -->
+          <div class="pk-stats">
+            <div class="pk-stat-card" id="pkStat1"></div>
+            <div class="pk-stat-card" id="pkStat2"></div>
+            <div class="pk-stat-card" id="pkStat3"></div>
+          </div>
+          <!-- Bottom: track rows -->
+          <div class="pk-tracks">
+            <div class="pk-track" id="pkTrack1">
+              <div class="pk-track-dot" id="pkDot1"></div>
+              <div class="pk-track-bar" id="pkTrBar1" style="width:70%"></div>
+            </div>
+            <div class="pk-track" id="pkTrack2">
+              <div class="pk-track-dot" id="pkDot2"></div>
+              <div class="pk-track-bar" id="pkTrBar2" style="width:52%"></div>
+            </div>
+          </div>
+          <div class="pk-selected-ring" id="pkRing"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theme cards strip -->
+    <div class="theme-cards-strip" id="themeStrip">
+      <!-- rendered by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!-- LIVE PRESSKIT PREVIEW                        -->
+<!-- ════════════════════════════════════════════ -->
+<div class="presskit-preview" id="presskit">
+
+  <!-- HERO -->
+  <section class="hero" id="hero">
+    <div class="hero-bg" id="heroBg">
+      <img src="https://images.unsplash.com/photo-1571266028243-e4733b0f0bb0?w=1920&q=80"
+           alt="NXGHT" id="heroImg" style="transition:opacity .6s"/>
+    </div>
+    <div class="hero-overlay" id="heroOverlay"></div>
+    <div class="hero-content">
+      <h1 class="hero-name" id="heroName">NXGHT</h1>
+      <div class="tags">
+        <span class="tag">TECHNO</span>
+        <span class="tag">DJ</span>
+        <span class="tag">DARK</span>
+        <span class="tag">HYPNOTIC</span>
+      </div>
+    </div>
+    <div class="scroll-hint">
+      <span>SCROLL</span>
+      <div class="scroll-line"></div>
+    </div>
+    <canvas class="waveform" id="waveCanvas"></canvas>
+  </section>
+
+  <!-- BIO -->
+  <section style="background:var(--bg)">
+    <div class="section">
+      <p class="section-label">// ABOUT</p>
+      <h2 class="section-title">Arquitecto del sonido oscuro</h2>
+      <p class="bio-text">
+        NXGHT es un DJ y arquitecto sonoro nacido en Berlín y con base en Barcelona cuyas sesiones difuminan la línea entre la pista de baile y el vacío. Conocido por sus sets de 6 horas y su meticulosa aproximación al diseño de sonido, NXGHT ha construido un seguimiento de culto en el circuito underground europeo.
+      </p>
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-number" id="stat1">0</div>
+          <div class="stat-label">Reproducciones</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="stat2">0</div>
+          <div class="stat-label">Seguidores</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="stat3">0</div>
+          <div class="stat-label">Eventos/año</div>
+        </div>
+      </div>
+      <div class="achievements">
+        <div class="achievement">
+          <span class="ach-num">01</span>
+          <div><div class="ach-title">Fabric Residency 2024</div><div class="ach-desc">Residente mensual en Fabric London — uno de solo 8 artistas a nivel global</div></div>
+        </div>
+        <div class="achievement">
+          <span class="ach-num">02</span>
+          <div><div class="ach-title">Sonar Festival 2023</div><div class="ach-desc">Headliner en SonarNight con 4,200 asistentes</div></div>
+        </div>
+        <div class="achievement">
+          <span class="ach-num">03</span>
+          <div><div class="ach-title">20M Streams</div><div class="ach-desc">Reproducciones acumuladas en SoundCloud y Spotify durante 2024</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MUSIC -->
+  <section class="music-section" style="background:var(--surface)">
+    <div class="music-inner">
+      <p class="section-label">// MUSIC</p>
+      <h2 class="section-title">Escucha</h2>
+      <div class="track-grid">
+        <div class="track-card"><div class="track-play">▶</div><div><div class="track-name">NXGHT — Void Walker</div><div class="track-num">TRACK 01</div></div></div>
+        <div class="track-card"><div class="track-play">▶</div><div><div class="track-name">NXGHT — Depth Charge</div><div class="track-num">TRACK 02</div></div></div>
+        <div class="track-card"><div class="track-play">▶</div><div><div class="track-name">NXGHT — Signal Lost</div><div class="track-num">TRACK 03</div></div></div>
+        <div class="track-card"><div class="track-play">▶</div><div><div class="track-name">NXGHT — Subterranean</div><div class="track-num">TRACK 04</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TIMELINE -->
+  <section class="timeline-section" style="background:var(--bg)">
+    <div style="max-width:860px;margin:0 auto;padding:0 0 3rem">
+      <p class="section-label">// LIVE HISTORY</p>
+      <h2 class="section-title">En el escenario</h2>
+    </div>
+    <div class="timeline-inner">
+      <div class="timeline-line"><div class="timeline-progress"></div></div>
+      <div class="timeline-items">
+        <div class="timeline-item"><div class="timeline-card"><div class="tl-venue">Fabric London</div><div class="tl-meta">📍 London · Marzo 2024</div></div><div class="timeline-dot"></div><div class="timeline-spacer"></div></div>
+        <div class="timeline-item"><div class="timeline-spacer"></div><div class="timeline-dot"></div><div class="timeline-card"><div class="tl-venue">Berghain</div><div class="tl-meta">📍 Berlin · Enero 2024</div></div></div>
+        <div class="timeline-item"><div class="timeline-card"><div class="tl-venue">Sonar Festival</div><div class="tl-meta">📍 Barcelona · Junio 2023</div></div><div class="timeline-dot"></div><div class="timeline-spacer"></div></div>
+        <div class="timeline-item"><div class="timeline-spacer"></div><div class="timeline-dot"></div><div class="timeline-card"><div class="tl-venue">De School</div><div class="tl-meta">📍 Amsterdam · Abril 2023</div></div></div>
+        <div class="timeline-item"><div class="timeline-card"><div class="tl-venue">Tresor NYE</div><div class="tl-meta">📍 Berlin · Dic 2022</div></div><div class="timeline-dot"></div><div class="timeline-spacer"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GALLERY -->
+  <section class="gallery-section" style="background:var(--surface)">
+    <div class="gallery-inner">
+      <p class="section-label">// MEDIA</p>
+      <h2 class="section-title" style="margin-bottom:2rem">Galería</h2>
+      <div class="masonry">
+        <div class="masonry-item"><img src="https://images.unsplash.com/photo-1594488506255-7c39def26de1?w=400&q=75" alt=""></div>
+        <div class="masonry-item"><img src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400&q=75" alt=""></div>
+        <div class="masonry-item"><img src="https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=400&q=75" alt=""></div>
+        <div class="masonry-item"><img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&q=75" alt=""></div>
+        <div class="masonry-item"><img src="https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=400&q=75" alt=""></div>
+        <div class="masonry-item"><img src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=400&q=75" alt=""></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="contact-section" style="background:var(--bg)">
+    <div class="contact-inner">
+      <p class="section-label">// BOOKING & CONTACT</p>
+      <h2 class="section-title">Reserva a <span class="contact-name" id="contactName">NXGHT</span></h2>
+      <p style="color:var(--muted);margin-bottom:0">Para bookings, colaboraciones y prensa</p>
+      <div class="email-btn" onclick="copyEmail(this)">
+        <span>📧</span>
+        <span id="emailText">booking@nxght.com</span>
+        <span id="emailCopied" style="color:var(--accent);display:none">✓ Copiado</span>
+      </div>
+      <div class="social-links">
+        <a class="social-link" href="#">🎧 SoundCloud</a>
+        <a class="social-link" href="#">🟢 Spotify</a>
+        <a class="social-link" href="#">📷 Instagram</a>
+        <a class="social-link" href="#">▶ YouTube</a>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /presskit-preview -->
+
+<!-- Fixed booking button -->
+<div class="cta-fixed" id="ctaFixed">📧 Booking</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// Theme data
+// ═══════════════════════════════════════════════
+const THEMES = {
+  dark_rave: {
+    css: { '--bg':'#080808','--surface':'#111111','--text':'#F5F5F5','--muted':'#9CA3AF','--accent':'#C026D3','--glow':'#E879F9','--border':'#1F1F1F' },
+    label: 'Rave Oscuro', sub: 'Underground · Berlín · 6am',
+    gradient: 'linear-gradient(135deg,#C026D3,#7C3AED)',
+    heroImg: 'https://images.unsplash.com/photo-1571266028243-e4733b0f0bb0?w=1920&q=80',
+    heroName: 'NXGHT', tags: ['TECHNO','DJ','DARK','HYPNOTIC'],
+    email: 'booking@nxght.com',
+    bio: 'NXGHT es un DJ y arquitecto sonoro cuyas sesiones difuminan la línea entre la pista de baile y el vacío.',
+  },
+  minimal_pro: {
+    css: { '--bg':'#F5F5F4','--surface':'#FFFFFF','--text':'#171717','--muted':'#6B7280','--accent':'#171717','--glow':'#525252','--border':'#E5E7EB' },
+    label: 'Minimal Pro', sub: 'Estudio · Prensa · Premium',
+    gradient: 'linear-gradient(135deg,#171717,#525252)',
+    heroImg: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=1920&q=80',
+    heroName: 'SOLARA', tags: ['PRODUCER','AFROBEATS','VIBRANT','SOULFUL'],
+    email: 'bookings@solaramusic.com',
+    bio: 'SOLARA conecta los ritmos de África Occidental con la música de club contemporánea desde Londres.',
+  },
+  cyber_neon: {
+    css: { '--bg':'#020617','--surface':'#0F172A','--text':'#F1F5F9','--muted':'#94A3B8','--accent':'#06B6D4','--glow':'#67E8F9','--border':'#1E293B' },
+    label: 'Cyber Neón', sub: 'Futuro · Digital · Grid',
+    gradient: 'linear-gradient(135deg,#06B6D4,#6366F1)',
+    heroImg: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1920&q=80',
+    heroName: 'PULSE', tags: ['HOUSE','LIVE ACT','CYBER','FUTURE'],
+    email: 'booking@pulse.io',
+    bio: 'PULSE combina síntesis modular en tiempo real con visuales generativos para crear experiencias irrepetibles.',
+  },
+  editorial_clean: {
+    css: { '--bg':'#FAF9F6','--surface':'#FFFFFF','--text':'#1C1C1C','--muted':'#78716C','--accent':'#78350F','--glow':'#92400E','--border':'#E7E5E4' },
+    label: 'Editorial Limpio', sub: 'Artístico · Textural · Poético',
+    gradient: 'linear-gradient(135deg,#78350F,#B45309)',
+    heroImg: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1920&q=80',
+    heroName: 'KAIA', tags: ['AMBIENT','BOTH','CINEMATIC','TEXTURAL'],
+    email: 'hello@kaiamusic.com',
+    bio: 'KAIA crea paisajes sonoros que habitan el espacio entre lo ambiental y lo electrónico.',
+  },
+}
+
+let current = 'dark_rave'
+let waveAnim = null
+
+// ── Build theme strip cards ────────────────────
+function buildStrip() {
+  const strip = document.getElementById('themeStrip')
+  strip.innerHTML = ''
+  Object.entries(THEMES).forEach(([key, t]) => {
+    const btn = document.createElement('button')
+    btn.id = 'strip-' + key
+    btn.className = 'theme-card-new' + (key === current ? ' selected' : '')
+    btn.style.setProperty('--card-accent', t.css['--accent'])
+    btn.innerHTML = `
+      <div class="swatch" style="background:${t.css['--bg']}">
+        <div class="swatch-gradient" style="background:${t.gradient}"></div>
+      </div>
+      <div class="card-info">
+        <div class="card-name" style="color:${key===current ? t.css['--accent'] : 'rgba(255,255,255,0.8)'}">${t.label}</div>
+        <div class="card-sub">${t.sub}</div>
+      </div>
+      <div class="check-badge" style="background:${t.css['--accent']}">✓</div>
+    `
+    btn.addEventListener('click', () => setTheme(key))
+    btn.addEventListener('mouseenter', () => updatePreview(key))
+    btn.addEventListener('mouseleave', () => updatePreview(current))
+    strip.appendChild(btn)
+  })
+}
+
+// ── Update mini-preview panel ──────────────────
+function updatePreview(key) {
+  const t = THEMES[key]
+  const c = t.css
+
+  // Background + gradient wash
+  document.getElementById('pkFake').style.backgroundColor = c['--bg']
+  document.getElementById('pkGradient').style.background = t.gradient
+
+  // Name bars
+  document.getElementById('pkBar1').style.backgroundColor = c['--text']
+  document.getElementById('pkBar2').style.backgroundColor = c['--muted']
+
+  // Tag
+  const tag = document.getElementById('pkTag')
+  tag.style.backgroundColor = c['--accent']
+  tag.style.opacity = '.65'
+
+  // Stat cards
+  ;['pkStat1','pkStat2','pkStat3'].forEach(id => {
+    const el = document.getElementById(id)
+    el.style.backgroundColor = c['--surface']
+    el.style.border = `1px solid ${c['--border']}`
+  })
+
+  // Tracks
+  ;['pkTrack1','pkTrack2'].forEach(id => {
+    const el = document.getElementById(id)
+    el.style.backgroundColor = c['--surface']
+    el.style.border = `1px solid ${c['--border']}`
+  })
+  ;['pkDot1','pkDot2'].forEach(id => {
+    document.getElementById(id).style.backgroundColor = c['--accent']
+  })
+  ;['pkTrBar1','pkTrBar2'].forEach(id => {
+    document.getElementById(id).style.backgroundColor = c['--muted']
+    document.getElementById(id).style.opacity = '.3'
+  })
+
+  // Ring glow
+  const ring = document.getElementById('pkRing')
+  ring.style.border = `2px solid ${c['--accent']}`
+  ring.style.boxShadow = `inset 0 0 0 0 transparent, 0 0 20px ${c['--accent']}44`
+
+  // Preview border
+  document.getElementById('livePreview').style.borderColor = c['--accent'] + '55'
+}
+
+// ── Apply theme to full presskit ───────────────
+function setTheme(name) {
+  current = name
+  const t = THEMES[name]
+
+  // CSS vars on root
+  Object.entries(t.css).forEach(([k,v]) => document.documentElement.style.setProperty(k,v))
+
+  // Hero
+  const img = document.getElementById('heroImg')
+  img.style.opacity = '0'
+  setTimeout(() => {
+    img.src = t.heroImg
+    img.onload = () => { img.style.opacity = '1' }
+  }, 250)
+  document.getElementById('heroName').textContent = t.heroName
+  document.getElementById('contactName').textContent = t.heroName
+  document.getElementById('emailText').textContent = t.email
+
+  // Tags
+  document.querySelector('.tags').innerHTML =
+    t.tags.map(tag => `<span class="tag">${tag}</span>`).join('')
+
+  // Nav pills
+  document.querySelectorAll('.nav-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.theme === name)
+  })
+
+  // Strip cards
+  document.querySelectorAll('.theme-card-new').forEach(c => {
+    const key = c.id.replace('strip-','')
+    const isActive = key === name
+    c.classList.toggle('selected', isActive)
+    c.querySelector('.card-name').style.color = isActive
+      ? THEMES[key].css['--accent']
+      : 'rgba(255,255,255,0.8)'
+  })
+
+  // Update mini-preview to match
+  updatePreview(name)
+
+  // Stats + waveform
+  animateStats()
+  startWaveform()
+}
+
+// ── Counters ───────────────────────────────────
+function animateCount(el, target, suffix='') {
+  const dur = 2000, t0 = Date.now()
+  const ease = t => 1 - Math.pow(1-t, 4)
+  const tick = () => {
+    const p = Math.min((Date.now()-t0)/dur, 1), v = Math.round(target*ease(p))
+    el.textContent = v>=1e6 ? (v/1e6).toFixed(1)+'M'+suffix : v>=1e3 ? (v/1e3).toFixed(0)+'K'+suffix : v+suffix
+    if(p < 1) requestAnimationFrame(tick)
+  }
+  tick()
+}
+function animateStats() {
+  animateCount(document.getElementById('stat1'), 20000000)
+  animateCount(document.getElementById('stat2'), 142000)
+  animateCount(document.getElementById('stat3'), 48, '+')
+}
+
+// ── Waveform ───────────────────────────────────
+function startWaveform() {
+  if(waveAnim) cancelAnimationFrame(waveAnim)
+  const canvas = document.getElementById('waveCanvas')
+  if(!canvas) return
+  const ctx = canvas.getContext('2d')
+  let t = 0
+
+  const resize = () => {
+    canvas.width = canvas.offsetWidth * devicePixelRatio
+    canvas.height = canvas.offsetHeight * devicePixelRatio
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0)
+  }
+  resize()
+
+  const draw = () => {
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()
+    const w = canvas.offsetWidth, h = canvas.offsetHeight
+    ctx.clearRect(0,0,w,h)
+    const grad = ctx.createLinearGradient(0,0,w,0)
+    grad.addColorStop(0,'transparent')
+    grad.addColorStop(.25, accent+'88')
+    grad.addColorStop(.75, accent+'88')
+    grad.addColorStop(1,'transparent')
+    ctx.strokeStyle = grad
+    ctx.lineWidth = 1.5
+    ctx.beginPath()
+    for(let i=0;i<=100;i++) {
+      const x=i*(w/100), y=h/2+Math.sin(i*.22+t)*22+Math.sin(i*.38+t*1.3+1)*14+Math.sin(i*.1+t*.7)*8
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)
+    }
+    ctx.stroke()
+    t+=.016
+    waveAnim=requestAnimationFrame(draw)
+  }
+  draw()
+}
+
+// ── Copy email ─────────────────────────────────
+function copyEmail() {
+  const email = document.getElementById('emailText').textContent
+  navigator.clipboard.writeText(email).then(() => {
+    document.getElementById('emailCopied').style.display='inline'
+    setTimeout(()=>document.getElementById('emailCopied').style.display='none',2000)
+  })
+}
+
+// ── Init ───────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  // Wire nav pills with data-theme
+  document.querySelectorAll('.nav-pill').forEach(p => {
+    p.addEventListener('click', e => { e.preventDefault(); setTheme(p.dataset.theme) })
+  })
+  buildStrip()
+  setTheme('dark_rave')
+})
+window.addEventListener('resize', startWaveform)
+</script>
+</body>
+</html>
