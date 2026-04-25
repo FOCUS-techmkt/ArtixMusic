@@ -415,3 +415,37 @@ nav.top .nav-cta { display: flex; gap: 8px; align-items: center; }
   color: var(--bg-0);
   border-color: var(--fg-0);
 }
+
+/* ============================================================
+   MOBILE — iPhone / Touch optimizations
+   ============================================================ */
+@media (hover: none) and (pointer: coarse) {
+  body { cursor: auto; }
+  .cursor-halo, .cursor-dot { display: none !important; }
+  .btn, .swatch, .opt { cursor: pointer; }
+}
+
+@media (max-width: 768px) {
+  /* Nav */
+  nav.top {
+    top: 10px;
+    padding: 10px 14px 10px 16px;
+    width: calc(100% - 20px);
+  }
+  nav.top .nav-cta .btn-ghost { display: none; }
+  nav.top .logo { font-size: 0.9rem; }
+
+  /* Buttons */
+  .btn { padding: 12px 18px; font-size: 0.85rem; }
+  .btn-sm { padding: 9px 14px; font-size: 0.78rem; }
+
+  /* Section head */
+  .section-head { margin-bottom: 52px; }
+  .section-head h2 { font-size: clamp(2rem, 9vw, 3rem); margin-top: 16px; margin-bottom: 18px; }
+  .section-head p { font-size: 1rem; }
+}
+
+@media (max-width: 480px) {
+  section { padding: 80px 0; }
+  .wrap { padding: 0 20px; }
+}
