@@ -3,16 +3,15 @@ import { useState, useRef, useEffect } from 'react'
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, Check, ChevronDown, Play, Star, Zap, Globe, BarChart3, Palette, Layout, Lock, X, Mail, Music, Ticket, Database, TrendingUp } from 'lucide-react'
+import { Check, ChevronDown, ArrowRight } from 'lucide-react'
 
 // ─── Design tokens ─────────────────────────────────────────────────────────────
 const A1 = '#a855f7'
 const A2 = '#c084fc'
 const A3 = '#7c3aed'
-const BG = '#05050a'
 
-// ─── Logo Mark (triangle A) ────────────────────────────────────────────────────
-function LogoMark({ size = 28 }: { size?: number }) {
+// ─── Logo Mark ─────────────────────────────────────────────────────────────────
+function LogoMark({ size = 26 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <defs>
@@ -23,22 +22,42 @@ function LogoMark({ size = 28 }: { size?: number }) {
         </linearGradient>
       </defs>
       <path d="M12 2 L22 20 L17 20 L12 11 L7 20 L2 20 Z" fill="url(#lgm)" />
-      <circle cx="12" cy="17" r="1.5" fill={BG} />
+      <circle cx="12" cy="17" r="1.5" fill="#05050a" />
     </svg>
   )
 }
 
-// ─── Aurora background ─────────────────────────────────────────────────────────
-function Aurora() {
+// ─── FadeIn ────────────────────────────────────────────────────────────────────
+function FadeIn({
+  children, delay = 0, className = '', y = 28, style,
+}: {
+  children: React.ReactNode; delay?: number; className?: string; y?: number; style?: React.CSSProperties
+}) {
   return (
-    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden>
-      <div className="absolute -top-40 left-1/4 w-[700px] h-[500px] rounded-full opacity-[0.07]"
-        style={{ background: `radial-gradient(ellipse, ${A1}, transparent 70%)`, filter: 'blur(60px)' }} />
-      <div className="absolute top-1/3 right-0 w-[500px] h-[400px] rounded-full opacity-[0.05]"
-        style={{ background: `radial-gradient(ellipse, #06b6d4, transparent 70%)`, filter: 'blur(80px)' }} />
-      <div className="absolute bottom-1/4 left-0 w-[400px] h-[300px] rounded-full opacity-[0.04]"
-        style={{ background: `radial-gradient(ellipse, ${A2}, transparent 70%)`, filter: 'blur(80px)' }} />
-    </div>
+    <motion.div
+      initial={{ opacity: 0, y }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-24px' }}
+      transition={{ duration: 0.65, delay, ease: [0.22, 1, 0.36, 1] }}
+      className={className}
+      style={style}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+// ─── Iridescent text ───────────────────────────────────────────────────────────
+function Iridescent({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="font-serif italic" style={{
+      background: 'linear-gradient(120deg, #e8ddff 0%, #c084fc 30%, #a855f7 55%, #7c3aed 75%, #e8ddff 100%)',
+      backgroundSize: '200% 100%',
+      WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent',
+      animation: 'shimmer 8s ease-in-out infinite',
+    }}>
+      {children}
+    </span>
   )
 }
 
@@ -53,64 +72,47 @@ function Nav() {
   }, [])
   return (
     <>
-      <nav className={`fixed top-0 inset-x-0 z-50 flex items-center justify-between px-5 md:px-8 py-4 transition-all duration-300 ${
-        scrolled ? 'border-b border-white/[0.07] bg-[#05050a]/90 backdrop-blur-xl' : 'bg-transparent'
-      }`}>
+      <nav className={`fixed top-0 inset-x-0 z-50 flex items-center justify-between px-5 md:px-10 py-4 transition-all duration-300 ${
+        scrolled ? 'border-b border-white/[0.07] backdrop-blur-xl' : ''
+      }`}
+        style={scrolled ? { background: 'rgba(5,5,10,0.9)' } : {}}
+      >
         <div className="flex items-center gap-2.5">
-          <LogoMark size={26} />
-          <span className="font-display font-bold text-base tracking-[0.2em] text-white">
-            ARTIX
-          </span>
+          <LogoMark size={24} />
+          <span className="font-display font-semibold text-base tracking-[0.18em] text-white">ARTIX</span>
         </div>
-        <div className="hidden md:flex items-center gap-7 text-sm text-white/45 font-display">
-          <a href="#ejemplos" className="hover:text-white transition-colors">Ejemplos</a>
-          <a href="#features" className="hover:text-white transition-colors">Features</a>
-          <a href="#precios" className="hover:text-white transition-colors">Precios</a>
-          <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
+        <div className="hidden md:flex items-center gap-8 text-sm font-mono text-white/40">
+          {[['#features','Producto'],['#social','Artistas'],['#pricing','Precios'],['#faq','FAQ']].map(([h,l]) => (
+            <a key={h} href={h} className="hover:text-white transition-colors">{l}</a>
+          ))}
         </div>
         <div className="hidden md:flex items-center gap-3">
-          <Link href="/login" className="text-sm text-white/45 hover:text-white transition-colors font-display">
-            Iniciar sesión
-          </Link>
-          <Link href="/signup"
-            className="text-sm px-5 py-2 rounded-full font-display font-semibold text-white transition-all hover:scale-105"
-            style={{ background: `linear-gradient(135deg, ${A3}, ${A1})`, boxShadow: `0 0 20px ${A1}30` }}>
+          <Link href="/login" className="text-sm font-mono text-white/40 hover:text-white transition-colors">Iniciar sesión</Link>
+          <Link href="/signup" className="text-sm px-5 py-2 rounded-full font-display font-semibold text-white transition-all hover:scale-105"
+            style={{ background: `linear-gradient(135deg, ${A3}, ${A1})`, boxShadow: `0 0 20px ${A1}33` }}>
             Early access →
           </Link>
         </div>
-        {/* Mobile hamburger */}
-        <button
-          className="md:hidden w-9 h-9 flex flex-col justify-center items-center gap-1.5"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Menu"
-        >
-          <span className={`w-5 h-px bg-white/60 transition-all ${menuOpen ? 'rotate-45 translate-y-[3px]' : ''}`} />
-          <span className={`w-5 h-px bg-white/60 transition-all ${menuOpen ? 'opacity-0' : ''}`} />
-          <span className={`w-5 h-px bg-white/60 transition-all ${menuOpen ? '-rotate-45 -translate-y-[3px]' : ''}`} />
+        <button className="md:hidden flex flex-col gap-1.5 w-8 h-8 items-center justify-center" onClick={() => setMenuOpen(!menuOpen)}>
+          <span className={`w-5 h-px bg-white/60 transition-all duration-200 ${menuOpen ? 'rotate-45 translate-y-[3px]' : ''}`} />
+          <span className={`w-5 h-px bg-white/60 transition-all duration-200 ${menuOpen ? 'opacity-0' : ''}`} />
+          <span className={`w-5 h-px bg-white/60 transition-all duration-200 ${menuOpen ? '-rotate-45 -translate-y-[3px]' : ''}`} />
         </button>
       </nav>
-      {/* Mobile menu */}
       <AnimatePresence>
         {menuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="fixed top-[60px] inset-x-0 z-40 bg-[#05050a]/95 backdrop-blur-xl border-b border-white/[0.07] px-5 py-5 flex flex-col gap-4 md:hidden"
-          >
-            {['#ejemplos','#features','#precios','#faq'].map((href, i) => (
-              <a key={href} href={href} onClick={() => setMenuOpen(false)}
-                className="text-sm text-white/60 hover:text-white font-display transition-colors py-1">
-                {['Ejemplos','Features','Precios','FAQ'][i]}
-              </a>
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+            className="fixed top-[60px] inset-x-0 z-40 px-5 py-5 flex flex-col gap-4 md:hidden border-b border-white/[0.07] backdrop-blur-xl"
+            style={{ background: 'rgba(5,5,10,0.96)' }}>
+            {[['#features','Producto'],['#social','Artistas'],['#pricing','Precios'],['#faq','FAQ']].map(([h,l]) => (
+              <a key={h} href={h} onClick={() => setMenuOpen(false)} className="text-sm font-mono text-white/50 hover:text-white transition-colors py-1">{l}</a>
             ))}
-            <div className="flex flex-col gap-2 pt-2 border-t border-white/[0.07]">
-              <Link href="/login" onClick={() => setMenuOpen(false)} className="text-sm text-white/50 text-center py-2 font-display">Iniciar sesión</Link>
+            <div className="flex flex-col gap-2 pt-3 border-t border-white/[0.07]">
+              <Link href="/login" onClick={() => setMenuOpen(false)} className="text-sm font-mono text-white/40 text-center py-2">Iniciar sesión</Link>
               <Link href="/signup" onClick={() => setMenuOpen(false)}
-                className="text-sm py-3 rounded-full font-display font-semibold text-white text-center"
+                className="py-3 rounded-full text-center text-sm font-display font-semibold text-white"
                 style={{ background: `linear-gradient(135deg, ${A3}, ${A1})` }}>
-                Crear kit gratis →
+                Early access →
               </Link>
             </div>
           </motion.div>
@@ -120,1155 +122,1266 @@ function Nav() {
   )
 }
 
-// ─── Fade-in wrapper ───────────────────────────────────────────────────────────
-function FadeIn({ children, delay = 0, className = '', y = 24, style }: { children: React.ReactNode; delay?: number; className?: string; y?: number; style?: React.CSSProperties }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-30px' }}
-      transition={{ duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] }}
-      className={className}
-      style={style}
-    >
-      {children}
-    </motion.div>
-  )
-}
+// ─── Hero ──────────────────────────────────────────────────────────────────────
+function Hero() {
+  const [variant, setVariant] = useState<'dashboard'|'orb'|'waveform'>('dashboard')
+  const gridRef = useRef<HTMLDivElement>(null)
 
-// ─── iPhone Frame ──────────────────────────────────────────────────────────────
-function IPhoneFrame({ children, scale = 1 }: { children: React.ReactNode; scale?: number }) {
-  const s = scale
-  return (
-    <div style={{
-      position: 'relative', width: 220 * s, height: 460 * s, borderRadius: 44 * s,
-      background: 'linear-gradient(160deg, #2a1f3d 0%, #150f24 100%)',
-      border: `${1.5 * s}px solid rgba(168,85,247,0.25)`,
-      boxShadow: `0 0 0 ${1 * s}px rgba(0,0,0,0.7), 0 ${40 * s}px ${80 * s}px rgba(0,0,0,0.75), inset 0 ${1 * s}px 0 rgba(255,255,255,0.08)`,
-      padding: 9 * s, flexShrink: 0,
-    }}>
-      <div style={{ position: 'absolute', top: 13 * s, left: '50%', transform: 'translateX(-50%)', width: 78 * s, height: 19 * s, borderRadius: 100, background: '#000', zIndex: 30 }} />
-      <div style={{ position: 'absolute', right: -2, top: 100 * s, width: 3 * s, height: 56 * s, borderRadius: '0 3px 3px 0', background: '#1a0f2e' }} />
-      <div style={{ position: 'absolute', left: -2, top: 62 * s, width: 3 * s, height: 22 * s, borderRadius: '3px 0 0 3px', background: '#1a0f2e' }} />
-      <div style={{ position: 'absolute', left: -2, top: 90 * s, width: 3 * s, height: 30 * s, borderRadius: '3px 0 0 3px', background: '#1a0f2e' }} />
-      <div style={{ position: 'absolute', left: -2, top: 126 * s, width: 3 * s, height: 30 * s, borderRadius: '3px 0 0 3px', background: '#1a0f2e' }} />
-      <div style={{ width: '100%', height: '100%', borderRadius: 37 * s, overflow: 'hidden', position: 'relative', background: '#000' }}>
-        {children}
-      </div>
-    </div>
-  )
-}
-
-// ─── Demo Artists ──────────────────────────────────────────────────────────────
-const DEMO_ARTISTS = [
-  {
-    slug: 'charlotte-de-witte',
-    name: 'C. DE WITTE',
-    role: 'DJ & Producer',
-    genre: 'Techno',
-    location: 'Ghent · Belgium',
-    accentColor: '#a855f7',
-    bgColor: '#07030f',
-    photo: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=600&q=80',
-    stats: [{ v: '4.2M', l: 'Monthly' }, { v: '72', l: 'Países' }, { v: '#4', l: 'DJ Mag' }],
-    wave: [5, 9, 14, 8, 11, 6, 15, 10, 7, 13, 9, 5, 12, 8, 4, 10, 14, 7, 11, 6, 13, 9, 5, 8],
-  },
-  {
-    slug: 'solen',
-    name: 'SOLEN.',
-    role: 'DJ & Live Act',
-    genre: 'Melodic Techno',
-    location: 'Berlin · Barcelona',
-    accentColor: '#06b6d4',
-    bgColor: '#020d10',
-    photo: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&q=80',
-    stats: [{ v: '8.1M', l: 'Monthly' }, { v: '58', l: 'Países' }, { v: '110M', l: 'Streams' }],
-    wave: [6, 11, 8, 14, 5, 9, 12, 7, 15, 10, 6, 13, 8, 5, 11, 9, 4, 12, 7, 10, 6, 14, 9, 5],
-  },
-  {
-    slug: 'vela-drift',
-    name: 'VELA DRIFT',
-    role: 'Producer · DJ',
-    genre: 'Afro House',
-    location: 'Nairobi · Amsterdam',
-    accentColor: '#f59e0b',
-    bgColor: '#080400',
-    photo: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&q=80',
-    stats: [{ v: '62M', l: 'Streams' }, { v: '63', l: 'Países' }, { v: 'Grammy', l: 'Award' }],
-    wave: [4, 9, 6, 12, 7, 4, 10, 14, 8, 5, 9, 13, 7, 4, 8, 12, 9, 6, 11, 8, 5, 10, 7, 4],
-  },
-]
-
-// ─── Phone Presskit ────────────────────────────────────────────────────────────
-function PhonePreskit({ artist, scale = 1 }: { artist: typeof DEMO_ARTISTS[0]; scale?: number }) {
-  const s = scale
-  return (
-    <div style={{ width: '100%', height: '100%', background: artist.bgColor, position: 'relative', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', inset: 0 }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={artist.photo} alt={artist.name} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.5 }} />
-      </div>
-      <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to bottom, ${artist.bgColor}22 0%, transparent 25%, ${artist.bgColor}BB 55%, ${artist.bgColor}F5 78%, ${artist.bgColor} 100%)` }} />
-      <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '200%', height: '50%', background: `radial-gradient(ellipse at bottom, ${artist.accentColor}1A, transparent 70%)` }} />
-      <div style={{ position: 'absolute', top: 28 * s, left: 14 * s, right: 14 * s, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: 7 * s, fontFamily: 'monospace', color: 'rgba(255,255,255,0.3)', letterSpacing: 1.5 }}>ARTIX</span>
-        <span style={{ fontSize: 7 * s, fontFamily: 'monospace', color: artist.accentColor, padding: `${2 * s}px ${5 * s}px`, borderRadius: 100, border: `1px solid ${artist.accentColor}44`, background: `${artist.accentColor}15` }}>● LIVE</span>
-      </div>
-      <div style={{ position: 'absolute', bottom: 18 * s, left: 14 * s, right: 14 * s }}>
-        <span style={{ display: 'inline-block', fontSize: 7 * s, fontFamily: 'monospace', color: artist.accentColor, letterSpacing: 1.5, textTransform: 'uppercase' as const, padding: `${2 * s}px ${8 * s}px`, borderRadius: 100, border: `1px solid ${artist.accentColor}30`, background: `${artist.accentColor}12`, marginBottom: 7 * s }}>{artist.genre}</span>
-        <div style={{ fontSize: 22 * s, fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1, color: '#fff', marginBottom: 3 * s, fontFamily: 'system-ui, sans-serif' }}>{artist.name}</div>
-        <div style={{ fontSize: 9 * s, color: 'rgba(255,255,255,0.4)', marginBottom: 10 * s, fontFamily: 'monospace' }}>{artist.role} · {artist.location}</div>
-        <div style={{ display: 'flex', gap: 14 * s, marginBottom: 10 * s }}>
-          {artist.stats.map(st => (
-            <div key={st.l}>
-              <div style={{ fontSize: 11 * s, fontWeight: 700, color: '#fff', fontFamily: 'system-ui, sans-serif', lineHeight: 1 }}>{st.v}</div>
-              <div style={{ fontSize: 7 * s, color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace', marginTop: 1 * s }}>{st.l}</div>
-            </div>
-          ))}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 1.5 * s, marginBottom: 10 * s, height: 14 * s }}>
-          {artist.wave.map((h, i) => (
-            <div key={i} style={{ width: 2.5 * s, height: h * s, borderRadius: 2, background: i < 14 ? artist.accentColor : `${artist.accentColor}40` }} />
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: 5 * s }}>
-          <div style={{ flex: 1, padding: `${6 * s}px ${12 * s}px`, borderRadius: 100, background: artist.accentColor, textAlign: 'center' as const, fontSize: 9 * s, fontWeight: 700, color: '#000', fontFamily: 'system-ui, sans-serif' }}>Booking →</div>
-          <div style={{ padding: `${6 * s}px ${10 * s}px`, borderRadius: 100, border: '1px solid rgba(255,255,255,0.15)', fontSize: 9 * s, color: 'rgba(255,255,255,0.5)', fontFamily: 'monospace' }}>♫</div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Example artists for marquee ──────────────────────────────────────────────
-const EXAMPLES = [
-  { slug: 'francisco-allendes', name: 'F. ALLENDES', genre: 'Tech House', role: 'DJ & Producer', location: 'Barcelona · Miami', plays: '1.2M', shows: '320+', primary: '#a855f7', secondary: '#7c3aed', bg: '#07030f', text: '#f3e8ff', photo: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600&q=80' },
-  { slug: 'nina-k', name: 'NINA K.', genre: 'Techno', role: 'DJ', location: 'Moscow · Berlin', plays: '8.2M', shows: '340+', primary: '#ec4899', secondary: '#be185d', bg: '#0a010a', text: '#fce7f3', photo: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=600&q=80' },
-  { slug: 'okara', name: 'OKARA', genre: 'Melodic Techno', role: 'DJ · Live', location: 'Barcelona', plays: '3.1M', shows: '120+', primary: '#06b6d4', secondary: '#0891b2', bg: '#020d10', text: '#e0f2fe', photo: 'https://images.unsplash.com/photo-1571266028243-e4733b0f0bb0?w=600&q=80' },
-  { slug: 'kaytro', name: 'KAYTRO', genre: 'House', role: 'Producer', location: 'Montreal', plays: '14M', shows: '290+', primary: '#10b981', secondary: '#059669', bg: '#020d09', text: '#d1fae5', photo: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=600&q=80' },
-  { slug: 'liora', name: 'LIORA', genre: 'Afro House', role: 'DJ · Vocalist', location: 'Lagos · London', plays: '5.5M', shows: '190+', primary: '#f59e0b', secondary: '#d97706', bg: '#0a0600', text: '#fffbeb', photo: 'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?w=600&q=80' },
-  { slug: 'honey-d', name: 'HONEY D.', genre: 'House · Disco', role: 'DJ', location: 'Chicago · NYC', plays: '9.3M', shows: '400+', primary: '#eab308', secondary: '#ca8a04', bg: '#09090b', text: '#fafafa', photo: 'https://images.unsplash.com/photo-1501386761578-eaa54b616f8a?w=600&q=80' },
-  { slug: 'mali-g', name: 'MALI G.', genre: 'House', role: 'DJ', location: 'Melbourne', plays: '4.2M', shows: '180+', primary: '#c084fc', secondary: '#7c3aed', bg: '#08071a', text: '#ede9fe', photo: 'https://images.unsplash.com/photo-1471478331149-c72f17e33c73?w=600&q=80' },
-  { slug: 'marco-v', name: 'MARCO V.', genre: 'Electronic', role: 'Producer', location: 'Amsterdam', plays: '6.8M', shows: '210+', primary: '#f97316', secondary: '#ea580c', bg: '#0a0400', text: '#ffedd5', photo: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600&q=80' },
-  { slug: 'vela-drift', name: 'VELA DRIFT', genre: 'Afro House', role: 'Producer', location: 'Nairobi', plays: '62M', shows: '500+', primary: '#f59e0b', secondary: '#d97706', bg: '#080400', text: '#fffbeb', photo: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&q=80' },
-  { slug: 'solen', name: 'SOLEN.', genre: 'Melodic Techno', role: 'DJ · Live', location: 'Berlin', plays: '8.1M', shows: '150+', primary: '#a855f7', secondary: '#7c3aed', bg: '#07030f', text: '#f3e8ff', photo: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=80' },
-  { slug: 'jamie-x', name: 'JAMIE X.', genre: 'House', role: 'DJ · Producer', location: 'London', plays: '12M', shows: '420+', primary: '#f43f5e', secondary: '#e11d48', bg: '#0a0204', text: '#ffe4e6', photo: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=600&q=80' },
-  { slug: 'anais', name: 'ANAÏS', genre: 'Deep House', role: 'DJ · Producer', location: 'Paris · Ibiza', plays: '7.1M', shows: '260+', primary: '#8b5cf6', secondary: '#6d28d9', bg: '#060310', text: '#ede9fe', photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&q=80' },
-]
-
-function MarqueeCard({ ex }: { ex: typeof EXAMPLES[0] }) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className="relative flex-shrink-0 w-48 h-64 rounded-2xl overflow-hidden cursor-pointer"
-      style={{ backgroundColor: ex.bg }}
-    >
-      <div className="absolute inset-0 transition-transform duration-700 ease-out" style={{ transform: hovered ? 'scale(1.07)' : 'scale(1)' }}>
-        <Image src={ex.photo} alt={ex.name} fill className="object-cover" sizes="192px" />
-      </div>
-      <div className="absolute inset-0" style={{ background: `linear-gradient(to bottom, transparent 20%, ${ex.bg}CC 55%, ${ex.bg}F5 80%, ${ex.bg} 100%)` }} />
-      <div className="absolute inset-0 opacity-20" style={{ background: `radial-gradient(ellipse at top right, ${ex.primary}99, transparent 60%)` }} />
-      <div className="absolute top-3 left-3 right-3 flex justify-between items-center">
-        <span className="text-[8px] font-mono opacity-25" style={{ color: ex.text }}>artix/{ex.slug}</span>
-        <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: ex.primary }} />
-      </div>
-      <div className="absolute inset-x-0 bottom-0 p-3.5 flex flex-col gap-1">
-        <span className="inline-flex self-start px-2 py-0.5 rounded-full text-[7px] font-mono" style={{ backgroundColor: ex.primary + '22', color: ex.primary, border: `1px solid ${ex.primary}40` }}>{ex.genre.toUpperCase()}</span>
-        <p className="font-display font-black text-base leading-tight tracking-tight" style={{ color: ex.text }}>{ex.name}</p>
-        <p className="text-[8px] font-mono opacity-35" style={{ color: ex.text }}>{ex.role} · {ex.location}</p>
-        <div className="flex gap-3 mt-0.5">
-          <div>
-            <p className="text-[11px] font-bold" style={{ color: ex.primary }}>{ex.plays}</p>
-            <p className="text-[7px] font-mono opacity-25" style={{ color: ex.text }}>plays/mo</p>
-          </div>
-          <div>
-            <p className="text-[11px] font-bold" style={{ color: ex.primary }}>{ex.shows}</p>
-            <p className="text-[7px] font-mono opacity-25" style={{ color: ex.text }}>shows/yr</p>
-          </div>
-        </div>
-      </div>
-      <div className="absolute inset-0 flex items-center justify-center transition-all duration-200" style={{ opacity: hovered ? 1 : 0, backgroundColor: ex.bg + 'BB', backdropFilter: hovered ? 'blur(4px)' : 'none' }}>
-        <div className="flex items-center gap-1.5 px-4 py-2 rounded-full text-white text-xs font-semibold" style={{ background: `linear-gradient(135deg, ${ex.secondary}, ${ex.primary})` }}>
-          Ver presskit <ArrowRight className="w-3 h-3" />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function MarqueeRow({ items, reverse = false }: { items: typeof EXAMPLES; reverse?: boolean }) {
-  const doubled = [...items, ...items]
-  return (
-    <div className="overflow-hidden w-full" style={{ maskImage: 'linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%)' }}>
-      <motion.div
-        className="flex gap-3"
-        animate={{ x: reverse ? [-(items.length * 198), 0] : [0, -(items.length * 198)] }}
-        transition={{ repeat: Infinity, duration: items.length * 4.5, ease: 'linear' }}
-        style={{ width: 'max-content' }}
-      >
-        {doubled.map((ex, i) => <MarqueeCard key={`${ex.slug}-${i}`} ex={ex} />)}
-      </motion.div>
-    </div>
-  )
-}
-
-// ─── Testimonials ──────────────────────────────────────────────────────────────
-const TESTIMONIALS = [
-  {
-    quote: 'Mandé mi presskit a 3 festivales la misma semana y en dos días ya tenía respuesta. Antes eso me tomaba un mes armar todo.',
-    name: 'Valentina M.',
-    role: 'DJ · Buenos Aires',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&q=80',
-    color: A1,
-  },
-  {
-    quote: 'Los booking agents ahora me escriben ellos. Tener una URL profesional marca una diferencia enorme — ya no parezco un artista amateur.',
-    name: 'Rodrigo K.',
-    role: 'Producer · Ciudad de México',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&q=80',
-    color: '#06b6d4',
-  },
-  {
-    quote: 'En 5 minutos tuve algo que se ve mejor que el presskit de artistas con sello discográfico. Completamente alucinante.',
-    name: 'Daniela V.',
-    role: 'Live Act · Barcelona',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&q=80',
-    color: '#f59e0b',
-  },
-]
-
-// ─── FAQ ───────────────────────────────────────────────────────────────────────
-const FAQS = [
-  { q: '¿Necesito saber diseño o código?', a: 'Para nada. Respondes unas preguntas, eliges tus colores y listo. El sistema genera el kit animado automáticamente.' },
-  { q: '¿Cuánto tarda en estar listo?', a: 'El onboarding toma entre 3 y 7 minutos. Puedes completarlo en menos tiempo si ya tienes tu bio y links a mano.' },
-  { q: '¿Mi presskit es único o todos se ven igual?', a: 'Cada kit usa tus propios colores, fotos y layout. Combinando colores, fondo y las 4 estructuras hay miles de combinaciones. Nadie más tendrá exactamente el tuyo.' },
-  { q: '¿Puedo actualizar el kit después?', a: 'Sí, cuantas veces quieras. Cambias colores, logros, fotos, links — y la URL sigue siendo la misma.' },
-  { q: '¿Puedo capturar leads y hacer email marketing?', a: 'Sí, ARTIX incluye formularios de captura de fans, segmentación por tipo (fans/VIP/bookers/media) y envío de campañas. Lanza música, vende entradas directamente a tu base.' },
-  { q: '¿Puedo usar mi propio dominio?', a: 'Sí, en el plan Pro puedes conectar tu propio dominio (ej: press.tunombre.com) con unos pasos simples.' },
-  { q: '¿Es seguro? ¿Quién puede ver mi presskit?', a: 'Tú controlas si el kit es público o privado. Puedes compartirlo con un link y mantenerlo oculto del buscador si prefieres.' },
-  { q: '¿Funciona para agencias con varios artistas?', a: 'Sí, el plan Agency te da hasta 10 presskits bajo un solo dashboard, ideal para managers y sellos.' },
-]
-
-// ─── Plans ─────────────────────────────────────────────────────────────────────
-const PLANS = [
-  {
-    name: 'Starter',
-    price: 'Gratis',
-    period: 'para siempre',
-    desc: 'Para empezar.',
-    color: '#6b7280',
-    features: ['1 press kit', 'URL artix/tu-nombre', 'Colores y layout personalizados', '4 estructuras de diseño', 'Secciones bio, música y contacto'],
-    cta: 'Crear kit gratis',
-    href: '/signup',
-    highlight: false,
-  },
-  {
-    name: 'Pro',
-    price: '$12',
-    period: '/ mes',
-    desc: '14 días gratis, sin tarjeta.',
-    color: A1,
-    features: ['Todo de Starter', 'Analíticas en tiempo real', 'Dominio personalizado', 'Fan database + email marketing', 'Venta de entradas directa', 'Badge "Artista Verificado"'],
-    cta: 'Empezar 14 días gratis',
-    href: '/signup?plan=pro',
-    highlight: true,
-  },
-  {
-    name: 'Agency',
-    price: '$29',
-    period: '/ mes',
-    desc: 'Para managers y agencias.',
-    color: '#06b6d4',
-    features: ['Hasta 10 artistas', 'Todo de Pro', 'Dashboard de agencia', 'Facturación unificada', 'API access', 'SLA garantizado'],
-    cta: 'Hablar con ventas',
-    href: 'mailto:hola@artix.pro',
-    highlight: false,
-  },
-]
-
-// ─── Recent signups ────────────────────────────────────────────────────────────
-const RECENT_SIGNUPS = [
-  { initials: 'VM', color: A1 },
-  { initials: 'KT', color: '#06b6d4' },
-  { initials: 'DV', color: '#f59e0b' },
-  { initials: 'AL', color: '#10b981' },
-  { initials: 'JM', color: A2 },
-  { initials: 'RS', color: '#ef4444' },
-]
-
-// ─── Main landing ──────────────────────────────────────────────────────────────
-export default function LandingPage() {
-  const heroRef = useRef<HTMLElement>(null)
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] })
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.65], [1, 0])
-  const heroY = useTransform(scrollYProgress, [0, 1], [0, 80])
-
-  const [openFaq, setOpenFaq] = useState<number | null>(null)
-  const [showDemo, setShowDemo] = useState(false)
-  const [demoIdx, setDemoIdx] = useState(0)
-  const [email, setEmail] = useState('')
-  const [submitted, setSubmitted] = useState(false)
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (email) setSubmitted(true)
-  }
+  // Mouse-reactive dot grid
+  useEffect(() => {
+    const container = gridRef.current
+    if (!container) return
+    container.innerHTML = ''
+    const cols = 16, rows = 10
+    const dots: HTMLDivElement[] = []
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const d = document.createElement('div')
+        d.style.cssText = `position:absolute;width:2px;height:2px;border-radius:50%;background:${A2};transition:transform 0.3s,opacity 0.4s;opacity:0.15;left:${(c/(cols-1))*100}%;top:${(r/(rows-1))*100}%`
+        container.appendChild(d)
+        dots.push(d)
+      }
+    }
+    const handler = (e: MouseEvent) => {
+      const rect = container.getBoundingClientRect()
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top
+      dots.forEach(d => {
+        const dx = parseFloat(d.style.left) / 100 * rect.width - mx
+        const dy = parseFloat(d.style.top) / 100 * rect.height - my
+        const dist = Math.sqrt(dx*dx + dy*dy)
+        const f = Math.max(0, 1 - dist / 240)
+        d.style.opacity = String(0.15 + f * 0.85)
+        d.style.transform = `scale(${1 + f * 2.5})`
+      })
+    }
+    window.addEventListener('mousemove', handler)
+    return () => { window.removeEventListener('mousemove', handler) }
+  }, [])
 
   return (
-    <main className="min-h-screen text-white overflow-x-hidden" style={{ background: BG }}>
-      <Aurora />
-      <Nav />
-
-      {/* ── HERO ──────────────────────────────────────────── */}
-      <motion.section
-        ref={heroRef}
-        style={{ opacity: heroOpacity, y: heroY }}
-        className="relative min-h-screen px-5 md:px-8 pt-28 flex flex-col overflow-hidden"
-      >
-        {/* Grid dots */}
-        <div className="absolute inset-0 pointer-events-none" style={{
-          backgroundImage: `radial-gradient(circle, rgba(168,85,247,0.12) 1px, transparent 1px)`,
-          backgroundSize: '40px 40px',
-          maskImage: 'radial-gradient(ellipse at center, black 30%, transparent 80%)',
+    <section className="relative min-h-screen flex items-center pt-32 pb-20 overflow-hidden">
+      {/* Aurora background */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <motion.div className="absolute rounded-full" animate={{ x:[0,60,-50,0], y:[0,-50,60,0], scale:[1,1.1,0.9,1] }}
+          transition={{ duration: 22, repeat: Infinity, ease:'easeInOut' }}
+          style={{ width:720, height:720, top:-180, left:-180, background:A1, filter:'blur(90px)', opacity:0.06 }} />
+        <motion.div className="absolute rounded-full" animate={{ x:[0,-40,50,0], y:[0,60,-40,0] }}
+          transition={{ duration: 22, repeat: Infinity, ease:'easeInOut', delay:-7 }}
+          style={{ width:600, height:600, bottom:-200, right:-140, background:A2, filter:'blur(90px)', opacity:0.045 }} />
+        <motion.div className="absolute rounded-full" animate={{ x:[0,50,-60,0], y:[0,-60,40,0] }}
+          transition={{ duration: 22, repeat: Infinity, ease:'easeInOut', delay:-14 }}
+          style={{ width:500, height:500, top:'30%', left:'45%', background:A3, filter:'blur(90px)', opacity:0.035 }} />
+        {/* Grid lines */}
+        <div className="absolute inset-0" style={{
+          backgroundImage: `linear-gradient(rgba(168,85,247,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(168,85,247,0.05) 1px,transparent 1px)`,
+          backgroundSize: '64px 64px',
+          maskImage: 'radial-gradient(ellipse at center, black 20%, transparent 72%)',
         }} />
+        {/* Mouse dots */}
+        <div ref={gridRef} className="absolute inset-0" />
+      </div>
 
-        <div className="relative z-10 flex flex-col items-center gap-6 max-w-5xl mx-auto text-center flex-1 justify-center pb-8 w-full">
-          {/* Badge */}
-          <FadeIn delay={0}>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-mono tracking-widest"
-              style={{ borderColor: `${A1}40`, color: A2, background: `${A1}0e` }}>
-              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: A1 }} />
-              LA PLATAFORMA DE DJS Y PRODUCTORES
-            </div>
-          </FadeIn>
-
-          {/* Headline */}
-          <FadeIn delay={0.1} y={30}>
-            <h1 className="font-display font-black text-[clamp(2.4rem,8vw,5.5rem)] leading-[0.9] tracking-tight">
-              Tu presencia digital<br />
-              <span className="italic" style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic',
-                background: `linear-gradient(135deg, #e8ddff 0%, ${A2} 40%, ${A1} 70%, ${A3} 100%)`,
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                al nivel de tu música.
-              </span>
-            </h1>
-          </FadeIn>
-
-          <FadeIn delay={0.2}>
-            <p className="text-base md:text-lg text-white/45 max-w-xl leading-relaxed font-display">
-              Web profesional animada, fan database, email marketing y venta directa de entradas.
-              Todo en un solo link.
-            </p>
-          </FadeIn>
-
-          <FadeIn delay={0.3}>
-            <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-              <Link href="/signup"
-                className="group inline-flex items-center gap-2 px-7 py-4 rounded-full font-display font-bold text-base text-white transition-all duration-300 hover:scale-105 w-full sm:w-auto justify-center"
-                style={{ background: `linear-gradient(135deg, ${A3}, ${A1})`, boxShadow: `0 0 40px ${A1}40` }}>
-                Crear mi kit gratis
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <button
-                onClick={() => { setDemoIdx(0); setShowDemo(true) }}
-                className="inline-flex items-center gap-2 px-6 py-4 rounded-full border border-white/10 text-white/50 hover:text-white hover:border-white/20 text-sm font-display font-medium transition-all duration-300 bg-transparent w-full sm:w-auto justify-center cursor-pointer"
-              >
-                <Play className="w-4 h-4" /> Ver ejemplos
-              </button>
-            </div>
-          </FadeIn>
-
-          {/* Trust bar */}
-          <FadeIn delay={0.4}>
-            <div className="flex flex-wrap justify-center items-center gap-4 md:gap-5 text-xs text-white/30 font-mono mt-1">
-              <span className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400" /> Sin tarjeta</span>
-              <span className="hidden sm:block w-px h-3 bg-white/10" />
-              <span className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400" /> 14 días Pro gratis</span>
-              <span className="hidden sm:block w-px h-3 bg-white/10" />
-              <span className="flex items-center gap-1.5"><Check className="w-3 h-3 text-emerald-400" /> Listo en 5 min</span>
-            </div>
-          </FadeIn>
-        </div>
-
-        {/* Hero iPhones */}
-        <div className="relative z-10 flex justify-center items-start gap-6 md:gap-16 pb-0 mt-4">
-          <FadeIn delay={0.5} y={60} className="hidden sm:block">
-            <motion.div animate={{ y: [0, -10, 0] }} transition={{ repeat: Infinity, duration: 5.5, ease: 'easeInOut' }} style={{ rotate: -6 }}>
-              <IPhoneFrame scale={0.78}>
-                <PhonePreskit artist={DEMO_ARTISTS[0]} scale={0.78} />
-              </IPhoneFrame>
-            </motion.div>
-          </FadeIn>
-          <FadeIn delay={0.65} y={60}>
-            <motion.div animate={{ y: [0, -12, 0] }} transition={{ repeat: Infinity, duration: 5, ease: 'easeInOut', delay: 0.8 }} style={{ rotate: 0 }}>
-              <IPhoneFrame scale={0.92}>
-                <PhonePreskit artist={DEMO_ARTISTS[1]} scale={0.92} />
-              </IPhoneFrame>
-            </motion.div>
-          </FadeIn>
-          <FadeIn delay={0.5} y={60} className="hidden sm:block">
-            <motion.div animate={{ y: [0, -10, 0] }} transition={{ repeat: Infinity, duration: 5.5, ease: 'easeInOut', delay: 1.5 }} style={{ rotate: 6 }}>
-              <IPhoneFrame scale={0.78}>
-                <PhonePreskit artist={DEMO_ARTISTS[2]} scale={0.78} />
-              </IPhoneFrame>
-            </motion.div>
-          </FadeIn>
-        </div>
-      </motion.section>
-
-      {/* ── SOCIAL PROOF BAR ────────────────────────────────── */}
-      <section className="py-10 px-5 md:px-8 border-y border-white/[0.06]">
-        <FadeIn>
-          <div className="max-w-4xl mx-auto flex flex-col items-center gap-5">
-            <div className="flex items-center gap-3">
-              <div className="flex">
-                {RECENT_SIGNUPS.map((u, i) => (
-                  <div key={i} style={{
-                    width: 30, height: 30, borderRadius: '50%',
-                    background: `linear-gradient(135deg, ${u.color}, ${u.color}88)`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 9, fontWeight: 800, color: '#fff',
-                    border: `2px solid ${BG}`, marginLeft: i === 0 ? 0 : -8, zIndex: 6 - i, position: 'relative',
-                  }}>{u.initials}</div>
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-5 md:px-10">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-16 items-center">
+          {/* Left text */}
+          <div>
+            <FadeIn delay={0}>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/[0.1] text-[11px] font-mono text-white/45 tracking-widest mb-7">
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: A1 }} />
+                Early access · Abril 2026
+              </div>
+            </FadeIn>
+            <FadeIn delay={0.08} y={30}>
+              <h1 className="font-display font-semibold leading-[0.92] tracking-[-0.04em] text-white mb-7"
+                style={{ fontSize: 'clamp(3rem,7.5vw,6.8rem)' }}>
+                El <Iridescent>sistema operativo</Iridescent> de tu carrera musical.
+              </h1>
+            </FadeIn>
+            <FadeIn delay={0.16}>
+              <p className="text-base md:text-[1.1rem] text-white/55 leading-relaxed mb-8 max-w-lg">
+                Tu web, tu press kit, tu audiencia y tus datos — unificados en una sola plataforma impulsada por IA. Sin depender de nadie.
+              </p>
+            </FadeIn>
+            <FadeIn delay={0.22}>
+              <div className="flex flex-col sm:flex-row gap-3 mb-10">
+                <Link href="/signup"
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full font-display font-semibold text-white text-sm transition-all hover:scale-105"
+                  style={{ background: `linear-gradient(135deg, ${A3}, ${A1})`, boxShadow: `0 0 30px ${A1}40` }}>
+                  Solicitar early access <span className="ml-1">→</span>
+                </Link>
+                <a href="#features"
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full border border-white/10 text-white/55 hover:text-white hover:border-white/20 font-display font-medium text-sm transition-all">
+                  Ver cómo funciona
+                </a>
+              </div>
+            </FadeIn>
+            <FadeIn delay={0.3}>
+              <div className="flex gap-8 sm:gap-12">
+                {[['3 min','Configuración'],['+2,400','Artistas en lista'],['0€','Hasta el lanzamiento']].map(([n,l]) => (
+                  <div key={l}>
+                    <div className="font-display font-semibold text-2xl text-white tracking-tight">{n}</div>
+                    <div className="text-[11px] font-mono text-white/35 mt-1">{l}</div>
+                  </div>
                 ))}
               </div>
-              <p className="text-sm text-white/50 font-display">
-                <span className="text-white font-semibold">847 artistas</span> ya tienen su kit publicado
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex gap-0.5">
-                {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-[#f59e0b] text-[#f59e0b]" />)}
-              </div>
-              <span className="text-white font-semibold text-sm">4.9</span>
-              <span className="text-white/30 text-xs font-mono">· 312 reseñas verificadas</span>
-            </div>
-            <div className="flex flex-wrap justify-center gap-2">
-              {['🌍 Artistas en 23 países', '⚡ Kit listo en ~4 min', '📈 +160 kits nuevos este mes', '🎧 3 de cada 4 reciben respuesta de booking'].map((m) => (
-                <span key={m} className="px-3 py-1.5 rounded-full text-xs text-white/45 border border-white/[0.07] font-mono" style={{ background: 'rgba(255,255,255,0.025)' }}>{m}</span>
+            </FadeIn>
+          </div>
+
+          {/* Right visual */}
+          <FadeIn delay={0.25} y={40} className="relative">
+            <AnimatePresence mode="wait">
+              <motion.div key={variant} initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.3 }}>
+                {variant === 'dashboard' && <HeroDashboard />}
+                {variant === 'orb' && <HeroOrb />}
+                {variant === 'waveform' && <HeroWaveform />}
+              </motion.div>
+            </AnimatePresence>
+            {/* Variant switcher */}
+            <div className="flex gap-2 mt-5 justify-center">
+              {(['dashboard','orb','waveform'] as const).map((v, i) => (
+                <button key={v} onClick={() => setVariant(v)}
+                  className="px-4 py-1.5 rounded-full text-[11px] font-mono transition-all cursor-pointer border"
+                  style={{
+                    background: variant === v ? `${A1}22` : 'transparent',
+                    borderColor: variant === v ? `${A1}55` : 'rgba(255,255,255,0.1)',
+                    color: variant === v ? A2 : 'rgba(255,255,255,0.35)',
+                  }}>
+                  {['Perfil','Aura','Signal'][i]}
+                </button>
               ))}
+            </div>
+          </FadeIn>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function HeroDashboard() {
+  return (
+    <div className="rounded-2xl overflow-hidden border border-white/[0.1] shadow-2xl" style={{ background: '#0a0a14' }}>
+      {/* Chrome bar */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.07]" style={{ background: '#07070f' }}>
+        <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-red-500/70" /><div className="w-2.5 h-2.5 rounded-full bg-yellow-500/70" /><div className="w-2.5 h-2.5 rounded-full bg-green-500/70" /></div>
+        <div className="flex-1 mx-3 px-3 py-1 rounded text-[11px] font-mono text-white/30 text-center border border-white/[0.06]" style={{ background: 'rgba(255,255,255,0.03)' }}>🔒 solen.fm</div>
+        <div className="text-[11px] font-mono text-white/20">⌕ ↗</div>
+      </div>
+      {/* Cover */}
+      <div className="relative h-36 overflow-hidden" style={{ background: 'linear-gradient(135deg, #1a0535, #0a0a1a)' }}>
+        <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${A3}22, transparent)` }} />
+        <div className="absolute bottom-4 left-4">
+          <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-mono mb-2" style={{ background: `${A1}20`, border: `1px solid ${A1}40`, color: A2 }}>
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: A1 }} />LIVE · Berghain esta noche
+          </div>
+          <div className="font-display font-semibold text-2xl text-white tracking-tight">SOLEN.</div>
+          <div className="text-[11px] font-mono text-white/45 mt-0.5">Melodic Techno · Berlin / Barcelona</div>
+        </div>
+        <div className="absolute top-4 right-4 flex gap-3 text-[11px] font-mono text-white/30">
+          <span className="opacity-100 text-white/70">Música</span><span>Tour</span><span>Press</span><span>Booking</span>
+        </div>
+      </div>
+      {/* Release player */}
+      <div className="px-4 py-3 flex items-center gap-3 border-b border-white/[0.06]">
+        <div className="w-10 h-10 rounded-lg shrink-0" style={{ background: `linear-gradient(135deg, ${A3}, ${A1})` }} />
+        <div className="flex-1 min-w-0">
+          <div className="text-[10px] font-mono text-white/30 mb-0.5">LAST RELEASE · AURORA EP</div>
+          <div className="text-sm font-display font-semibold text-white">Midnight Protocol</div>
+          <div className="flex items-end gap-0.5 h-4 mt-1">
+            {Array.from({length:28}).map((_,i) => (
+              <div key={i} className="w-0.5 rounded-full" style={{ height:`${20+Math.abs(Math.sin(i*0.6))*80}%`, background:`${A1}99`, animation:`wf 1.2s ${i*0.04}s ease-in-out infinite alternate` }} />
+            ))}
+          </div>
+        </div>
+        <div className="text-[10px] font-mono text-white/30">02:47</div>
+      </div>
+      {/* Shows */}
+      <div className="p-4 flex flex-col gap-2.5">
+        {[['23 MAY','Berghain · Berlin','Sold out','text-red-400'],['07 JUN','Hï Ibiza · Ibiza','72% vendido',`text-[${A2}]`],['14 JUN','Sónar · Barcelona','Tickets →','text-white/40']].map(([d,v,s,sc]) => (
+          <div key={d} className="flex items-center gap-3">
+            <div className="text-center shrink-0 w-9">
+              <div className="font-display font-semibold text-sm text-white leading-none">{d.split(' ')[0]}</div>
+              <div className="text-[9px] font-mono text-white/35">{d.split(' ')[1]}</div>
+            </div>
+            <div className="flex-1 text-[12px] font-mono text-white/60">{v}</div>
+            <div className={`text-[11px] font-mono ${sc}`}>{s}</div>
+          </div>
+        ))}
+      </div>
+      {/* Floating chips */}
+      <div className="relative h-8 px-4 flex items-center gap-2 mb-2">
+        {['+340 leads · 7d','Booking · Awakenings'].map((t,i) => (
+          <div key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono border border-white/[0.08]" style={{ background: `${A1}12`, color: A2 }}>
+            <span className="w-1 h-1 rounded-full animate-pulse" style={{ background: A1 }} />{t}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function HeroOrb() {
+  return (
+    <div className="flex items-center justify-center py-12 relative" style={{ minHeight: 360 }}>
+      <div className="relative flex items-center justify-center" style={{ width: 280, height: 280 }}>
+        {[1,2,3].map(i => (
+          <motion.div key={i} className="absolute rounded-full border border-white/[0.07]"
+            animate={{ scale:[1,1.04,1], opacity:[0.4,0.7,0.4] }}
+            transition={{ duration: 3+i, repeat: Infinity, delay: i*0.8 }}
+            style={{ width: 100+i*70, height: 100+i*70 }} />
+        ))}
+        <motion.div className="absolute rounded-full"
+          animate={{ scale:[1,1.08,1] }} transition={{ duration: 4, repeat: Infinity }}
+          style={{ width:180, height:180, background:`radial-gradient(ellipse, ${A2}99, ${A1}55, ${A3}22)`, filter:'blur(12px)' }} />
+        <div className="absolute rounded-full" style={{ width:120, height:120, background:`radial-gradient(ellipse, #fff 0%, ${A2}CC 40%, ${A1}88 70%)`, filter:'blur(4px)', opacity:0.9 }} />
+      </div>
+      <div className="absolute flex flex-col gap-2 right-0 top-8">
+        {['Frecuencia · 432 Hz','Audiencia · 8.2K','Shows · +14 mes'].map((t,i) => (
+          <div key={i} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-mono border border-white/[0.08]" style={{ background:`${A1}12`, color:A2 }}>
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background:A1 }} />{t}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function HeroWaveform() {
+  return (
+    <div className="rounded-2xl border border-white/[0.09] p-6" style={{ background: '#08080f' }}>
+      <div className="flex items-center gap-2 mb-5 text-[11px] font-mono text-white/40">
+        <span className="w-2 h-2 rounded-full" style={{ background: '#ef4444', boxShadow: '0 0 6px #ef4444' }} />
+        LIVE · ANÁLISIS IA
+      </div>
+      <div className="flex items-end gap-0.5 h-24 mb-4">
+        {Array.from({length:60}).map((_,i) => (
+          <motion.div key={i} className="flex-1 rounded-full"
+            animate={{ height: ['30%','100%','30%'] }}
+            transition={{ duration: 1.2, repeat: Infinity, delay: (i*0.03)%1.6, ease:'easeInOut' }}
+            style={{ background:`linear-gradient(to top, ${A1}, ${A2})`, opacity: 0.7+Math.sin(i*0.4)*0.3 }} />
+        ))}
+      </div>
+      <div className="flex justify-between text-[11px] font-mono text-white/30">
+        <span>00:02:47 / 04:12</span>
+        <span>Track · Midnight Protocol</span>
+      </div>
+    </div>
+  )
+}
+
+// ─── Problem ───────────────────────────────────────────────────────────────────
+function Problem() {
+  return (
+    <section className="py-28 md:py-36 relative" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="max-w-6xl mx-auto px-5 md:px-10">
+        <FadeIn className="text-center mb-20 max-w-3xl mx-auto">
+          <div className="inline-block text-[11px] font-mono text-white/35 tracking-widest mb-6">01 · El problema</div>
+          <h2 className="font-display font-semibold text-white mb-6 leading-[0.92] tracking-[-0.03em]"
+            style={{ fontSize: 'clamp(2rem,5vw,3.6rem)' }}>
+            Un link de bio no es <Iridescent>una carrera.</Iridescent>
+          </h2>
+          <p className="text-white/50 text-base md:text-lg">Así se ve hoy la presencia digital de un artista. Así debería verse.</p>
+        </FadeIn>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_60px_1fr] gap-6 lg:gap-0 items-start">
+          {/* BEFORE — Linktree */}
+          <FadeIn delay={0.05}>
+            <div className="rounded-2xl overflow-hidden border border-white/[0.06]" style={{ background:'rgba(255,255,255,0.02)' }}>
+              <div className="flex items-center justify-between p-4 border-b border-white/[0.05]">
+                <div className="flex items-center gap-2 text-[11px] font-mono text-red-400/80">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-400" />ANTES · Linktree / bio en IG
+                </div>
+                <span className="text-[10px] font-mono text-red-400/60 border border-red-400/20 px-2 py-0.5 rounded-full">GENÉRICO</span>
+              </div>
+              {/* Phone mockup */}
+              <div className="flex justify-center py-6 px-4">
+                <div className="w-48 rounded-2xl overflow-hidden border border-white/[0.08] p-4 flex flex-col items-center gap-2.5" style={{ background:'#111' }}>
+                  <div className="w-12 h-12 rounded-full bg-white/10" />
+                  <div className="text-[12px] font-mono text-white/60">@kora_music</div>
+                  <div className="text-[10px] font-mono text-white/30 mb-1">DJ / Producer · Bookings DM</div>
+                  {['🎵 Spotify','🔗 Press kit (404)','📧 kora.music.info@gma...','📱 Instagram','☁️ Soundcloud','📀 Beatport','▶️ YouTube'].map((btn, i) => (
+                    <div key={i} className={`w-full py-2 rounded-lg text-center text-[10px] font-mono border ${btn.includes('404') ? 'border-red-400/30 text-red-400/60' : 'border-white/[0.08] text-white/40'}`}
+                      style={{ background: btn.includes('404') ? 'rgba(239,68,68,0.06)' : 'rgba(255,255,255,0.03)' }}>
+                      {btn}
+                    </div>
+                  ))}
+                  <div className="text-[9px] font-mono text-white/15 mt-1">powered by linktree</div>
+                </div>
+              </div>
+              <div className="px-5 pb-5 flex flex-col gap-2">
+                {['Diseño genérico de plantilla','Cero datos de quién clickeó','Audiencia no es tuya','Bookers no te toman en serio','Archivos dispersos en Drive'].map(item => (
+                  <div key={item} className="flex items-center gap-2 text-sm text-white/40 font-mono">
+                    <span className="text-red-400">×</span>{item}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+
+          {/* Arrow divider */}
+          <div className="hidden lg:flex flex-col items-center justify-center h-full gap-2 pt-32">
+            <div className="w-px h-24 bg-gradient-to-b from-transparent via-white/20 to-transparent" />
+            <div className="w-8 h-8 rounded-full flex items-center justify-center border border-white/[0.1] text-sm font-mono" style={{ background:`${A1}15`, color:A1 }}>→</div>
+            <div className="text-[10px] font-mono tracking-widest" style={{ color:A1, writingMode:'vertical-rl', letterSpacing:'0.2em' }}>ARTIX</div>
+            <div className="w-px h-24 bg-gradient-to-b from-transparent via-white/20 to-transparent" />
+          </div>
+
+          {/* AFTER — ARTIX site */}
+          <FadeIn delay={0.12}>
+            <div className="rounded-2xl overflow-hidden border" style={{ borderColor:`${A1}35`, background:`${A1}06` }}>
+              <div className="flex items-center justify-between p-4 border-b" style={{ borderColor:`${A1}18` }}>
+                <div className="flex items-center gap-2 text-[11px] font-mono" style={{ color:A2 }}>
+                  <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background:A1 }} />AHORA · tu web ARTIX
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border" style={{ color:A2, borderColor:`${A1}40`, background:`${A1}15` }}>★ PREMIUM</span>
+              </div>
+              {/* Browser chrome */}
+              <div className="p-3 border-b" style={{ borderColor:`${A1}12`, background:`${A1}05` }}>
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1.5"><div className="w-2 h-2 rounded-full bg-red-500/60"/><div className="w-2 h-2 rounded-full bg-yellow-500/60"/><div className="w-2 h-2 rounded-full bg-green-500/60"/></div>
+                  <div className="flex-1 mx-2 px-2.5 py-1 rounded text-[10px] font-mono text-center border" style={{ borderColor:`${A1}20`, color:`${A2}80`, background:`${A1}08` }}>🔒 solen.fm</div>
+                </div>
+              </div>
+              {/* Hero photo area */}
+              <div className="relative h-32 overflow-hidden" style={{ background:'linear-gradient(135deg,#1a0535,#0a0a1a)' }}>
+                <div className="absolute inset-0 opacity-30" style={{ background:`radial-gradient(ellipse at top right, ${A1}66, transparent 60%)` }} />
+                <div className="absolute inset-0 p-4 flex flex-col justify-end">
+                  <div className="font-display font-semibold text-2xl text-white tracking-tight">SOLEN.</div>
+                  <div className="text-[11px] font-mono text-white/40">Melodic Techno · Berlín</div>
+                </div>
+                <div className="absolute top-4 right-4 inline-flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-mono border" style={{ background:`${A1}20`, borderColor:`${A1}40`, color:A2 }}>
+                  <span className="w-1 h-1 rounded-full animate-pulse" style={{ background:A1 }} />LIVE tonight
+                </div>
+              </div>
+              {/* Panels */}
+              <div className="grid grid-cols-2 gap-px" style={{ background:`${A1}15` }}>
+                {[['PRÓXIMO SHOW','Berghain · 23.05'],['NUEVO EP','+340 pre-saves hoy']].map(([l,v],i) => (
+                  <div key={i} className="p-3" style={{ background:'#07050f' }}>
+                    <div className="text-[9px] font-mono text-white/25 mb-1">{l}</div>
+                    <div className="text-[12px] font-mono" style={{ color:A2 }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="p-4 flex flex-col gap-2">
+                {['Diseño único con IA','Cada visita = lead capturado','Audiencia tuya para siempre','Press kit + rider profesional','Vende tickets y drops directo'].map(item => (
+                  <div key={item} className="flex items-center gap-2 text-sm font-mono" style={{ color:`${A2}CC` }}>
+                    <Check className="w-3 h-3" style={{ color:A1 }} />{item}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+        </div>
+
+        {/* Result metrics */}
+        <FadeIn delay={0.2} className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
+          {[['×3','Más bookings','en 90 días',A1],['×7','Conversión','vs Linktree','#06b6d4'],['0%','Dependencia','del algoritmo','#10b981'],['100%','Datos de','tu audiencia','#f59e0b']].map(([n,l1,l2,c]) => (
+            <div key={l1} className="rounded-xl p-4 text-center border border-white/[0.05]" style={{ background:'rgba(255,255,255,0.02)' }}>
+              <div className="font-display font-semibold text-3xl tracking-tight" style={{ color:c as string }}>{n}</div>
+              <div className="text-[11px] font-mono text-white/35 mt-1.5">{l1}<br/>{l2}</div>
+            </div>
+          ))}
+        </FadeIn>
+      </div>
+    </section>
+  )
+}
+
+// ─── Transformation ────────────────────────────────────────────────────────────
+const ARTIST_PROFILES = [
+  {
+    id: 'solen', name: 'SOLEN.', handle: 'solen.fm', role: 'Melodic Techno · DJ / Producer',
+    location: 'Berlín · Barcelona', since: 'Desde 2018',
+    bio: 'Solen construye paisajes sonoros hipnóticos entre el techno melódico y el progressive. Residente en Watergate Berlín y Hï Ibiza.',
+    stats: [['4.2M','Reproducciones'],['184K','Oyentes/mes'],['87','Shows'],['312K','Seguidores']],
+    tracks: [['01','Midnight Protocol','07:42','Aurora EP · 2026'],['02','Chrome Dust','06:18','Aurora EP · 2026'],['03','Signal / Noise','08:04','Single · 2025'],['04','Solar Drift','07:56','Parallel LP · 2025'],['05','Berlin Requiem','09:12','Parallel LP · 2025']],
+    shows: [['23 MAY','Berghain · Klubnacht','Berlín'],['07 JUN','Hï Ibiza · Main Room','Ibiza'],['14 JUN','Sónar Festival','Barcelona'],['28 JUN','Awakenings','Ámsterdam'],['12 JUL','Tomorrowland · Crystal Garden','Boom']],
+    press: ['Mixmag','Resident Advisor','DJ Mag Top 100','Beatport Charts'],
+  },
+  {
+    id: 'okara', name: 'OKARA', handle: 'okara.fm', role: 'Afrohouse · DJ / Live',
+    location: 'Johannesburgo · Londres', since: 'Desde 2015',
+    bio: 'Okara fusiona raíces sudafricanas con house progresivo. Giras por África, Europa y Norteamérica con Innervisions y Rise Music.',
+    stats: [['12.8M','Reproducciones'],['620K','Oyentes/mes'],['142','Shows'],['890K','Seguidores']],
+    tracks: [['01','Ancestral Code','08:22','Roots / Future · 2026'],['02','Black Sun','07:14','Roots / Future · 2026'],['03','Umfundisi (Remix)','09:48','Single · 2025']],
+    shows: [['18 MAY','Fabric London','Londres'],['01 JUN','Afrikan Basement','Nueva York'],['21 JUN','Kappa FuturFestival','Turín']],
+    press: ['Mixmag','DJ Mag África','Boiler Room'],
+  },
+  {
+    id: 'vela', name: 'VELA DRIFT', handle: 'veladrift.fm', role: 'Minimal · DJ / Producer',
+    location: 'Ámsterdam', since: 'Desde 2020',
+    bio: 'Sonido minimal con texturas orgánicas. Residente en De School y DGTL. Cinco EPs auto-editados, más de 200K oyentes mensuales.',
+    stats: [['2.1M','Reproducciones'],['214K','Oyentes/mes'],['64','Shows'],['128K','Seguidores']],
+    tracks: [['01','Quiet Machines','06:32','Grain EP · 2026'],['02','Soft Architecture','07:08','Grain EP · 2026'],['03','Static Bloom','08:14','Single · 2026']],
+    shows: [['30 MAY','De School','Ámsterdam'],['15 JUN','DGTL Festival','Ámsterdam'],['05 JUL','Nitsa Club','Barcelona']],
+    press: ['Mixmag Holanda','Beatport'],
+  },
+]
+
+function Transformation() {
+  const [active, setActive] = useState('solen')
+  const artist = ARTIST_PROFILES.find(a => a.id === active)!
+
+  return (
+    <section className="py-28 md:py-36" style={{ borderTop:'1px solid rgba(255,255,255,0.06)' }}>
+      <div className="max-w-6xl mx-auto px-5 md:px-10">
+        <FadeIn className="text-center mb-6">
+          <div className="inline-block text-[11px] font-mono text-white/35 tracking-widest mb-6">02 · Esto es lo que construyes</div>
+          <h2 className="font-display font-semibold text-white mb-6 leading-[0.92] tracking-[-0.03em]"
+            style={{ fontSize:'clamp(2rem,5vw,3.6rem)' }}>
+            Perfiles de <Iridescent>nivel internacional.</Iridescent>
+          </h2>
+          <p className="text-white/50 text-base md:text-lg max-w-xl mx-auto">
+            Tres ejemplos de lo que los artistas crean en ARTIX. Todo generado con IA en 3 minutos.
+          </p>
+        </FadeIn>
+
+        {/* Profile selector */}
+        <FadeIn delay={0.08} className="flex gap-3 justify-center flex-wrap mb-8">
+          {ARTIST_PROFILES.map(p => (
+            <button key={p.id} onClick={() => setActive(p.id)}
+              className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-sm font-mono transition-all cursor-pointer"
+              style={{
+                background: active === p.id ? `${A1}18` : 'rgba(255,255,255,0.02)',
+                borderColor: active === p.id ? `${A1}50` : 'rgba(255,255,255,0.07)',
+                color: active === p.id ? A2 : 'rgba(255,255,255,0.45)',
+              }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: active === p.id ? A1 : 'rgba(255,255,255,0.2)' }} />
+              {p.name}
+              <span className="text-[10px] opacity-60">{p.role.split(' · ')[0]}</span>
+            </button>
+          ))}
+        </FadeIn>
+
+        {/* Profile showcase — browser */}
+        <AnimatePresence mode="wait">
+          <motion.div key={artist.id} initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-12 }} transition={{ duration:0.3 }}
+            className="rounded-2xl overflow-hidden border border-white/[0.08] shadow-2xl"
+            style={{ background:'#08080f' }}>
+            {/* Chrome */}
+            <div className="flex items-center gap-3 px-5 py-3 border-b border-white/[0.06]" style={{ background:'#05050c' }}>
+              <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-red-500/70"/><div className="w-2.5 h-2.5 rounded-full bg-yellow-500/70"/><div className="w-2.5 h-2.5 rounded-full bg-green-500/70"/></div>
+              <div className="flex-1 mx-4 px-3 py-1 rounded text-[11px] font-mono text-center border border-white/[0.07] text-white/35" style={{ background:'rgba(255,255,255,0.03)' }}>🔒 {artist.handle}</div>
+              <div className="flex gap-2 text-[12px] font-mono text-white/20"><span>⌕</span><span>↗</span></div>
+            </div>
+            {/* Scrollable profile */}
+            <div className="overflow-auto max-h-[520px]">
+              {/* Hero band */}
+              <div className="relative h-40 flex items-end p-6" style={{ background:'linear-gradient(135deg,#1a0535,#080814)' }}>
+                <div className="absolute inset-0 opacity-25" style={{ background:`radial-gradient(ellipse at top right, ${A1}66, transparent 60%)` }} />
+                <div className="relative z-10">
+                  <div className="font-display font-semibold text-3xl text-white tracking-tight leading-none">{artist.name}</div>
+                  <div className="flex flex-wrap gap-2 mt-2 text-[11px] font-mono text-white/40">
+                    <span>{artist.role}</span><span>·</span><span>{artist.location}</span><span>·</span><span>{artist.since}</span>
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    <div className="px-4 py-1.5 rounded-full text-[11px] font-mono font-semibold text-black" style={{ background:`linear-gradient(135deg,${A3},${A1})` }}>▶ Última release</div>
+                    <div className="px-4 py-1.5 rounded-full text-[11px] font-mono border border-white/20 text-white/60">Booking / Contacto</div>
+                  </div>
+                </div>
+              </div>
+              {/* Stats bar */}
+              <div className="grid grid-cols-2 md:grid-cols-4 border-b border-white/[0.06]">
+                {artist.stats.map(([n,l]) => (
+                  <div key={l} className="p-4 border-r border-white/[0.06] last:border-r-0">
+                    <div className="font-display font-semibold text-lg text-white">{n}</div>
+                    <div className="text-[11px] font-mono text-white/35 mt-0.5">{l}</div>
+                  </div>
+                ))}
+              </div>
+              {/* Grid: bio + tracks */}
+              <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-white/[0.06]">
+                <div className="p-5">
+                  <div className="text-[11px] font-mono text-white/30 tracking-widest mb-3">Bio</div>
+                  <p className="text-sm text-white/55 leading-relaxed mb-4">{artist.bio}</p>
+                  <div className="text-[11px] font-mono text-white/30 tracking-widest mb-2">Featured in</div>
+                  <div className="flex flex-wrap gap-2">
+                    {artist.press.map(p => (
+                      <span key={p} className="px-2.5 py-1 rounded border text-[10px] font-mono text-white/40 border-white/[0.08]" style={{ background:'rgba(255,255,255,0.02)' }}>{p}</span>
+                    ))}
+                  </div>
+                </div>
+                <div className="p-5">
+                  <div className="text-[11px] font-mono text-white/30 tracking-widest mb-3">Latest tracks</div>
+                  <div className="flex flex-col gap-2.5">
+                    {artist.tracks.map(([n,t,d,ep]) => (
+                      <div key={n} className="flex items-center gap-3 group cursor-pointer">
+                        <div className="w-5 h-5 rounded-full border border-white/[0.1] flex items-center justify-center text-[9px] font-mono text-white/30 group-hover:border-white/30 transition-colors shrink-0">▶</div>
+                        <span className="text-[10px] font-mono text-white/25 w-5">{n}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-mono text-white/75 truncate">{t}</div>
+                          <div className="text-[10px] font-mono text-white/30">{ep}</div>
+                        </div>
+                        <span className="text-[11px] font-mono text-white/30">{d}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              {/* Shows */}
+              <div className="p-5 border-t border-white/[0.06]">
+                <div className="text-[11px] font-mono text-white/30 tracking-widest mb-4">Próximas fechas · World tour</div>
+                <div className="flex flex-col gap-3">
+                  {artist.shows.map(([d,v,c]) => (
+                    <div key={d} className="flex items-center gap-4">
+                      <div className="text-[11px] font-mono text-white/40 w-14 shrink-0">{d}</div>
+                      <div className="flex-1">
+                        <div className="text-sm font-mono text-white/70">{v}</div>
+                        <div className="text-[10px] font-mono text-white/30">{c}</div>
+                      </div>
+                      <div className="text-[11px] font-mono border border-white/[0.1] px-3 py-1 rounded-full text-white/40 hover:text-white transition-colors cursor-pointer">Tickets →</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Press kit */}
+              <div className="p-5 border-t border-white/[0.06]">
+                <div className="text-[11px] font-mono text-white/30 tracking-widest mb-4">Professional Kit</div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {[['📄','Press Kit EN/ES','PDF · 2.4 MB'],['🎛','Technical Rider','v2.1 · actualizado'],['📷','Hi-Res Photos','12 fotos · ZIP'],['📑','Hospitality','Auto-enviado']].map(([ico,l,s]) => (
+                    <div key={l} className="rounded-xl p-3 border border-white/[0.06] text-center" style={{ background:'rgba(255,255,255,0.02)' }}>
+                      <div className="text-xl mb-2">{ico}</div>
+                      <div className="text-[11px] font-mono text-white/65">{l}</div>
+                      <div className="text-[10px] font-mono text-white/30 mt-0.5">{s}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+
+        <FadeIn delay={0.15} className="flex flex-wrap justify-center gap-4 mt-8 text-[11px] font-mono text-white/30">
+          {['100% personalizable','Dominio propio','Generado en 3 min','Actualizado en vivo'].map(t => (
+            <span key={t} className="flex items-center gap-1.5"><span style={{ color:A1 }}>✓</span>{t}</span>
+          ))}
+        </FadeIn>
+      </div>
+    </section>
+  )
+}
+
+// ─── Features (sticky horizontal scroll) ─────────────────────────────────────
+const FEATURES = [
+  { num:'01', title:'Web profesional', accent:'en 3 minutos', desc:'Describe tu estilo. La IA construye una web única con tu música, tu estética y tu dominio propio. Sin código. Sin plantillas genéricas.', viz:'prompt' },
+  { num:'02', title:'Press kit y rider,', accent:'siempre listos', desc:'Bio, fotos alta resolución, rider técnico, hospitality. Un enlace para mandar a cualquier booker. Siempre actualizado.', viz:'presskit' },
+  { num:'03', title:'Captura leads', accent:'que son tuyos', desc:'Cada visitante es un fan potencial. Emails reales, segmentados y exportables. Tu audiencia no vive en Instagram.', viz:'leads' },
+  { num:'04', title:'Email marketing', accent:'sin fricción', desc:'Campañas para anunciar lanzamientos, shows o drops. Tasas de apertura 3× superiores a redes sociales.', viz:'email' },
+  { num:'05', title:'Dashboard', accent:'en tiempo real', desc:'Visitas, reproducciones, crecimiento, conversión. Todo en una sola vista. Sabes exactamente qué funciona.', viz:'analytics' },
+  { num:'06', title:'IA que te', accent:'sugiere la siguiente jugada', desc:'Analiza tu carrera y te dice qué contenido publicar, a qué ciudades apuntar, con qué artistas colaborar.', viz:'ai' },
+  { num:'07', title:'Integración', accent:'con todo', desc:'Spotify, Apple Music, Beatport, Bandcamp, SoundCloud. Sincronización automática de tu catálogo.', viz:'music' },
+]
+
+function FeatureViz({ kind }: { kind: string }) {
+  const base = 'rounded-xl border border-white/[0.07] p-4 mt-auto text-[11px] font-mono'
+  const bg = 'rgba(255,255,255,0.02)'
+  if (kind === 'prompt') return (
+    <div className={base} style={{ background:bg }}>
+      <div className="text-white/40 mb-1.5">DJ techno · minimal · berlín underground</div>
+      <div className="text-white/40 mb-3">paleta: morado iridiscente + chrome</div>
+      <div className="flex items-center gap-1.5" style={{ color:A2 }}>Generando web<span className="flex gap-0.5 ml-1">{[0,1,2].map(i=><motion.span key={i} animate={{opacity:[0,1,0]}} transition={{duration:1.2,delay:i*0.2,repeat:Infinity}} className="w-1 h-1 rounded-full" style={{background:A1}}/>)}</span></div>
+    </div>
+  )
+  if (kind === 'presskit') return (
+    <div className={base} style={{ background:bg }}>
+      {[['Bio EN','✓ OK'],['Bio ES','✓ OK'],['Rider','v2.1'],['Fotos HR','12'],['Enlace pública','artix.fm/solen/press']].map(([l,v]) => (
+        <div key={l} className="flex justify-between py-1.5 border-b border-white/[0.05] last:border-0">
+          <span className="text-white/40">{l}</span>
+          <span style={{ color:v.includes('✓')?A1:A2 }}>{v}</span>
+        </div>
+      ))}
+    </div>
+  )
+  if (kind === 'leads') return (
+    <div className={base} style={{ background:bg }}>
+      <div className="flex items-baseline gap-2 mb-3"><span className="font-display text-2xl font-semibold text-white">8,247</span><span style={{ color:A2 }}>+340 / 7d</span></div>
+      {[['lucas@eu.music','BOOKER'],['mia@razzmatazz.com','VENUE'],['alex@...fan.com','FAN']].map(([e,t]) => (
+        <div key={e} className="flex justify-between py-1.5 border-b border-white/[0.05] last:border-0">
+          <span className="text-white/45">{e}</span>
+          <span className="px-1.5 py-0.5 rounded text-[9px]" style={{ background:`${A1}20`, color:A1 }}>{t}</span>
+        </div>
+      ))}
+    </div>
+  )
+  if (kind === 'email') return (
+    <div className={base} style={{ background:bg }}>
+      {[['Tour 2026 · 14 fechas','52% OPEN'],['Nuevo EP · Midnight Protocol','61% OPEN'],['Lista VIP · early access','74% OPEN'],['Borrador · Summer residency','—']].map(([s,r]) => (
+        <div key={s} className="flex items-center justify-between py-1.5 border-b border-white/[0.05] last:border-0 gap-3">
+          <div className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background:r==='—'?'rgba(255,255,255,0.2)':A1 }} /><span className="text-white/50 truncate">{s}</span></div>
+          <span style={{ color:r==='—'?'rgba(255,255,255,0.2)':A2 }}>{r}</span>
+        </div>
+      ))}
+    </div>
+  )
+  if (kind === 'analytics') return (
+    <div className={base} style={{ background:bg }}>
+      <div className="text-white/30 mb-2 text-[10px] tracking-widest">VISITAS · ÚLTIMOS 30D</div>
+      <svg viewBox="0 0 300 100" className="w-full" preserveAspectRatio="none" style={{ height:70 }}>
+        <defs><linearGradient id="agr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={A1} stopOpacity="0.4"/><stop offset="1" stopColor={A1} stopOpacity="0"/></linearGradient></defs>
+        <path d="M0,80 C30,70 60,75 90,58 S160,35 200,40 S260,20 300,12 L300,100 L0,100 Z" fill="url(#agr)"/>
+        <path d="M0,80 C30,70 60,75 90,58 S160,35 200,40 S260,20 300,12" fill="none" stroke={A2} strokeWidth="2"/>
+        <circle cx="300" cy="12" r="3" fill="#fff"/><circle cx="300" cy="12" r="8" fill={A1} opacity="0.3"/>
+      </svg>
+      <div className="flex items-baseline gap-2 mt-2"><span className="font-display text-lg font-semibold text-white">124,824</span><span style={{ color:A2 }}>+38%</span></div>
+    </div>
+  )
+  if (kind === 'ai') return (
+    <div className={base + ' flex flex-col gap-3'} style={{ background:bg }}>
+      {[['IA · Crecimiento','Tu audiencia crece 2.4× más rápido en Berlín. Considera un show allí en Q2.'],['IA · Colaboración','3 artistas con audiencia afín buscan featurings este mes.']].map(([t,d]) => (
+        <div key={t} className="rounded-lg p-3 border border-white/[0.06]" style={{ background:`${A1}08` }}>
+          <span className="inline-block text-[9px] font-mono px-2 py-0.5 rounded mb-1.5" style={{ background:`${A1}25`, color:A2 }}>{t}</span>
+          <p className="text-white/50 text-[11px] leading-relaxed">{d}</p>
+        </div>
+      ))}
+    </div>
+  )
+  if (kind === 'music') return (
+    <div className={base} style={{ background:bg }}>
+      {[['Spotify','84.2K'],['Beatport','12 tracks'],['SoundCloud','38.1K'],['Bandcamp','4 albums']].map(([n,v]) => (
+        <div key={n} className="flex items-center justify-between py-1.5 border-b border-white/[0.05] last:border-0">
+          <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{ background:A1 }} /><span className="text-white/55">{n}</span></div>
+          <span style={{ color:A2 }}>{v}</span>
+        </div>
+      ))}
+    </div>
+  )
+  return null
+}
+
+function Features() {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const trackRef = useRef<HTMLDivElement>(null)
+  const fillRef = useRef<HTMLDivElement>(null)
+  const { scrollYProgress } = useScroll({ target: wrapRef, offset: ['start start', 'end end'] })
+  const x = useTransform(scrollYProgress, [0, 1], ['0px', '-1px']) // placeholder; real calc in effect
+
+  useEffect(() => {
+    const wrap = wrapRef.current
+    const track = trackRef.current
+    const fill = fillRef.current
+    if (!wrap || !track) return
+    const onScroll = () => {
+      const rect = wrap.getBoundingClientRect()
+      const total = wrap.offsetHeight - window.innerHeight
+      const scrolled = Math.max(0, -rect.top)
+      const progress = Math.max(0, Math.min(1, scrolled / total))
+      const maxShift = track.scrollWidth - window.innerWidth + 80
+      track.style.transform = `translateX(${-progress * maxShift}px)`
+      if (fill) fill.style.width = `${progress * 100}%`
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // suppress unused warning
+  void x
+
+  return (
+    <section id="features" style={{ borderTop:'1px solid rgba(255,255,255,0.06)' }}>
+      <div ref={wrapRef} style={{ height: `${100 + FEATURES.length * 80}vh` }}>
+        <div className="sticky top-0 h-screen overflow-hidden flex flex-col justify-center">
+          <div className="px-5 md:px-10 max-w-3xl mb-10">
+            <FadeIn>
+              <div className="text-[11px] font-mono text-white/35 tracking-widest mb-5">03 · Producto</div>
+              <h2 className="font-display font-semibold text-white leading-[0.92] tracking-[-0.03em] mb-4"
+                style={{ fontSize:'clamp(2rem,5vw,3.4rem)' }}>
+                Siete herramientas.<br /><Iridescent>Una sola plataforma.</Iridescent>
+              </h2>
+              <p className="text-white/45 text-base">Cada pieza diseñada para artistas que toman su carrera en serio. Desplázate para explorar.</p>
+            </FadeIn>
+          </div>
+          <div className="relative overflow-hidden">
+            <div ref={trackRef} className="flex gap-5 px-5 md:px-10 pb-1 transition-transform duration-100 ease-out" style={{ willChange:'transform', width:'max-content' }}>
+              {FEATURES.map(f => (
+                <div key={f.num} className="flex-shrink-0 w-72 md:w-80 rounded-2xl p-5 border border-white/[0.07] flex flex-col gap-4" style={{ background:'rgba(255,255,255,0.025)', minHeight:320 }}>
+                  <div className="text-[11px] font-mono text-white/25">{f.num} / 07</div>
+                  <h3 className="font-display font-semibold text-white leading-tight text-lg">
+                    {f.title}{' '}<span style={{ color:A2 }}>{f.accent}</span>
+                  </h3>
+                  <p className="text-sm text-white/45 leading-relaxed">{f.desc}</p>
+                  <FeatureViz kind={f.viz} />
+                </div>
+              ))}
+            </div>
+            {/* Progress bar */}
+            <div className="mx-5 md:mx-10 mt-4 h-px bg-white/[0.06] rounded-full overflow-hidden" style={{ maxWidth:400 }}>
+              <div ref={fillRef} className="h-full rounded-full transition-all duration-100" style={{ background:`linear-gradient(to right, ${A3}, ${A1})`, width:'0%' }} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Monetize ─────────────────────────────────────────────────────────────────
+function Monetize() {
+  const [step, setStep] = useState(0)
+  const steps = [
+    { k:'capture', t:'Captura', d:'Un visitante deja su email por un unreleased track.' },
+    { k:'segment', t:'Segmenta', d:'La IA clasifica: fan, booker, venue, media, VIP.' },
+    { k:'launch', t:'Lanza', d:'Envías entradas, drops o música directa a quien importa.' },
+    { k:'convert', t:'Convierte', d:'Tickets vendidos, releases en top, data 100% tuya.' },
+  ]
+  useEffect(() => {
+    const iv = setInterval(() => setStep(s => (s+1)%4), 3200)
+    return () => clearInterval(iv)
+  }, [])
+
+  return (
+    <section className="py-28 md:py-36" style={{ borderTop:'1px solid rgba(255,255,255,0.06)' }}>
+      <div className="max-w-6xl mx-auto px-5 md:px-10">
+        <FadeIn className="text-center mb-20 max-w-3xl mx-auto">
+          <div className="inline-block text-[11px] font-mono text-white/35 tracking-widest mb-6">03 · Monetización directa</div>
+          <h2 className="font-display font-semibold text-white mb-6 leading-[0.92] tracking-[-0.03em]"
+            style={{ fontSize:'clamp(2rem,5vw,3.6rem)' }}>
+            De un email <Iridescent>a un sold out.</Iridescent>
+          </h2>
+          <p className="text-white/50 text-base md:text-lg">Los emails que capturas no son lista, son una máquina de ventas. Lanza música, vende entradas y conoce a tu audiencia.</p>
+        </FadeIn>
+
+        {/* Flow */}
+        <FadeIn delay={0.08} className="mb-20">
+          {/* Steps */}
+          <div className="relative flex flex-col sm:flex-row gap-4 mb-8">
+            {steps.map((s, i) => (
+              <button key={s.k} onClick={() => setStep(i)}
+                className="flex-1 rounded-xl p-4 border text-left transition-all duration-200 cursor-pointer"
+                style={{
+                  background: step === i ? `${A1}15` : 'rgba(255,255,255,0.02)',
+                  borderColor: step === i ? `${A1}45` : 'rgba(255,255,255,0.06)',
+                }}>
+                <div className="text-[11px] font-mono text-white/30 mb-1">0{i+1}</div>
+                <div className="font-display font-semibold text-sm text-white mb-1" style={{ color: step===i ? A2 : undefined }}>{s.t}</div>
+                <div className="text-[12px] text-white/40 leading-relaxed">{s.d}</div>
+              </button>
+            ))}
+            {/* Progress line */}
+            <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background:'rgba(255,255,255,0.06)' }}>
+              <motion.div className="h-full" animate={{ width:`${(step/3)*100}%` }} transition={{ duration:0.4 }}
+                style={{ background:`linear-gradient(to right, ${A3}, ${A1})` }} />
+            </div>
+          </div>
+          {/* Demo panel */}
+          <AnimatePresence mode="wait">
+            <motion.div key={step} initial={{ opacity:0, y:8 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:-8 }} transition={{ duration:0.25 }}
+              className="rounded-2xl border border-white/[0.07] overflow-hidden" style={{ background:'rgba(255,255,255,0.025)' }}>
+              {step === 0 && (
+                <div className="p-8 flex flex-col items-center gap-4 max-w-md mx-auto text-center">
+                  <div className="text-[11px] font-mono text-white/30 tracking-widest">CAPTURA EN TU WEB</div>
+                  <div className="font-display font-semibold text-white text-xl">Unlock · Aurora EP preview</div>
+                  <div className="text-sm text-white/45">Accede al EP 48h antes del drop oficial.</div>
+                  <div className="w-full flex gap-2 mt-2">
+                    <div className="flex-1 px-4 py-3 rounded-xl border border-white/[0.1] text-sm font-mono text-white/25" style={{ background:'rgba(255,255,255,0.03)' }}>tu-email@...</div>
+                    <div className="px-5 py-3 rounded-xl text-sm font-mono text-white font-semibold" style={{ background:`linear-gradient(135deg,${A3},${A1})` }}>Acceder →</div>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[11px] font-mono" style={{ color:A2 }}>
+                    <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background:A1 }} />2,847 ya dentro
+                  </div>
+                </div>
+              )}
+              {step === 1 && (
+                <div className="p-8">
+                  <div className="text-[11px] font-mono text-white/30 tracking-widest mb-5">SEGMENTACIÓN IA · AUTOMÁTICA</div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[['FANS','6,840',A1],['VIP','418','#f59e0b'],['BOOKERS','127','#06b6d4'],['MEDIA','64','#10b981']].map(([t,n,c]) => (
+                      <div key={t} className="rounded-xl p-4 text-center border border-white/[0.06]" style={{ background:'rgba(255,255,255,0.03)' }}>
+                        <div className="text-[10px] font-mono px-2 py-0.5 rounded-full inline-block mb-2" style={{ background:`${c}22`, color:c as string }}>{t}</div>
+                        <div className="font-display font-semibold text-xl text-white">{n}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 text-[12px] font-mono text-white/30 text-center">→ Cada uno recibe mensajes diferentes</div>
+                </div>
+              )}
+              {step === 2 && (
+                <div className="p-8">
+                  <div className="text-[11px] font-mono text-white/30 tracking-widest mb-5">CAMPAÑAS ACTIVAS</div>
+                  <div className="flex flex-col gap-3">
+                    {[['🎫','Berlín · 23.05 · Berghain','A VIPs + Fans Alemania','740 vendidas'],['💿','Aurora EP · 48h early access','A todos los fans','61% open'],['🎛','Press release · Summer Tour','A 64 contactos media','18 features']].map(([ico,t,sub,n]) => (
+                      <div key={t} className="flex items-center gap-4 p-4 rounded-xl border border-white/[0.06]" style={{ background:'rgba(255,255,255,0.02)' }}>
+                        <span className="text-xl shrink-0">{ico}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-mono text-white/65 truncate">{t}</div>
+                          <div className="text-[11px] font-mono text-white/30">{sub}</div>
+                        </div>
+                        <div className="text-sm font-mono shrink-0" style={{ color:A2 }}>{n}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {step === 3 && (
+                <div className="p-8">
+                  <div className="text-[11px] font-mono text-white/30 tracking-widest mb-5">RESULTADOS · ÚLTIMOS 30 DÍAS</div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[['€18,240','Tickets vendidos directo',A1],['2,847','Pre-saves EP',A2],['×4.2','ROI vs Instagram ads','#f59e0b'],['100%','Datos tuyos','#10b981']].map(([n,l,c]) => (
+                      <div key={l} className="rounded-xl p-4 border border-white/[0.06]" style={{ background:'rgba(255,255,255,0.02)' }}>
+                        <div className="font-display font-semibold text-xl mb-1" style={{ color:c as string }}>{n}</div>
+                        <div className="text-[11px] font-mono text-white/35">{l}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </FadeIn>
+
+        {/* Pillars */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {[
+            { t:'Vende entradas directo', d:'Sin comisiones de ticketeras. El 100% de la venta es tuyo. QR automático al comprador.', m:'0% comisión · €18K este mes', color:A1,
+              viz: <div className="flex flex-col gap-2">
+                {['BERGHAIN · 23.05 · Berlín','HÏ IBIZA · 07.06 · Ibiza'].map((v,i)=>(
+                  <div key={v} className="rounded-lg border border-white/[0.08] p-3 flex items-center gap-3" style={{ background:'rgba(255,255,255,0.02)', opacity:1-i*0.25 }}>
+                    <div className="w-8 h-10 rounded border border-dashed border-white/20 flex items-center justify-center text-[9px] font-mono text-white/30">QR</div>
+                    <div><div className="text-[11px] font-mono text-white/60">{v}</div><div className="text-[9px] font-mono text-white/30 mt-0.5">Acceso directo</div></div>
+                  </div>
+                ))}
+              </div>
+            },
+            { t:'Lanza música a tu base', d:'Pre-saves, early access y bundles físicos. Tus fans escuchan antes que en plataformas.', m:'48h antes · 61% open rate', color:'#06b6d4',
+              viz: <div>
+                <div className="rounded-lg p-3 border border-white/[0.08] mb-3 flex items-center gap-3" style={{ background:'rgba(255,255,255,0.02)' }}>
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center text-lg" style={{ background:`linear-gradient(135deg,${A3},${A1})` }}>🎵</div>
+                  <div><div className="text-[11px] font-mono text-white/60">AURORA EP</div><div className="text-[10px] font-mono" style={{ color:'#06b6d4' }}>2,847 pre-saves</div></div>
+                </div>
+                {[['Pre-saves',84],['Early access',62],['Bundle vinilo',38]].map(([l,v])=>(
+                  <div key={l as string} className="mb-2">
+                    <div className="flex justify-between text-[10px] font-mono text-white/30 mb-1"><span>{l}</span><span>{v}%</span></div>
+                    <div className="h-1 rounded-full bg-white/[0.06]"><div className="h-full rounded-full" style={{ width:`${v}%`, background:'#06b6d4' }} /></div>
+                  </div>
+                ))}
+              </div>
+            },
+            { t:'Tu data, tu propiedad', d:'Exporta en un click. Cumplimiento GDPR total. Tu lista es tuya — hoy y siempre.', m:'100% portable · 1 click export', color:'#10b981',
+              viz: <div className="rounded-lg border border-white/[0.08] overflow-hidden" style={{ background:'rgba(255,255,255,0.02)' }}>
+                <div className="flex items-center gap-2 p-3 border-b border-white/[0.06]">
+                  <span className="text-base">⬇</span>
+                  <div><div className="text-[11px] font-mono text-white/60">audience_export.csv</div><div className="text-[10px] font-mono text-white/30">8,247 rows · 1.2 MB</div></div>
+                </div>
+                {[['lucas@','BOOK','#06b6d4'],['mia@razz','VENUE','#a855f7'],['alex@fan','FAN','#10b981'],['sara@ed','MEDIA','#f59e0b']].map(([e,t,c])=>(
+                  <div key={e} className="flex justify-between items-center px-3 py-1.5 border-b border-white/[0.04] last:border-0">
+                    <span className="text-[11px] font-mono text-white/40">{e}</span>
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded" style={{ background:`${c}20`, color:c }}>{t}</span>
+                  </div>
+                ))}
+              </div>
+            },
+            { t:'Re-engagement automático', d:'La IA detecta fans fríos y los reactiva con contenido personalizado. Tú no mueves un dedo.', m:'24% reactivación · 0 esfuerzo', color:'#f59e0b',
+              viz: <div>
+                <svg viewBox="0 0 220 90" className="w-full" style={{ height:70 }}>
+                  <defs><linearGradient id="regr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={A1} stopOpacity="0.5"/><stop offset="1" stopColor={A1} stopOpacity="0"/></linearGradient></defs>
+                  <path d="M0,70 C30,65 50,72 80,60" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2"/>
+                  <path d="M80,60 C100,28 140,50 170,20 S200,10 220,8" fill="none" stroke={A2} strokeWidth="2.5"/>
+                  <path d="M80,60 C100,28 140,50 170,20 S200,10 220,8 L220,90 L80,90 Z" fill="url(#regr)"/>
+                  <circle cx="80" cy="60" r="4" fill="#fff"/><circle cx="80" cy="60" r="10" fill={A1} opacity="0.25"/>
+                </svg>
+                <div className="flex justify-center gap-4 mt-2">
+                  {['💤 inactivo','✉️ mail IA','🔥 activo'].map((s,i)=>(
+                    <div key={s} className="flex items-center gap-1 text-[10px] font-mono text-white/35">
+                      {i>0 && <span className="text-white/20">→</span>}{s}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            },
+          ].map(pillar => (
+            <FadeIn key={pillar.t} className="rounded-2xl p-5 border border-white/[0.06] flex flex-col gap-4" style={{ background:'rgba(255,255,255,0.02)' }}>
+              {pillar.viz}
+              <div>
+                <div className="font-display font-semibold text-sm text-white mb-1.5">{pillar.t}</div>
+                <p className="text-[12px] text-white/40 leading-relaxed mb-2">{pillar.d}</p>
+                <div className="text-[11px] font-mono" style={{ color:pillar.color as string }}>{pillar.m}</div>
+              </div>
+            </FadeIn>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Social proof ──────────────────────────────────────────────────────────────
+const TICKER_ARTISTS = ['SOLEN.','OKARA','VELA DRIFT','NOVA SIGNAL','LUMEN //','KAIRÓS','ECHOWAVE','NIGHT MODE','BRUTAL MIRAGE','ZENITH·01']
+const TESTIMONIALS_DATA = [
+  { q:'Pasé de mandar 6 archivos a cada booker a mandar un solo link. Mis bookings se duplicaron en 3 meses.', n:'SOLEN.', r:'DJ / Producer · Berlín' },
+  { q:'Vendí 740 entradas de mi show en Berghain directo a mi lista. Sin comisiones. Sin intermediarios.', n:'OKARA', r:'Afrohouse · Johannesburgo' },
+  { q:'La IA me sugirió apuntar a México para mi tour. Acerté tres fechas agotadas. No me lo esperaba.', n:'VELA DRIFT', r:'Minimal · Ámsterdam' },
+]
+
+function Social() {
+  return (
+    <section id="social" style={{ borderTop:'1px solid rgba(255,255,255,0.06)' }}>
+      {/* Ticker */}
+      <div className="overflow-hidden py-4 border-b border-white/[0.06]" style={{ background:'rgba(255,255,255,0.015)' }}>
+        <motion.div className="flex gap-8 whitespace-nowrap"
+          animate={{ x: ['0%', '-50%'] }}
+          transition={{ repeat: Infinity, duration: 18, ease: 'linear' }}
+          style={{ width: 'max-content' }}>
+          {[...TICKER_ARTISTS,...TICKER_ARTISTS,...TICKER_ARTISTS,...TICKER_ARTISTS].map((name,i) => (
+            <span key={i} className="text-[11px] font-mono text-white/20 tracking-[0.25em]">
+              {name}<span className="mx-4 text-white/10">·</span>
+            </span>
+          ))}
+        </motion.div>
+      </div>
+
+      <div className="py-28 md:py-36 max-w-6xl mx-auto px-5 md:px-10">
+        <FadeIn className="mb-16">
+          <div className="text-[11px] font-mono text-white/35 tracking-widest mb-5">04 · Artistas en ARTIX</div>
+          <h2 className="font-display font-semibold text-white leading-[0.92] tracking-[-0.03em] max-w-3xl"
+            style={{ fontSize:'clamp(2rem,5vw,3.6rem)' }}>
+            La plataforma donde los <Iridescent>artistas serios</Iridescent> construyen carrera.
+          </h2>
+        </FadeIn>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-16">
+          {TESTIMONIALS_DATA.map((t, i) => (
+            <FadeIn key={i} delay={i*0.08}
+              className="rounded-2xl p-6 border border-white/[0.06] flex flex-col gap-4" style={{ background:'rgba(255,255,255,0.02)' }}>
+              <div className="text-4xl font-serif text-white/15 leading-none">&ldquo;</div>
+              <p className="text-sm text-white/60 leading-relaxed flex-1">{t.q}</p>
+              <div className="flex items-center gap-3 pt-4 border-t border-white/[0.06]">
+                <div className="w-9 h-9 rounded-full shrink-0" style={{ background:`linear-gradient(135deg,${A3},${A1})` }} />
+                <div>
+                  <div className="text-sm font-display font-semibold text-white">{t.n}</div>
+                  <div className="text-[11px] font-mono text-white/35">{t.r}</div>
+                </div>
+              </div>
+            </FadeIn>
+          ))}
+        </div>
+
+        {/* Metrics */}
+        <FadeIn delay={0.1}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-5 py-10 border-y border-white/[0.06]">
+            {[['2,400+','Artistas en waitlist',A1],['3×','Más bookings promedio',A2],['47%','Open rate medio','#06b6d4'],['€2.4M','Tickets vendidos directo','#f59e0b']].map(([n,l,c]) => (
+              <div key={l} className="text-center">
+                <div className="font-display font-semibold text-3xl md:text-4xl tracking-tight mb-1" style={{ color:c as string }}>{n}</div>
+                <div className="text-[11px] font-mono text-white/35">{l}</div>
+              </div>
+            ))}
+          </div>
+        </FadeIn>
+      </div>
+    </section>
+  )
+}
+
+// ─── For Who ───────────────────────────────────────────────────────────────────
+const WHO = [
+  { num:'01', t:'DJs', role:'Para residentes y headliners',
+    benefits:['Press kit siempre actualizado','Booking form profesional','Rider técnico auto-enviado','Calendario de shows integrado'],
+    result:{ n:'×3', l:'más bookings en 90 días' }, quote:'Los promotores no preguntan dos veces.' },
+  { num:'02', t:'Productores', role:'Para quien lanza música',
+    benefits:['Lanzamientos a tu base propia','Pre-saves automáticos','Venta de bundles físicos','Integración Bandcamp / Beatport'],
+    result:{ n:'+61%', l:'open rate en releases' }, quote:'Mis fans escuchan antes que en Spotify.' },
+  { num:'03', t:'Emergentes', role:'Para los que empiezan en serio',
+    benefits:['Imagen pro desde día uno','Sin coste hasta facturar','Plantillas de pitch a sellos','Comunidad de artistas'],
+    result:{ n:'3 min', l:'para estar online' }, quote:'Parezco un artista de 5 años de carrera.' },
+  { num:'04', t:'Profesionales', role:'Para carreras establecidas',
+    benefits:['Analítica avanzada multi-ciudad','Sugerencias IA de estrategia','Venta directa de tickets','Multi-idioma automático'],
+    result:{ n:'€2M+', l:'gestionado al año' }, quote:'Escalamos sin contratar equipo.' },
+]
+
+function ForWho() {
+  const [active, setActive] = useState(0)
+  const who = WHO[active]
+  return (
+    <section className="py-28 md:py-36" style={{ borderTop:'1px solid rgba(255,255,255,0.06)' }}>
+      <div className="max-w-6xl mx-auto px-5 md:px-10">
+        <FadeIn className="mb-14">
+          <div className="text-[11px] font-mono text-white/35 tracking-widest mb-5">05 · Para quién es</div>
+          <h2 className="font-display font-semibold text-white leading-[0.92] tracking-[-0.03em] max-w-3xl"
+            style={{ fontSize:'clamp(2rem,5vw,3.6rem)' }}>
+            Si tu carrera depende de <Iridescent>ti mismo,</Iridescent> esto es para ti.
+          </h2>
+        </FadeIn>
+        <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-5">
+          {/* Tabs */}
+          <div className="flex md:flex-col gap-3">
+            {WHO.map((w, i) => (
+              <button key={w.num} onClick={() => setActive(i)}
+                className="flex items-center gap-3 p-4 rounded-xl border text-left transition-all duration-200 cursor-pointer flex-1 md:flex-none"
+                style={{
+                  background: active===i ? `${A1}15` : 'rgba(255,255,255,0.02)',
+                  borderColor: active===i ? `${A1}45` : 'rgba(255,255,255,0.06)',
+                }}>
+                <div className="text-[11px] font-mono text-white/25">{w.num}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-display font-semibold text-sm text-white">{w.t}</div>
+                  <div className="text-[11px] font-mono text-white/35 truncate hidden md:block">{w.role}</div>
+                </div>
+                <span className="text-white/20 text-sm">→</span>
+              </button>
+            ))}
+          </div>
+          {/* Display */}
+          <AnimatePresence mode="wait">
+            <motion.div key={who.num} initial={{ opacity:0, x:12 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:-12 }} transition={{ duration:0.25 }}
+              className="rounded-2xl border border-white/[0.07] p-6 md:p-8 relative overflow-hidden" style={{ background:'rgba(255,255,255,0.025)' }}>
+              <div className="absolute inset-0 opacity-5 pointer-events-none" style={{ background:`radial-gradient(ellipse at top right, ${A1}, transparent 60%)` }} />
+              <div className="relative z-10">
+                <div className="mb-6">
+                  <div className="font-display font-semibold text-2xl text-white mb-1">{who.t}</div>
+                  <div className="text-[12px] font-mono text-white/35">· {who.role}</div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6">
+                  <div>
+                    <div className="text-[11px] font-mono text-white/30 tracking-widest mb-3">Lo que consigues</div>
+                    <ul className="flex flex-col gap-2.5">
+                      {who.benefits.map(b => (
+                        <li key={b} className="flex items-center gap-2.5 text-sm text-white/60">
+                          <Check className="w-3.5 h-3.5 shrink-0" style={{ color:A1 }} />{b}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="md:text-right">
+                    <div className="font-display font-semibold text-5xl text-white" style={{ background:`linear-gradient(135deg,${A2},${A1})`,WebkitBackgroundClip:'text',backgroundClip:'text',WebkitTextFillColor:'transparent' }}>{who.result.n}</div>
+                    <div className="text-[12px] font-mono text-white/40 mt-1 mb-4">{who.result.l}</div>
+                    <div className="text-sm text-white/35 italic font-serif">&ldquo;{who.quote}&rdquo;</div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Pricing ───────────────────────────────────────────────────────────────────
+function Pricing() {
+  return (
+    <section id="pricing" className="py-28 md:py-36" style={{ borderTop:'1px solid rgba(255,255,255,0.06)' }}>
+      <div className="max-w-4xl mx-auto px-5 md:px-10">
+        <FadeIn className="text-center mb-14">
+          <div className="inline-block text-[11px] font-mono text-white/35 tracking-widest mb-6">07 · Early access</div>
+          <h2 className="font-display font-semibold text-white leading-[0.92] tracking-[-0.03em] mb-5"
+            style={{ fontSize:'clamp(2rem,5vw,3.6rem)' }}>
+            Los primeros 500 artistas<br />entran <Iridescent>gratis.</Iridescent>
+          </h2>
+        </FadeIn>
+        <FadeIn delay={0.08}>
+          <div className="rounded-2xl border overflow-hidden" style={{ borderColor:`${A1}35`, background:`${A1}06` }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-white/[0.08]">
+              <div className="p-8">
+                <div className="text-[11px] font-mono tracking-widest mb-2" style={{ color:A2 }}>Plan Pro · Founder access</div>
+                <h3 className="font-display font-semibold text-xl text-white mb-3">Todo incluido. Un año.</h3>
+                <p className="text-sm text-white/45 leading-relaxed mb-6">Web IA, press kit, rider, emails ilimitados, analítica avanzada, sugerencias IA, dominio personalizado, 0% comisión en tickets.</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {['Web con IA ilimitada','Press kit profesional','Emails ilimitados','Dashboard completo','Sugerencias IA','Dominio propio','0% comisión tickets','Badge Founder perpetuo'].map(f => (
+                    <div key={f} className="flex items-center gap-2 text-sm text-white/55">
+                      <Check className="w-3.5 h-3.5 shrink-0" style={{ color:A1 }} />{f}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="p-8 flex flex-col justify-between">
+                <div>
+                  <div className="font-display font-semibold text-white mb-1">
+                    <span className="text-6xl tracking-tight">0</span>
+                    <span className="text-2xl text-white/40 ml-1">€ / año</span>
+                  </div>
+                  <div className="text-[12px] font-mono text-white/35 mb-8">Después · 29€ / mes</div>
+                </div>
+                <Link href="/signup"
+                  className="inline-flex items-center justify-center gap-2 w-full py-4 rounded-xl font-display font-semibold text-white text-base transition-all hover:scale-[1.02]"
+                  style={{ background:`linear-gradient(135deg,${A3},${A1})`, boxShadow:`0 0 30px ${A1}40` }}>
+                  Reclamar mi acceso <ArrowRight className="w-4 h-4" />
+                </Link>
+                <div className="mt-4 text-center text-[11px] font-mono text-white/25">
+                  <span className="w-1.5 h-1.5 rounded-full inline-block mr-1.5 align-middle animate-pulse" style={{ background:A1 }} />
+                  {' '}382 / 500 accesos reclamados
+                </div>
+              </div>
             </div>
           </div>
         </FadeIn>
-      </section>
+      </div>
+    </section>
+  )
+}
 
-      {/* ── PROBLEM — Linktree vs ARTIX ──────────────────────── */}
-      <section className="py-20 md:py-28 px-5 md:px-8 border-b border-white/[0.06]">
-        <div className="max-w-5xl mx-auto">
-          <FadeIn className="text-center mb-4">
-            <p className="text-xs font-mono tracking-widest uppercase mb-3" style={{ color: A1 }}>// EL PROBLEMA</p>
-            <h2 className="font-display font-black text-[clamp(1.8rem,5vw,3.2rem)] tracking-tight">
-              Así se ve la presencia digital<br className="hidden md:block" />
-              <span className="text-white/30"> de un artista hoy.</span>
-            </h2>
-          </FadeIn>
-          <FadeIn delay={0.05} className="text-center mb-14">
-            <p className="text-sm text-white/35 font-display">Así debería verse.</p>
-          </FadeIn>
+// ─── FAQ ───────────────────────────────────────────────────────────────────────
+const FAQ_ITEMS = [
+  { q:'¿Necesito saber de diseño o programación?', a:'No. Describes tu estilo en una frase y la IA genera tu web. Luego puedes editar lo que quieras con clicks.' },
+  { q:'¿Cuánto tarda la configuración inicial?', a:'Unos 3 minutos. Generación con IA, conexión de tus redes y dominio. Luego afinas detalles cuando quieras.' },
+  { q:'¿Puedo usar mi propio dominio?', a:'Sí. Conecta cualquier dominio que ya tengas o compra uno desde la plataforma.' },
+  { q:'¿Qué pasa con mis emails si dejo ARTIX?', a:'Tu lista de leads es tuya. La exportas en CSV cuando quieras, sin restricciones. Cumplimiento GDPR completo.' },
+  { q:'¿Cobráis comisión por venta de tickets?', a:'0% de comisión durante el primer año en plan Founder. Después, la más baja del mercado (2% vs 10-15% habitual).' },
+  { q:'¿Cuándo está disponible?', a:'Abrimos en oleadas desde abril 2026. Los primeros 500 artistas reciben plan Pro gratis durante un año.' },
+]
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8">
-            {/* Linktree side */}
-            <FadeIn delay={0} className="rounded-2xl border border-white/[0.06] overflow-hidden" style={{ background: 'rgba(255,255,255,0.02)' }}>
-              <div className="p-4 border-b border-white/[0.05] flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="flex gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
-                  </div>
-                  <span className="text-[10px] font-mono text-white/25 ml-2">linktr.ee/djfulano</span>
-                </div>
-                <span className="text-[9px] font-mono text-red-400/70 border border-red-400/25 px-2 py-0.5 rounded-full">GENÉRICO</span>
-              </div>
-              <div className="p-6 flex flex-col gap-3">
-                <div className="w-14 h-14 rounded-full bg-white/10 mx-auto mb-2" />
-                <div className="h-3 bg-white/10 rounded w-24 mx-auto" />
-                <div className="h-2 bg-white/5 rounded w-16 mx-auto mb-2" />
-                {['SoundCloud', 'Instagram', 'Spotify', 'Booking', 'YouTube'].map((l) => (
-                  <div key={l} className="w-full h-10 rounded-xl bg-white/[0.06] border border-white/[0.06] flex items-center justify-center">
-                    <span className="text-xs text-white/25 font-mono">{l}</span>
-                  </div>
-                ))}
-                <div className="mt-3 pt-3 border-t border-white/[0.05] flex flex-col gap-2">
-                  {['✕ Sin foto real ni identidad', '✕ Sin stats de artista', '✕ Sin reproductor de música', '✕ Sin formulario de booking', '✕ Sin analíticas propias', '✕ 0% tus datos — son de Linktree'].map((item) => (
-                    <p key={item} className="text-xs text-white/30 font-mono">{item}</p>
-                  ))}
-                </div>
-              </div>
-            </FadeIn>
-
-            {/* ARTIX side */}
-            <FadeIn delay={0.1} className="rounded-2xl overflow-hidden relative" style={{ border: `1px solid ${A1}35`, background: `${A1}06` }}>
-              <div className="absolute top-0 right-0 w-48 h-48 rounded-full pointer-events-none" style={{ background: `radial-gradient(ellipse, ${A1}15, transparent 70%)`, filter: 'blur(30px)' }} />
-              <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: `${A1}20` }}>
-                <div className="flex items-center gap-2">
-                  <div className="flex gap-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/60" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/60" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-green-500/60" />
-                  </div>
-                  <span className="text-[10px] font-mono ml-2" style={{ color: `${A2}80` }}>artix/djfulano</span>
-                </div>
-                <span className="text-[9px] font-mono px-2 py-0.5 rounded-full" style={{ color: A2, borderColor: `${A1}40`, border: `1px solid ${A1}40`, background: `${A1}15` }}>★ PREMIUM</span>
-              </div>
-              <div className="p-6 flex flex-col gap-3">
-                {/* Mini artist card */}
-                <div className="rounded-xl overflow-hidden h-32 relative mb-1" style={{ background: '#07030f' }}>
-                  <Image src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400&q=80" alt="Artist" fill className="object-cover opacity-50" sizes="400px" />
-                  <div className="absolute inset-0" style={{ background: `linear-gradient(to right, #07030fCC, transparent)` }} />
-                  <div className="absolute inset-0 p-4 flex items-end">
-                    <div>
-                      <div className="font-display font-black text-lg text-white leading-none">SOLEN.</div>
-                      <div className="text-[10px] font-mono text-white/40 mt-0.5">DJ & Live Act · Berlin</div>
-                    </div>
-                    <div className="ml-auto flex items-center gap-1 px-2 py-1 rounded-full" style={{ background: `${A1}20`, border: `1px solid ${A1}40` }}>
-                      <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: A1 }} />
-                      <span className="text-[9px] font-mono" style={{ color: A1 }}>LIVE</span>
-                    </div>
-                  </div>
-                </div>
-                {/* Stats row */}
-                <div className="grid grid-cols-3 gap-2">
-                  {[['8.1M', 'Monthly'], ['58', 'Países'], ['#12', 'DJ Mag']].map(([v, l]) => (
-                    <div key={l} className="rounded-lg p-2.5 text-center" style={{ background: `${A1}10`, border: `1px solid ${A1}20` }}>
-                      <div className="font-display font-black text-sm text-white">{v}</div>
-                      <div className="text-[9px] font-mono text-white/35">{l}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex flex-col gap-2 mt-2">
-                  {['✓ Foto editorial + identidad visual única', '✓ Stats en vivo de tus plataformas', '✓ Reproductor embebido', '✓ Formulario de booking integrado', '✓ Analíticas en tiempo real', '✓ 100% tus datos — para siempre'].map((item) => (
-                    <p key={item} className="text-xs font-mono" style={{ color: `${A2}CC` }}>{item}</p>
-                  ))}
-                </div>
-              </div>
-            </FadeIn>
-          </div>
-
-          {/* Metrics row */}
-          <FadeIn delay={0.2} className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-            {[['×3', 'más bookings', A1], ['×7', 'conversión vs linktree', '#06b6d4'], ['0%', 'dependencia de terceros', '#10b981'], ['100%', 'tus datos, siempre', '#f59e0b']].map(([v, l, c]) => (
-              <div key={l} className="rounded-xl p-4 text-center border border-white/[0.05]" style={{ background: 'rgba(255,255,255,0.02)' }}>
-                <div className="font-display font-black text-2xl md:text-3xl" style={{ color: c as string }}>{v}</div>
-                <div className="text-[11px] font-mono text-white/35 mt-1">{l}</div>
-              </div>
-            ))}
-          </FadeIn>
-        </div>
-      </section>
-
-      {/* ── TRANSFORMATION — Artist profiles ─────────────────── */}
-      <section id="ejemplos" className="py-20 md:py-28 px-5 md:px-8 border-b border-white/[0.06] overflow-hidden">
-        <div className="max-w-6xl mx-auto">
-          <FadeIn className="text-center mb-4">
-            <p className="text-xs font-mono tracking-widest uppercase mb-3" style={{ color: A1 }}>// PRESETS EN VIVO</p>
-            <h2 className="font-display font-black text-[clamp(1.8rem,5vw,3.2rem)] tracking-tight">
-              Así se ve un presskit<br />
-              <span className="text-white/30">hecho con ARTIX.</span>
-            </h2>
-          </FadeIn>
-          <FadeIn delay={0.05} className="text-center mb-14">
-            <p className="text-sm text-white/35 font-display">Cada uno, único. Click para ver el presskit completo.</p>
-          </FadeIn>
-
-          <div className="flex items-end justify-center gap-4 md:gap-10" style={{ perspective: '1400px' }}>
-            <FadeIn delay={0.1} y={40} className="hidden sm:block">
-              <a href="/francisco-allendes" className="group block" style={{ transform: 'rotateY(16deg) translateZ(-50px)', transformStyle: 'preserve-3d' }}>
-                <div className="mb-3 text-center opacity-60 group-hover:opacity-100 transition-opacity">
-                  <span className="text-[10px] font-mono tracking-widest" style={{ color: A2 }}>F. ALLENDES · Tech House</span>
-                </div>
-                <motion.div whileHover={{ scale: 1.04, rotateY: 8 }} transition={{ duration: 0.3 }} style={{ transformStyle: 'preserve-3d' }}>
-                  <IPhoneFrame scale={0.8}>
-                    <PhonePreskit artist={DEMO_ARTISTS[0]} scale={0.8} />
-                  </IPhoneFrame>
+function FAQ() {
+  const [open, setOpen] = useState<number>(0)
+  return (
+    <section id="faq" className="py-28 md:py-36" style={{ borderTop:'1px solid rgba(255,255,255,0.06)' }}>
+      <div className="max-w-2xl mx-auto px-5 md:px-10">
+        <FadeIn className="text-center mb-14">
+          <div className="inline-block text-[11px] font-mono text-white/35 tracking-widest mb-6">06 · Preguntas</div>
+          <h2 className="font-display font-semibold text-white leading-[0.92] tracking-[-0.03em]"
+            style={{ fontSize:'clamp(2rem,5vw,3.6rem)' }}>
+            Todo lo que necesitas <Iridescent>saber.</Iridescent>
+          </h2>
+        </FadeIn>
+        <div className="flex flex-col gap-2">
+          {FAQ_ITEMS.map((item, i) => (
+            <FadeIn key={i} delay={i*0.03}>
+              <button onClick={() => setOpen(open===i ? -1 : i)}
+                className="w-full flex items-center justify-between gap-4 p-5 rounded-2xl border border-white/[0.06] hover:border-white/10 transition-all text-left cursor-pointer"
+                style={{ background:'rgba(255,255,255,0.02)' }}>
+                <span className="font-display font-medium text-sm text-white/80">{item.q}</span>
+                <motion.div animate={{ rotate: open===i ? 180 : 0 }} transition={{ duration:0.2 }} className="shrink-0">
+                  <ChevronDown className="w-4 h-4 text-white/30" />
                 </motion.div>
-                <div className="mt-4 text-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-xs font-mono text-white/40 border border-white/10 px-3 py-1 rounded-full">Ver presskit →</span>
-                </div>
-              </a>
-            </FadeIn>
-
-            <FadeIn delay={0.05} y={20}>
-              <a href="/francisco-allendes" className="group block relative" style={{ transform: 'translateZ(40px)', transformStyle: 'preserve-3d', zIndex: 10 }}>
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20 px-3 py-1 rounded-full text-[10px] font-mono font-black text-black tracking-wider" style={{ background: A1 }}>
-                  ⭐ FEATURED
-                </div>
-                <div className="mb-3 text-center">
-                  <span className="text-[10px] font-mono tracking-widest" style={{ color: A2 }}>SOLEN. · Melodic Techno</span>
-                </div>
-                <motion.div whileHover={{ scale: 1.04, y: -6 }} transition={{ duration: 0.3 }}
-                  style={{ filter: `drop-shadow(0 0 40px ${A1}55)` }}>
-                  <IPhoneFrame scale={0.95}>
-                    <PhonePreskit artist={DEMO_ARTISTS[1]} scale={0.95} />
-                  </IPhoneFrame>
-                </motion.div>
-                <div className="mt-4 text-center">
-                  <span className="text-xs font-mono border px-3 py-1 rounded-full group-hover:opacity-80 transition-colors" style={{ color: A1, borderColor: `${A1}40` }}>Ver presskit →</span>
-                </div>
-              </a>
-            </FadeIn>
-
-            <FadeIn delay={0.15} y={40} className="hidden sm:block">
-              <a href="/francisco-allendes" className="group block" style={{ transform: 'rotateY(-16deg) translateZ(-50px)', transformStyle: 'preserve-3d' }}>
-                <div className="mb-3 text-center opacity-60 group-hover:opacity-100 transition-opacity">
-                  <span className="text-[10px] font-mono tracking-widest" style={{ color: '#f59e0b' }}>VELA DRIFT · Afro House</span>
-                </div>
-                <motion.div whileHover={{ scale: 1.04, rotateY: -8 }} transition={{ duration: 0.3 }} style={{ transformStyle: 'preserve-3d' }}>
-                  <IPhoneFrame scale={0.8}>
-                    <PhonePreskit artist={DEMO_ARTISTS[2]} scale={0.8} />
-                  </IPhoneFrame>
-                </motion.div>
-                <div className="mt-4 text-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-xs font-mono text-white/40 border border-white/10 px-3 py-1 rounded-full">Ver presskit →</span>
-                </div>
-              </a>
-            </FadeIn>
-          </div>
-
-          <FadeIn delay={0.3} className="flex justify-center mt-12">
-            <Link href="/signup"
-              className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-full border text-sm font-display font-semibold hover:scale-105 transition-all"
-              style={{ borderColor: `${A1}40`, color: A2, background: `${A1}0e` }}>
-              Crear el mío — es gratis
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </FadeIn>
-        </div>
-      </section>
-
-      {/* ── MARQUEE GALLERY ───────────────────────────────────── */}
-      <section className="py-20 border-b border-white/[0.06]">
-        <div className="max-w-5xl mx-auto px-5 md:px-8 mb-10">
-          <FadeIn>
-            <p className="text-xs font-mono tracking-widest uppercase mb-3" style={{ color: A1 }}>// cada kit es único</p>
-          </FadeIn>
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <FadeIn delay={0.05}>
-              <h2 className="font-display font-black text-[clamp(2rem,5vw,3rem)] tracking-tight leading-none">
-                Ninguno igual<br />
-                <span className="text-white/25">al tuyo.</span>
-              </h2>
-            </FadeIn>
-            <FadeIn delay={0.1}>
-              <p className="text-white/35 text-sm max-w-xs leading-relaxed font-display">
-                Colores propios, foto real, layout elegido por ti. El sistema genera una identidad que no puede tener nadie más.
-              </p>
-            </FadeIn>
-          </div>
-        </div>
-        <div className="flex flex-col gap-3">
-          <MarqueeRow items={EXAMPLES} />
-          <MarqueeRow items={[...EXAMPLES.slice(6), ...EXAMPLES.slice(0, 6)]} reverse />
-        </div>
-      </section>
-
-      {/* ── MONETIZE — De un email a un sold out ─────────────── */}
-      <section className="py-20 md:py-28 px-5 md:px-8 border-b border-white/[0.06]">
-        <div className="max-w-5xl mx-auto">
-          <FadeIn className="text-center mb-4">
-            <p className="text-xs font-mono tracking-widest uppercase mb-3" style={{ color: A1 }}>// MONETIZA CON TUS FANS</p>
-            <h2 className="font-display font-black text-[clamp(1.8rem,5vw,3.2rem)] tracking-tight">
-              De un email<br />
-              <span className="italic" style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic',
-                background: `linear-gradient(135deg, ${A2}, ${A1})`,
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                a un sold out.
-              </span>
-            </h2>
-          </FadeIn>
-          <FadeIn delay={0.05} className="text-center mb-14">
-            <p className="text-sm text-white/35 font-display max-w-lg mx-auto">
-              Captura leads en tu presskit, segmenta tu audiencia con IA y lanza directamente a quienes sí van a comprar.
-            </p>
-          </FadeIn>
-
-          {/* Flow steps */}
-          <FadeIn delay={0.1} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-14">
-            {[
-              { n: '01', icon: Mail, label: 'Captura', desc: 'Fans dejan su email en tu presskit', color: A1 },
-              { n: '02', icon: Database, label: 'Segmenta', desc: 'IA clasifica: fans / VIP / bookers / media', color: '#06b6d4' },
-              { n: '03', icon: Music, label: 'Lanza', desc: 'Envía música, entradas o contenido exclusivo', color: '#10b981' },
-              { n: '04', icon: TrendingUp, label: 'Convierte', desc: 'Venta directa, 0% comisión', color: '#f59e0b' },
-            ].map((step, i) => (
-              <div key={step.n} className="relative">
-                {i < 3 && <div className="absolute top-8 left-[calc(100%+8px)] w-4 h-px hidden md:block" style={{ background: `linear-gradient(to right, ${step.color}60, transparent)` }} />}
-                <div className="rounded-2xl p-5 border border-white/[0.06] h-full" style={{ background: 'rgba(255,255,255,0.02)' }}>
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style={{ background: `${step.color}15`, border: `1px solid ${step.color}30` }}>
-                    <step.icon className="w-5 h-5" style={{ color: step.color }} />
-                  </div>
-                  <span className="text-[10px] font-mono text-white/20">{step.n}</span>
-                  <h3 className="font-display font-black text-base text-white mt-0.5 mb-1">{step.label}</h3>
-                  <p className="text-xs text-white/40 leading-relaxed font-display">{step.desc}</p>
-                </div>
-              </div>
-            ))}
-          </FadeIn>
-
-          {/* Pillars */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              {
-                icon: Ticket,
-                title: 'Venta directa de entradas',
-                color: A1,
-                visual: (
-                  <div className="rounded-xl overflow-hidden border mt-3" style={{ borderColor: `${A1}25`, background: `${A1}08` }}>
-                    <div className="p-3 flex items-center justify-between border-b" style={{ borderColor: `${A1}15` }}>
-                      <span className="text-[9px] font-mono" style={{ color: A2 }}>Berghain · 28 Jun</span>
-                      <span className="text-[9px] font-mono text-green-400">740 vendidas</span>
-                    </div>
-                    <div className="p-3 flex gap-2 items-center">
-                      <div className="w-8 h-14 rounded border border-dashed flex items-center justify-center" style={{ borderColor: `${A1}40` }}>
-                        <span style={{ fontSize: 10, color: A2 }}>QR</span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="h-2 rounded mb-1.5" style={{ background: `${A1}40`, width: '80%' }} />
-                        <div className="h-1.5 rounded mb-1" style={{ background: `${A1}20`, width: '60%' }} />
-                        <div className="h-1.5 rounded" style={{ background: `${A1}20`, width: '45%' }} />
-                      </div>
-                    </div>
-                    <div className="px-3 pb-3">
-                      <div className="text-[9px] font-mono text-white/25">0% comisión · €18,240 generados</div>
-                    </div>
-                  </div>
-                ),
-              },
-              {
-                icon: Music,
-                title: 'Lanzamiento de música',
-                color: '#06b6d4',
-                visual: (
-                  <div className="rounded-xl overflow-hidden border mt-3" style={{ borderColor: '#06b6d420', background: '#06b6d408' }}>
-                    <div className="p-3">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-lg" style={{ background: '#06b6d415' }}>🎵</div>
-                        <div>
-                          <div className="text-[9px] font-mono text-white/60">EP · Early Access</div>
-                          <div className="text-[9px] font-mono" style={{ color: '#06b6d4' }}>2,340 pre-saves</div>
-                        </div>
-                      </div>
-                      {[['Pre-saves', 84], ['Early access', 62], ['Bundle', 38]].map(([l, v]) => (
-                        <div key={l as string} className="mb-1.5">
-                          <div className="flex justify-between text-[8px] font-mono text-white/30 mb-0.5">
-                            <span>{l}</span><span>{v}%</span>
-                          </div>
-                          <div className="h-1 rounded-full bg-white/10">
-                            <div className="h-full rounded-full" style={{ width: `${v}%`, background: '#06b6d4' }} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ),
-              },
-              {
-                icon: Database,
-                title: 'Base de datos 100% tuya',
-                color: '#10b981',
-                visual: (
-                  <div className="rounded-xl overflow-hidden border mt-3" style={{ borderColor: '#10b98120', background: '#10b98108' }}>
-                    <div className="p-3">
-                      <div className="text-[8px] font-mono text-white/25 mb-2">fans_database.csv</div>
-                      {['fans (1,240)', 'VIP (89)', 'bookers (34)', 'media (12)'].map((row, i) => (
-                        <div key={row} className="flex items-center justify-between py-1 border-b border-white/[0.05]">
-                          <span className="text-[9px] font-mono text-white/40">{row}</span>
-                          <span className="text-[8px] px-1.5 py-0.5 rounded font-mono" style={{ background: '#10b98115', color: '#10b981' }}>{['GDPR', 'CSV', 'API', 'API'][i]}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ),
-              },
-              {
-                icon: TrendingUp,
-                title: 'Re-engagement IA',
-                color: '#f59e0b',
-                visual: (
-                  <div className="rounded-xl overflow-hidden border mt-3" style={{ borderColor: '#f59e0b20', background: '#f59e0b08' }}>
-                    <div className="p-3">
-                      <svg viewBox="0 0 80 40" className="w-full" style={{ height: 40 }}>
-                        <polyline points="0,35 15,30 30,25 45,15 60,10 80,5" fill="none" stroke="#f59e0b" strokeWidth="2" />
-                        <polyline points="0,35 15,30 30,25 45,15 60,10 80,5" fill="url(#gf)" strokeWidth="0" />
-                        <defs>
-                          <linearGradient id="gf" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0" stopColor="#f59e0b" stopOpacity="0.3" />
-                            <stop offset="1" stopColor="#f59e0b" stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-                        <polygon points="0,35 15,30 30,25 45,15 60,10 80,5 80,40 0,40" fill="url(#gf)" />
-                      </svg>
-                      <div className="flex items-center justify-between mt-1">
-                        <span className="text-[8px] font-mono text-white/25">inactivos → activos</span>
-                        <span className="text-[9px] font-mono" style={{ color: '#f59e0b' }}>+67%</span>
-                      </div>
-                    </div>
-                  </div>
-                ),
-              },
-            ].map((pillar) => (
-              <FadeIn key={pillar.title} className="rounded-2xl p-5 border border-white/[0.06]" style={{ background: 'rgba(255,255,255,0.02)' }}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${pillar.color}15`, border: `1px solid ${pillar.color}30` }}>
-                  <pillar.icon className="w-4.5 h-4.5" style={{ color: pillar.color }} />
-                </div>
-                <h3 className="font-display font-black text-sm text-white mt-3 mb-0">{pillar.title}</h3>
-                {pillar.visual}
-              </FadeIn>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ──────────────────────────────────────── */}
-      <section className="py-20 md:py-28 px-5 md:px-8 border-b border-white/[0.06]">
-        <div className="max-w-4xl mx-auto">
-          <FadeIn className="text-center mb-14">
-            <p className="text-xs font-mono tracking-widest uppercase mb-3" style={{ color: A1 }}>// CÓMO FUNCIONA</p>
-            <h2 className="font-display font-black text-[clamp(1.8rem,5vw,3.2rem)] tracking-tight">
-              5 minutos. Un kit que<br />nadie más puede tener.
-            </h2>
-          </FadeIn>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {[
-              { n: '01', title: 'Cuéntanos quién eres', desc: 'Nombre artístico, rol, género, bio y logros. Las preguntas guían — no necesitas saber qué escribir.', icon: '🎤' },
-              { n: '02', title: 'Elige tu estilo', desc: 'Color picker libre o paletas de inspiración. Fondo oscuro o claro. 4 estructuras visuales distintas.', icon: '🎨' },
-              { n: '03', title: 'Publica y comparte', desc: 'Tu kit queda en artix/tu-nombre con animaciones, reproductor y botón de booking.', icon: '🚀' },
-            ].map((s, i) => (
-              <FadeIn key={s.n} delay={i * 0.08}
-                className="group p-6 rounded-2xl border border-white/[0.06] hover:-translate-y-1 transition-all duration-300 cursor-default"
-                style={{ background: 'rgba(255,255,255,0.02)' }}>
-                <div className="text-3xl mb-4">{s.icon}</div>
-                <span className="font-mono text-xs text-white/20 tracking-widest">{s.n}</span>
-                <h3 className="font-display font-black text-base tracking-tight mt-1 mb-2 text-white">{s.title}</h3>
-                <p className="text-sm text-white/40 leading-relaxed font-display">{s.desc}</p>
-              </FadeIn>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── FEATURES ──────────────────────────────────────────── */}
-      <section id="features" className="py-20 md:py-28 px-5 md:px-8 border-b border-white/[0.06]">
-        <div className="max-w-4xl mx-auto">
-          <FadeIn className="text-center mb-14">
-            <p className="text-xs font-mono tracking-widest uppercase mb-3" style={{ color: A1 }}>// CARACTERÍSTICAS</p>
-            <h2 className="font-display font-black text-[clamp(1.8rem,5vw,3.2rem)] tracking-tight">
-              Todo lo que un booking agent<br />quiere ver.
-            </h2>
-          </FadeIn>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              { icon: Palette, title: 'Colores 100% tuyos', desc: 'Color picker libre + 10 paletas de inspiración. Tu marca, no una plantilla.' },
-              { icon: Layout, title: '4 layouts distintos', desc: 'Centrado, Editorial, Split y Raw. Cada uno crea una jerarquía visual completamente diferente.' },
-              { icon: Globe, title: 'URL permanente', desc: 'artix/tu-nombre — comparte en una línea con booking agents, festivales y prensa.' },
-              { icon: BarChart3, title: 'Analíticas reales', desc: 'Visitas, clics en contacto, reproducciones de música. Sabes quién revisa tu kit.' },
-              { icon: Zap, title: 'Animaciones incluidas', desc: 'Waveform, count-up de stats, parallax, galería y lightbox. Sin configurar nada.' },
-              { icon: Lock, title: 'Siempre editable', desc: 'Cambia colores, fotos o logros cuando quieras. La URL nunca cambia.' },
-            ].map((f, i) => (
-              <FadeIn key={f.title} delay={i * 0.05}
-                className="group p-5 rounded-2xl border border-white/[0.06] hover:-translate-y-0.5 transition-all duration-200 cursor-default"
-                style={{ background: 'rgba(255,255,255,0.02)' }}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-4" style={{ background: `${A1}12`, border: `1px solid ${A1}25` }}>
-                  <f.icon className="w-4 h-4" style={{ color: A1 }} />
-                </div>
-                <h3 className="font-display font-bold text-sm text-white mb-1.5">{f.title}</h3>
-                <p className="text-xs text-white/40 leading-relaxed font-display">{f.desc}</p>
-              </FadeIn>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── TESTIMONIALS ──────────────────────────────────────── */}
-      <section className="py-20 md:py-28 px-5 md:px-8 border-b border-white/[0.06]">
-        <div className="max-w-5xl mx-auto">
-          <FadeIn className="text-center mb-14">
-            <p className="text-xs font-mono tracking-widest uppercase mb-3" style={{ color: A1 }}>// LO QUE DICEN</p>
-            <h2 className="font-display font-black text-[clamp(1.8rem,5vw,3.2rem)] tracking-tight">
-              Artistas que ya usan<br />ARTIX.
-            </h2>
-          </FadeIn>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {TESTIMONIALS.map((t, i) => (
-              <FadeIn key={t.name} delay={i * 0.1}
-                className="group p-6 rounded-2xl border border-white/[0.06] hover:border-white/[0.12] hover:-translate-y-1 transition-all duration-300 flex flex-col gap-4"
-                style={{ background: 'rgba(255,255,255,0.02)' }}>
-                <div className="flex gap-0.5">
-                  {Array.from({ length: 5 }).map((_, j) => <Star key={j} className="w-3.5 h-3.5 fill-current" style={{ color: t.color }} />)}
-                </div>
-                <p className="text-sm text-white/65 leading-relaxed flex-1 font-display">&quot;{t.quote}&quot;</p>
-                <div className="flex items-center gap-3 pt-2 border-t border-white/[0.06]">
-                  <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 border" style={{ borderColor: t.color + '44' }}>
-                    <Image src={t.avatar} alt={t.name} width={36} height={36} className="object-cover w-full h-full" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-display font-semibold text-white">{t.name}</p>
-                    <p className="text-xs text-white/35 font-mono">{t.role}</p>
-                  </div>
-                </div>
-              </FadeIn>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── FOR WHO ────────────────────────────────────────────── */}
-      <section className="py-20 md:py-28 px-5 md:px-8 border-b border-white/[0.06]">
-        <div className="max-w-4xl mx-auto">
-          <FadeIn className="text-center mb-14">
-            <p className="text-xs font-mono tracking-widest uppercase mb-3" style={{ color: A1 }}>// PARA QUIÉN</p>
-            <h2 className="font-display font-black text-[clamp(1.8rem,5vw,3.2rem)] tracking-tight">
-              Si eres artista,<br />
-              <span className="text-white/30">ARTIX es para ti.</span>
-            </h2>
-          </FadeIn>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[
-              { label: 'DJs', emoji: '🎧', metric: '×3', metricLabel: 'más bookings', bullets: ['Press kit de nivel mundial en 5 min', 'Rider técnico incluido', 'Formulario de booking directo', 'Gestión de shows con leads'], color: A1 },
-              { label: 'Productores', emoji: '🎛️', metric: '+61%', metricLabel: 'más pre-saves', bullets: ['Releases con countdown y pre-save', 'Player embebido de tus tracks', 'Campaña de lanzamiento a tu base', 'Press release con IA'], color: '#06b6d4' },
-              { label: 'Emergentes', emoji: '🚀', metric: '3 min', metricLabel: 'para estar live', bullets: ['Onboarding guiado paso a paso', 'Plantillas para artistas sin fotos aún', 'Plan gratis para empezar', 'Primeros fans con formulario integrado'], color: '#10b981' },
-              { label: 'Managers / Agencias', emoji: '🏢', metric: '10', metricLabel: 'artistas bajo uno', bullets: ['Dashboard unificado de artistas', 'Kits diferenciados por artista', 'Analíticas cruzadas', 'Facturación unificada'], color: '#f59e0b' },
-            ].map((who, i) => (
-              <FadeIn key={who.label} delay={i * 0.08}
-                className="p-6 rounded-2xl border border-white/[0.06] hover:-translate-y-0.5 transition-all duration-300"
-                style={{ background: 'rgba(255,255,255,0.02)' }}>
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{who.emoji}</span>
-                    <h3 className="font-display font-black text-lg text-white">{who.label}</h3>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-display font-black text-xl" style={{ color: who.color }}>{who.metric}</div>
-                    <div className="text-[10px] font-mono text-white/30">{who.metricLabel}</div>
-                  </div>
-                </div>
-                <ul className="flex flex-col gap-2">
-                  {who.bullets.map((b) => (
-                    <li key={b} className="flex items-start gap-2 text-sm text-white/50 font-display">
-                      <Check className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: who.color }} />
-                      {b}
-                    </li>
-                  ))}
-                </ul>
-              </FadeIn>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── PRICING ────────────────────────────────────────────── */}
-      <section id="precios" className="py-20 md:py-28 px-5 md:px-8 border-b border-white/[0.06]">
-        <div className="max-w-5xl mx-auto">
-          <FadeIn className="text-center mb-4">
-            <p className="text-xs font-mono tracking-widest uppercase mb-3" style={{ color: A1 }}>// PRECIOS</p>
-            <h2 className="font-display font-black text-[clamp(1.8rem,5vw,3.2rem)] tracking-tight">Simple y transparente.</h2>
-          </FadeIn>
-          <FadeIn delay={0.05} className="text-center mb-12">
-            <p className="text-sm text-white/35 font-display">Un diseñador te cobra $300–$800 por un PDF estático.{' '}
-              <span className="text-white/60">Aquí lo tienes por $12/mes — animado, con fan database y analíticas.</span>
-            </p>
-          </FadeIn>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {PLANS.map((plan, i) => (
-              <FadeIn key={plan.name} delay={i * 0.08}
-                className={`relative flex flex-col p-6 rounded-2xl border transition-all hover:-translate-y-1 duration-300 ${
-                  plan.highlight ? '' : 'border-white/[0.06]'
-                }`}
-                style={plan.highlight ? { borderColor: `${A1}50`, background: `${A1}06` } : { background: 'rgba(255,255,255,0.02)' }}>
-                {plan.highlight && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[10px] font-mono font-bold text-white tracking-wider uppercase" style={{ background: `linear-gradient(135deg, ${A3}, ${A1})` }}>
-                    Más popular
-                  </div>
-                )}
-                <div className="mb-5">
-                  <p className="text-[10px] font-mono tracking-widest uppercase mb-1.5" style={{ color: plan.color }}>{plan.name}</p>
-                  <div className="flex items-baseline gap-1 mb-1">
-                    <span className="font-display font-black text-4xl tracking-tighter text-white">{plan.price}</span>
-                    <span className="text-sm text-white/30">{plan.period}</span>
-                  </div>
-                  <p className="text-xs text-white/35 font-mono">{plan.desc}</p>
-                </div>
-                <ul className="flex flex-col gap-2.5 mb-6 flex-1">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm text-white/60 font-display">
-                      <Check className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: plan.color }} />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link href={plan.href}
-                  className="w-full py-3 rounded-xl text-center text-sm font-display font-bold transition-all duration-200 hover:scale-[1.02]"
-                  style={{
-                    background: plan.highlight ? `linear-gradient(135deg, ${A3}, ${A1})` : 'transparent',
-                    color: plan.highlight ? '#fff' : plan.color,
-                    border: plan.highlight ? 'none' : `1px solid ${plan.color}50`,
-                  }}>
-                  {plan.cta}
-                </Link>
-              </FadeIn>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── FAQ ────────────────────────────────────────────────── */}
-      <section id="faq" className="py-20 md:py-28 px-5 md:px-8 border-b border-white/[0.06]">
-        <div className="max-w-2xl mx-auto">
-          <FadeIn className="text-center mb-12">
-            <p className="text-xs font-mono tracking-widest uppercase mb-3" style={{ color: A1 }}>// PREGUNTAS</p>
-            <h2 className="font-display font-black text-[clamp(1.8rem,5vw,3.2rem)] tracking-tight">Preguntas frecuentes.</h2>
-          </FadeIn>
-          <div className="flex flex-col gap-2">
-            {FAQS.map((faq, i) => (
-              <FadeIn key={i} delay={i * 0.03}>
-                <button
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full flex items-center justify-between gap-4 p-5 rounded-2xl border border-white/[0.06] hover:border-white/[0.10] hover:bg-white/[0.03] transition-all duration-200 text-left cursor-pointer"
-                  style={{ background: 'rgba(255,255,255,0.02)' }}>
-                  <span className="font-display font-semibold text-sm text-white/80">{faq.q}</span>
-                  <motion.div animate={{ rotate: openFaq === i ? 180 : 0 }} transition={{ duration: 0.2 }} className="shrink-0">
-                    <ChevronDown className="w-4 h-4 text-white/30" />
+              </button>
+              <AnimatePresence>
+                {open === i && (
+                  <motion.div initial={{ height:0, opacity:0 }} animate={{ height:'auto', opacity:1 }} exit={{ height:0, opacity:0 }}
+                    transition={{ duration:0.25, ease:'easeInOut' }} className="overflow-hidden">
+                    <p className="px-5 pb-5 pt-2 text-sm text-white/45 leading-relaxed">{item.a}</p>
                   </motion.div>
+                )}
+              </AnimatePresence>
+            </FadeIn>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── CTA Final ─────────────────────────────────────────────────────────────────
+function CTAFinal() {
+  const [email, setEmail] = useState('')
+  const [submitted, setSubmitted] = useState(false)
+  const handle = (e: React.FormEvent) => { e.preventDefault(); if (email) setSubmitted(true) }
+  return (
+    <section id="cta" className="py-36 md:py-48 text-center relative overflow-hidden" style={{ borderTop:'1px solid rgba(255,255,255,0.06)' }}>
+      <div className="absolute inset-0 pointer-events-none" style={{ background:`radial-gradient(ellipse at center, ${A1}10 0%, transparent 65%)`, filter:'blur(40px)' }} />
+      <div className="relative z-10 max-w-2xl mx-auto px-5">
+        <FadeIn>
+          <div className="inline-block text-[11px] font-mono text-white/35 tracking-widest mb-6">Cupos limitados · Oleada de abril</div>
+          <h2 className="font-display font-semibold text-white leading-[0.92] tracking-[-0.03em] mb-6"
+            style={{ fontSize:'clamp(2.5rem,7vw,5rem)' }}>
+            Toma tu carrera<br /><Iridescent>en serio.</Iridescent>
+          </h2>
+          <p className="text-white/45 text-base md:text-lg mb-10">
+            Únete a los 2,400 artistas que ya aseguraron su acceso.<br className="hidden md:block" />Los primeros 500 entran gratis durante un año.
+          </p>
+          <AnimatePresence mode="wait">
+            {!submitted ? (
+              <motion.form key="form" onSubmit={handle} initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
+                className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mb-6">
+                <input type="email" required placeholder="tu-email@artista.com"
+                  value={email} onChange={e => setEmail(e.target.value)}
+                  className="flex-1 px-5 py-3.5 rounded-full bg-white/[0.05] border border-white/[0.1] text-white placeholder-white/25 text-sm font-mono outline-none focus:border-white/25 transition-colors" />
+                <button type="submit"
+                  className="px-7 py-3.5 rounded-full font-display font-semibold text-white text-sm transition-all hover:scale-105 shrink-0"
+                  style={{ background:`linear-gradient(135deg,${A3},${A1})`, boxShadow:`0 0 30px ${A1}40` }}>
+                  Reservar →
                 </button>
-                <AnimatePresence>
-                  {openFaq === i && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.25, ease: 'easeInOut' }}
-                      className="overflow-hidden">
-                      <p className="px-5 pb-5 pt-1 text-sm text-white/45 leading-relaxed font-display">{faq.a}</p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </FadeIn>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA FINAL ──────────────────────────────────────────── */}
-      <section className="py-28 md:py-40 px-5 md:px-8 text-center">
-        <div className="relative max-w-2xl mx-auto">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full pointer-events-none"
-            style={{ background: `radial-gradient(ellipse, ${A1}12, transparent 70%)`, filter: 'blur(60px)' }} />
-          <FadeIn className="relative z-10">
-            <p className="text-xs font-mono tracking-widest uppercase mb-5" style={{ color: A1 }}>// EMPIEZA HOY</p>
-            <h2 className="font-display font-black text-[clamp(2.2rem,6vw,4rem)] tracking-tight mb-4 leading-tight">
-              Tu sonido merece<br />
-              <span className="italic" style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic',
-                background: `linear-gradient(135deg, #e8ddff, ${A2}, ${A1})`,
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                un kit a su altura.
-              </span>
-            </h2>
-            <p className="text-white/40 mb-8 text-base font-display">Gratis para empezar. Sin tarjeta. Listo en 5 minutos.</p>
-
-            {/* Email form */}
-            <AnimatePresence mode="wait">
-              {!submitted ? (
-                <motion.form key="form" onSubmit={handleSubmit} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                  className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mb-5">
-                  <input
-                    type="email" required placeholder="tu@email.com" value={email} onChange={e => setEmail(e.target.value)}
-                    className="flex-1 px-4 py-3 rounded-full bg-white/[0.06] border border-white/[0.12] text-white placeholder-white/25 text-sm font-mono outline-none focus:border-white/25 transition-colors"
-                  />
-                  <button type="submit"
-                    className="px-7 py-3 rounded-full font-display font-bold text-sm text-white transition-all duration-300 hover:scale-105 shrink-0"
-                    style={{ background: `linear-gradient(135deg, ${A3}, ${A1})`, boxShadow: `0 0 30px ${A1}40` }}>
-                    Unirse al early access →
-                  </button>
-                </motion.form>
-              ) : (
-                <motion.div key="done" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-                  className="flex items-center justify-center gap-3 px-6 py-4 rounded-full border mb-5 max-w-md mx-auto"
-                  style={{ borderColor: `${A1}40`, background: `${A1}10` }}>
-                  <Check className="w-4 h-4" style={{ color: A1 }} />
-                  <span className="text-sm font-display font-semibold" style={{ color: A2 }}>¡Listo! Te avisamos cuando tengas acceso.</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <div className="flex flex-wrap items-center justify-center gap-4 md:gap-5 text-xs text-white/25 font-mono">
-              <span className="flex items-center gap-1"><Check className="w-3 h-3 text-emerald-400" /> Sin tarjeta</span>
-              <span className="flex items-center gap-1"><Check className="w-3 h-3 text-emerald-400" /> 14 días Pro gratis</span>
-              <span className="flex items-center gap-1"><Check className="w-3 h-3 text-emerald-400" /> Cancela cuando quieras</span>
-            </div>
-          </FadeIn>
-        </div>
-      </section>
-
-      {/* ── FOOTER ─────────────────────────────────────────────── */}
-      <footer className="py-8 px-5 md:px-8 border-t border-white/[0.06]">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <LogoMark size={20} />
-            <span className="font-display font-bold text-sm tracking-[0.2em] text-white/30">ARTIX</span>
-          </div>
-          <p className="text-white/20 text-xs font-mono text-center">© 2026 ARTIX — Cada artista, un kit único</p>
-          <div className="flex gap-4 text-xs text-white/20 font-mono">
-            <a href="#" className="hover:text-white/50 transition-colors">Privacidad</a>
-            <a href="#" className="hover:text-white/50 transition-colors">Términos</a>
-            <Link href="/login" className="hover:text-white/50 transition-colors">Login</Link>
-          </div>
-        </div>
-      </footer>
-
-      {/* ── DEMO MODAL ─────────────────────────────────────────── */}
-      <AnimatePresence>
-        {showDemo && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-5"
-            style={{ background: 'rgba(2,1,8,0.95)', backdropFilter: 'blur(30px)' }}
-            onClick={() => setShowDemo(false)}>
-            <button onClick={() => setShowDemo(false)}
-              className="absolute top-5 right-5 w-10 h-10 rounded-full border border-white/[0.1] flex items-center justify-center transition-all hover:bg-white/[0.08]">
-              <X className="w-4 h-4 text-white/60" />
-            </button>
-            <motion.div
-              initial={{ scale: 0.88, y: 28, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.88, y: 28, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 28 }}
-              onClick={e => e.stopPropagation()}
-              className="flex flex-col items-center gap-5">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-white/[0.10]" style={{ background: 'rgba(255,255,255,0.04)' }}>
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-xs font-mono text-white/40">artix/{DEMO_ARTISTS[demoIdx].slug}</span>
-              </div>
-              <motion.div key={demoIdx} initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.25 }}>
-                <IPhoneFrame scale={1.25}>
-                  <PhonePreskit artist={DEMO_ARTISTS[demoIdx]} scale={1.25} />
-                </IPhoneFrame>
+              </motion.form>
+            ) : (
+              <motion.div key="done" initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }}
+                className="flex items-center justify-center gap-3 px-6 py-4 rounded-full border border-white/20 mb-6 max-w-md mx-auto"
+                style={{ background:`${A1}12` }}>
+                <Check className="w-4 h-4" style={{ color:A1 }} />
+                <span className="text-sm font-display font-semibold" style={{ color:A2 }}>✓ Reservado · Revisa tu email en 2 minutos.</span>
               </motion.div>
-              <div className="flex items-center gap-3">
-                {DEMO_ARTISTS.map((a, i) => (
-                  <button key={a.slug} onClick={() => setDemoIdx(i)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all duration-200 cursor-pointer"
-                    style={{
-                      background: demoIdx === i ? `${a.accentColor}20` : 'transparent',
-                      border: `1px solid ${demoIdx === i ? a.accentColor + '55' : 'rgba(255,255,255,0.1)'}`,
-                    }}>
-                    <div className="w-1.5 h-1.5 rounded-full" style={{ background: a.accentColor }} />
-                    <span className="text-xs font-mono" style={{ color: demoIdx === i ? a.accentColor : 'rgba(255,255,255,0.3)' }}>{a.name}</span>
-                  </button>
-                ))}
-              </div>
-              <Link href="/signup" onClick={() => setShowDemo(false)}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-display font-bold text-sm text-white transition-all hover:scale-105"
-                style={{ background: `linear-gradient(135deg, ${A3}, ${A1})`, boxShadow: `0 0 30px ${A1}40` }}>
-                Crear el mío gratis <ArrowRight className="w-4 h-4" />
-              </Link>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </main>
+            )}
+          </AnimatePresence>
+          <div className="flex flex-wrap justify-center gap-5 text-[11px] font-mono text-white/25">
+            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background:A1 }} />2,847 artistas reservados</span>
+            <span>Sin tarjeta</span>
+            <span>Cancela cuando quieras</span>
+          </div>
+        </FadeIn>
+      </div>
+    </section>
+  )
+}
+
+// ─── Footer ────────────────────────────────────────────────────────────────────
+function Footer() {
+  return (
+    <footer style={{ borderTop:'1px solid rgba(255,255,255,0.06)' }}>
+      <div className="max-w-7xl mx-auto px-5 md:px-10 py-16 grid grid-cols-2 md:grid-cols-5 gap-10">
+        <div className="col-span-2 md:col-span-1">
+          <div className="flex items-center gap-2 mb-4">
+            <LogoMark size={20} />
+            <span className="font-display font-semibold tracking-[0.18em] text-white/70">ARTIX</span>
+          </div>
+          <p className="text-sm text-white/35 leading-relaxed">El sistema operativo de la carrera musical. Para artistas que no esperan a nadie.</p>
+        </div>
+        {[
+          ['Producto',['Generador web IA','Press kit','Analytics','Email marketing'],['#features','#features','#features','#features']],
+          ['Artistas',['Casos de éxito','Comunidad','FAQ'],['#social','#social','#faq']],
+          ['Empresa',['Manifiesto','Prensa','Carreras'],['#','#','#']],
+          ['Legal',['Términos','Privacidad','Cookies'],['#','#','#']],
+        ].map(([title, links, hrefs]) => (
+          <div key={title as string}>
+            <h5 className="text-[11px] font-mono text-white/30 tracking-widest mb-4 uppercase">{title as string}</h5>
+            <ul className="flex flex-col gap-2.5">
+              {(links as string[]).map((l, i) => (
+                <li key={l}><a href={(hrefs as string[])[i]} className="text-sm text-white/40 hover:text-white transition-colors">{l}</a></li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <div className="border-t border-white/[0.06] px-5 md:px-10 py-5 flex items-center justify-between max-w-7xl mx-auto">
+        <div className="text-[11px] font-mono text-white/25">© 2026 ARTIX · Todos los derechos reservados</div>
+        <div className="flex gap-4 text-[11px] font-mono text-white/25">
+          {['IG','X','TT','SC'].map(s => <a key={s} href="#" className="hover:text-white transition-colors">{s}</a>)}
+        </div>
+      </div>
+      {/* Mega text */}
+      <div className="overflow-hidden" aria-hidden>
+        <div className="font-display font-semibold text-white/[0.025] text-center leading-none select-none"
+          style={{ fontSize:'clamp(5rem,20vw,18rem)', letterSpacing:'-0.04em', transform:'translateY(20%)' }}>
+          ARTIX.
+        </div>
+      </div>
+    </footer>
+  )
+}
+
+// ─── Global styles ─────────────────────────────────────────────────────────────
+const globalStyles = `
+  @keyframes shimmer { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+  @keyframes wf { 0%{height:20%} 100%{height:100%} }
+  html { scroll-behavior: smooth; }
+  .font-display { font-family: var(--font-display, 'Space Grotesk', sans-serif); }
+  .font-serif { font-family: var(--font-serif, 'Instrument Serif', serif); }
+  .font-mono { font-family: var(--font-mono, 'JetBrains Mono', monospace); }
+  body { background: #05050a; }
+`
+
+// ─── Root ──────────────────────────────────────────────────────────────────────
+export default function LandingPage() {
+  return (
+    <>
+      <style>{globalStyles}</style>
+      <main className="min-h-screen text-white overflow-x-hidden" style={{ background:'#05050a' }}>
+        <Nav />
+        <Hero />
+        <Problem />
+        <Transformation />
+        <Features />
+        <Monetize />
+        <Social />
+        <ForWho />
+        <Pricing />
+        <FAQ />
+        <CTAFinal />
+        <Footer />
+      </main>
+    </>
   )
 }
