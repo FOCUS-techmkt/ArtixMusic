@@ -112,8 +112,8 @@ function Nav() {
         <li><a href="#faq">FAQ</a></li>
       </ul>
       <div className="nav-cta">
-        <a href="#cta" className="btn btn-ghost btn-sm">Iniciar sesión</a>
-        <a href="#cta" className="btn btn-primary btn-sm">Early access <span className="arrow">→</span></a>
+        <a href="/login" className="btn btn-ghost btn-sm">Iniciar sesión</a>
+        <a href="/signup" className="btn btn-primary btn-sm">Crear press kit <span className="arrow">→</span></a>
       </div>
     </nav>
   )
@@ -248,7 +248,7 @@ function Hero({ variant, setVariant }: { variant: string; setVariant: (v: string
       <div className="wrap">
         <div className="hero-inner">
           <div>
-            <div className="eyebrow reveal">Early access · Abril 2026</div>
+            <div className="eyebrow reveal">Tu press kit profesional · Gratis</div>
             <h1 className="reveal delay-1">
               El <span className="serif-italic iridescent">sistema operativo</span> de tu carrera musical.
             </h1>
@@ -256,8 +256,8 @@ function Hero({ variant, setVariant }: { variant: string; setVariant: (v: string
               Tu web, tu press kit, tu audiencia y tus datos — unificados en una sola plataforma impulsada por IA. Sin depender de nadie.
             </p>
             <div className="hero-ctas reveal delay-3">
-              <a href="#cta" className="btn btn-neon">
-                Solicitar early access <span className="arrow">→</span>
+              <a href="/signup" className="btn btn-neon">
+                Crear mi press kit gratis <span className="arrow">→</span>
               </a>
               <a href="#features" className="btn btn-ghost">
                 Ver cómo funciona
@@ -266,15 +266,15 @@ function Hero({ variant, setVariant }: { variant: string; setVariant: (v: string
             <div className="hero-stats reveal delay-4">
               <div className="stat">
                 <div className="n">3 min</div>
-                <div className="l">Configuración</div>
+                <div className="l">Para estar online</div>
               </div>
               <div className="stat">
-                <div className="n">+2,400</div>
-                <div className="l">Artistas en lista</div>
+                <div className="n">500+</div>
+                <div className="l">Press kits creados</div>
               </div>
               <div className="stat">
                 <div className="n">0€</div>
-                <div className="l">Hasta el lanzamiento</div>
+                <div className="l">Para siempre</div>
               </div>
             </div>
           </div>
@@ -995,10 +995,10 @@ function Social() {
           ))}
         </div>
         <div className="social-metrics reveal">
-          <div className="metric"><div className="n">2,400<span className="u">+</span></div><div className="l">Artistas en waitlist</div></div>
+          <div className="metric"><div className="n">500<span className="u">+</span></div><div className="l">Press kits creados</div></div>
           <div className="metric"><div className="n">3<span className="u">×</span></div><div className="l">Más bookings promedio</div></div>
           <div className="metric"><div className="n">47<span className="u">%</span></div><div className="l">Open rate medio</div></div>
-          <div className="metric"><div className="n">€2.4M</div><div className="l">Tickets vendidos directo</div></div>
+          <div className="metric"><div className="n">0<span className="u">€</span></div><div className="l">Para empezar</div></div>
         </div>
       </div>
     </section>
@@ -1132,14 +1132,14 @@ function Pricing() {
     <section className="pricing-teaser" id="pricing">
       <div className="wrap">
         <div className="section-head reveal" style={{ textAlign: 'center', margin: '0 auto 70px' }}>
-          <div className="eyebrow" style={{ marginBottom: 24 }}>07 · Early access</div>
-          <h2>Los primeros 500 artistas <br />entran <span className="serif-italic iridescent">gratis.</span></h2>
+          <div className="eyebrow" style={{ marginBottom: 24 }}>07 · Planes</div>
+          <h2>Empieza gratis. <br /><span className="serif-italic iridescent">Siempre.</span></h2>
         </div>
         <div className="pricing-card reveal">
           <div>
-            <div className="tier">Plan Pro · Founder access</div>
-            <h3>Todo incluido. Un año.</h3>
-            <p>Web IA, press kit, rider, emails ilimitados, analítica avanzada, sugerencias IA, dominio personalizado, 0% comisión en tickets.</p>
+            <div className="tier">Plan Gratuito · Sin tarjeta</div>
+            <h3>Todo lo que necesitas para empezar.</h3>
+            <p>Web profesional, press kit completo, rider técnico, captura de fans, analítica y dominio personalizado. Gratis, sin límite de tiempo.</p>
             <ul className="perks">
               <li>Web con IA ilimitada</li>
               <li>Press kit profesional</li>
@@ -1152,9 +1152,9 @@ function Pricing() {
             </ul>
           </div>
           <div className="price-col">
-            <div className="price">0<span className="ct">€ / año</span></div>
-            <div className="price-note">Después · 29€ / mes</div>
-            <a href="#cta" className="btn btn-neon">Reclamar mi acceso <span className="arrow">→</span></a>
+            <div className="price">0<span className="ct">€ / mes</span></div>
+            <div className="price-note">Plan Pro con más funciones próximamente</div>
+            <a href="/signup" className="btn btn-neon">Crear mi press kit <span className="arrow">→</span></a>
           </div>
         </div>
       </div>
@@ -1164,48 +1164,26 @@ function Pricing() {
 
 // ============ CTA ============
 function CTA() {
-  const [email, setEmail] = useState('')
-  const [submitted, setSubmitted] = useState(false)
-
-  const handle = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email) return
-    setSubmitted(true)
-  }
-
   return (
     <section className="cta-final" id="cta">
       <div className="wrap">
-        <div className="eyebrow reveal">Cupos limitados · Oleada de abril</div>
+        <div className="eyebrow reveal">Gratis · Sin tarjeta · Listo en 3 min</div>
         <h2 className="reveal delay-1">
-          Toma tu carrera <br />
-          <span className="serif-italic iridescent">en serio.</span>
+          Crea tu press kit <br />
+          <span className="serif-italic iridescent">profesional hoy.</span>
         </h2>
         <p className="reveal delay-2">
-          Únete a los 2,400 artistas que ya aseguraron su acceso. Los primeros 500 entran gratis durante un año.
+          Tu web, tu press kit y tu audiencia — todo en un solo lugar. Empieza gratis, sin límite de tiempo. Sin fricción.
         </p>
-        {!submitted ? (
-          <form className="cta-form reveal delay-3" onSubmit={handle}>
-            <input
-              type="email"
-              placeholder="tu-email@artista.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <button type="submit" className="btn btn-neon">
-              Reservar <span className="arrow">→</span>
-            </button>
-          </form>
-        ) : (
-          <div className="cta-success reveal">
-            ✓ Reservado · Revisa tu email en 2 minutos.
-          </div>
-        )}
+        <div className="cta-form reveal delay-3" style={{ justifyContent: 'center' }}>
+          <a href="/signup" className="btn btn-neon" style={{ fontSize: '1.05rem', padding: '16px 36px' }}>
+            Crear mi press kit gratis <span className="arrow">→</span>
+          </a>
+        </div>
         <div className="form-meta reveal delay-4">
-          <span><span className="led" />2,847 artistas reservados</span>
-          <span>Sin tarjeta</span>
-          <span>Cancela cuando quieras</span>
+          <span><span className="led" />500+ press kits creados</span>
+          <span>Sin tarjeta de crédito</span>
+          <span>Gratis para siempre</span>
         </div>
       </div>
     </section>
