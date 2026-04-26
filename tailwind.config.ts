@@ -9,9 +9,10 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
-        display: ['var(--font-syne)', 'system-ui', 'sans-serif'],
-        mono: ['var(--font-jetbrains)', 'monospace'],
+        sans:    ['var(--font-inter)',    'system-ui', 'sans-serif'],
+        display: ['var(--font-display)',  'system-ui', 'sans-serif'],
+        mono:    ['var(--font-mono)',     'monospace'],
+        serif:   ['var(--font-serif)',    'serif'],
       },
       colors: {
         // Dark Rave

@@ -15,11 +15,11 @@ import type { Artist, OnboardingData, OnboardingStatus } from '@/types'
 import { ONBOARDING_STEPS } from '@/types'
 
 const stepVariants = {
-  enter:  (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
+  enter:  (dir: number) => ({ x: dir > 0 ? 48 : -48, opacity: 0 }),
   center: { x: 0, opacity: 1 },
-  exit:   (dir: number) => ({ x: dir > 0 ? '-60%' : '60%', opacity: 0 }),
+  exit:   (dir: number) => ({ x: dir > 0 ? -48 : 48, opacity: 0 }),
 }
-const stepTransition = { type: 'spring' as const, stiffness: 300, damping: 35, mass: 0.8 }
+const stepTransition = { type: 'tween' as const, ease: 'easeInOut', duration: 0.28 }
 
 const STEP_COMPONENTS = [
   StepIdentity,
@@ -158,7 +158,7 @@ export default function OnboardingWizard({ initialArtist }: { initialArtist: Art
           </motion.div>
 
           {/* Step content */}
-          <div className="relative overflow-hidden" style={{ minHeight: '440px' }}>
+          <div className="relative">
             <AnimatePresence mode="wait" custom={dir}>
               <motion.div
                 key={step}
@@ -168,7 +168,6 @@ export default function OnboardingWizard({ initialArtist }: { initialArtist: Art
                 animate="center"
                 exit="exit"
                 transition={stepTransition}
-                className="absolute inset-0"
               >
                 <StepComponent data={data} onChange={update} />
               </motion.div>
