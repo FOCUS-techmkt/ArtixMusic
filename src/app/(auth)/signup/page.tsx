@@ -30,6 +30,7 @@ export default function SignupPage() {
       password,
       options: {
         data: { artist_name: artistName, slug },
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
       },
     })
 

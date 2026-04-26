@@ -20,15 +20,26 @@ export default function LoginPage() {
     setError('')
 
     const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
       setError('Email o contraseña incorrectos')
       setLoading(false)
-    } else {
-      setSuccess(true)
-      setTimeout(() => router.push('/onboarding'), 800)
+      return
     }
+
+    setSuccess(true)
+
+    // Check if artist exists and onboarding is complete → skip straight to panel
+    const { data: artist } = await supabase
+      .from('artists')
+      .select('onboarding_step')
+      .eq('user_id', data.user.id)
+      .single()
+
+    setTimeout(() => {
+      router.push(artist?.onboarding_step === 'complete' ? '/panel' : '/onboarding')
+    }, 600)
   }
 
   return (
