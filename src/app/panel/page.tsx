@@ -17,9 +17,28 @@ export default async function PanelPage() {
   if (!artist) redirect('/onboarding')
   if (artist.onboarding_step !== 'complete') redirect('/onboarding')
 
-  const [{ data: sections }, { data: analytics }] = await Promise.all([
-    supabase.from('sections').select('*').eq('artist_id', artist.id).order('sort_order'),
-    supabase.from('analytics').select('event_type, created_at').eq('artist_id', artist.id).order('created_at', { ascending: false }).limit(200),
+  const [
+    { data: sections },
+    { data: analytics },
+    { data: fans },
+  ] = await Promise.all([
+    supabase
+      .from('sections')
+      .select('*')
+      .eq('artist_id', artist.id)
+      .order('sort_order'),
+    supabase
+      .from('analytics')
+      .select('event_type, created_at, country, referrer')
+      .eq('artist_id', artist.id)
+      .order('created_at', { ascending: false })
+      .limit(1000),
+    supabase
+      .from('fan_subscribers')
+      .select('*')
+      .eq('artist_slug', artist.slug)
+      .order('created_at', { ascending: false })
+      .limit(500),
   ])
 
   return (
@@ -27,6 +46,7 @@ export default async function PanelPage() {
       initialArtist={artist}
       initialSections={sections ?? []}
       analytics={analytics ?? []}
+      fans={fans ?? []}
     />
   )
 }
