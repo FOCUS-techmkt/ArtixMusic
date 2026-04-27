@@ -10,10 +10,11 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import ImageUpload from '@/components/shared/ImageUpload'
+import { toast } from 'sonner'
 import {
-  ToggleLeft, ToggleRight, Loader2, Check, RefreshCw,
+  ToggleLeft, ToggleRight, Loader2, RefreshCw,
   Smartphone, Monitor, Maximize2, Sun, Moon, GripVertical,
-  ChevronRight, Settings2, Sparkles, Copy,
+  Settings2, Sparkles, Copy, Check, ExternalLink,
 } from 'lucide-react'
 import type { TabProps } from '../DashboardClient'
 import { COLOR_PRESETS, LAYOUT_META } from '@/types'
@@ -54,12 +55,12 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
   const [font,      setFont]      = useState('space')
   const [effects,   setEffects]   = useState<string[]>(['glow'])
   const [saving,    setSaving]    = useState(false)
-  const [saved,     setSaved]     = useState(false)
   const [toggling,  setToggling]  = useState<string | null>(null)
   const [device,    setDevice]    = useState<'desktop' | 'mobile'>('desktop')
-  const [panel,     setPanel]     = useState<'sections' | 'design' | 'effects'>('sections')
-  const [activeSection, setActiveSection] = useState<Section | null>(null)
-  const [copied,    setCopied]    = useState(false)
+  const [panel,          setPanel]          = useState<'sections' | 'design' | 'effects'>('sections')
+  const [activeSection,  setActiveSection]  = useState<Section | null>(null)
+  const [lastEditedId,   setLastEditedId]   = useState<string | null>(null)
+  const [copied,         setCopied]         = useState(false)
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
   const appUrl     = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
@@ -103,10 +104,12 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
       bg_dark:         bgDark,
       layout_variant:  layout,
     }).eq('user_id', artist.user_id)
-    if (!error) {
+    if (error) {
+      toast.error('Error al guardar diseño')
+    } else {
       setArtist(p => ({ ...p, primary_color: primary, secondary_color: secondary, bg_dark: bgDark, layout_variant: layout }))
-      setSaved(true)
-      setTimeout(() => { setSaved(false); reloadPreview() }, 1200)
+      toast.success('Diseño guardado')
+      setTimeout(reloadPreview, 400)
     }
     setSaving(false)
   }
@@ -117,6 +120,22 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
       {/* ── LEFT PANEL ─────────────────────────────────── */}
       <div className="w-full lg:w-[300px] shrink-0 flex flex-col"
         style={{ background: '#0A0A0E', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
+
+        {/* Top header */}
+        <div className="flex items-center justify-between px-4 py-3 shrink-0"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[11px] font-mono text-white/40">Mi Sitio</span>
+            <span className="text-[11px] font-mono text-white/20">·</span>
+            <span className="text-[11px] font-mono" style={{ color: palette.primary }}>/{artist.slug}</span>
+          </div>
+          <a href={previewUrl} target="_blank" rel="noopener noreferrer"
+            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-mono transition-all hover:opacity-80"
+            style={{ background: palette.primary + '18', color: palette.primary, border: `1px solid ${palette.primary}25` }}>
+            <ExternalLink className="w-3 h-3" /> Ver
+          </a>
+        </div>
 
         {/* Panel tabs */}
         <div className="flex border-b border-white/[0.05] sticky top-0 z-10 shrink-0" style={{ background: '#0A0A0E' }}>
@@ -147,8 +166,9 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
                       section={section}
                       palette={palette}
                       toggling={toggling}
+                      isActive={lastEditedId === section.id}
                       onToggle={() => toggleSection(section.id, section.is_enabled)}
-                      onEdit={() => setActiveSection(section)}
+                      onEdit={() => { setActiveSection(section); setLastEditedId(section.id) }}
                     />
                   ))}
                 </SortableContext>
@@ -330,9 +350,7 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
                 whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
                 style={{ background: palette.primary }}>
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" />
-                  : saved  ? <><Check className="w-4 h-4" /> Guardado</>
-                  : 'Guardar diseño'}
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar diseño'}
               </motion.button>
             </div>
           )}
@@ -428,48 +446,73 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
 
 // ── Sortable section row ──────────────────────────────────────
 
-function SortableSection({ section, palette, toggling, onToggle, onEdit }: {
-  section: Section
-  palette: ReturnType<typeof import('@/types').deriveArtistPalette>
+function SortableSection({ section, palette, toggling, isActive, onToggle, onEdit }: {
+  section:  Section
+  palette:  ReturnType<typeof import('@/types').deriveArtistPalette>
   toggling: string | null
+  isActive: boolean
   onToggle: () => void
-  onEdit: () => void
+  onEdit:   () => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id })
   const meta = SECTION_LABELS[section.name] ?? { icon: '📄', label: section.name }
+
+  const borderColor = isDragging
+    ? palette.primary + '60'
+    : isActive
+      ? palette.primary + '55'
+      : section.is_enabled
+        ? palette.primary + '22'
+        : 'rgba(255,255,255,0.05)'
+
+  const bgColor = isDragging
+    ? palette.primary + '18'
+    : isActive
+      ? palette.primary + '12'
+      : section.is_enabled
+        ? palette.primary + '08'
+        : 'rgba(255,255,255,0.02)'
 
   return (
     <div ref={setNodeRef}
       style={{
         transform:  CSS.Transform.toString(transform),
-        transition,
-        opacity:    isDragging ? 0.5 : 1,
-        background: section.is_enabled ? palette.primary + '0C' : 'rgba(255,255,255,0.02)',
-        border:     `1px solid ${section.is_enabled ? palette.primary + '25' : 'rgba(255,255,255,0.05)'}`,
+        transition: isDragging ? 'none' : transition ?? undefined,
+        zIndex:     isDragging ? 50 : undefined,
+        background: bgColor,
+        border:     `1px solid ${borderColor}`,
+        boxShadow:  isDragging
+          ? `0 8px 32px rgba(0,0,0,0.5), 0 0 20px ${palette.primary}25`
+          : isActive
+            ? `0 0 0 1px ${palette.primary}20`
+            : 'none',
+        scale:      isDragging ? '1.02' : '1',
       }}
-      className="flex items-center gap-2 p-3 rounded-xl transition-all">
+      className="flex items-center gap-2 p-3 rounded-xl transition-all duration-150">
 
-      {/* Drag handle */}
-      <button {...attributes} {...listeners} className="p-1 text-white/15 hover:text-white/40 cursor-grab active:cursor-grabbing transition-colors">
+      <button {...attributes} {...listeners}
+        className="p-1 text-white/15 hover:text-white/40 cursor-grab active:cursor-grabbing transition-colors shrink-0">
         <GripVertical className="w-4 h-4" />
       </button>
 
-      {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="text-[12px] font-medium text-white/80 truncate">{meta.icon} {meta.label}</p>
-        <p className="text-[9px] font-mono text-white/25 mt-0.5">{section.is_enabled ? 'visible' : 'oculta'}</p>
+        <p className="text-[12px] font-medium truncate" style={{ color: isActive ? palette.primary : 'rgba(255,255,255,0.8)' }}>
+          {meta.icon} {meta.label}
+        </p>
+        <p className="text-[9px] font-mono mt-0.5" style={{ color: isActive ? palette.primary + 'AA' : 'rgba(255,255,255,0.2)' }}>
+          {section.is_enabled ? 'visible' : 'oculta'}
+        </p>
       </div>
 
-      {/* Edit button */}
-      <button onClick={onEdit} className="p-1.5 rounded-lg transition-colors text-white/25 hover:text-white/70">
+      <button onClick={onEdit}
+        className="p-1.5 rounded-lg transition-colors shrink-0"
+        style={{ color: isActive ? palette.primary : 'rgba(255,255,255,0.25)' }}>
         <Settings2 className="w-3.5 h-3.5" />
       </button>
 
-      {/* Toggle */}
-      <button
-        onClick={onToggle}
+      <button onClick={onToggle}
         disabled={toggling === section.id || section.name === 'hero'}
-        className="transition-all disabled:opacity-30">
+        className="transition-all disabled:opacity-30 shrink-0">
         {toggling === section.id
           ? <Loader2 className="w-5 h-5 animate-spin text-white/30" />
           : section.is_enabled

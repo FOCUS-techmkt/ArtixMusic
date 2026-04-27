@@ -3,22 +3,68 @@
 // Stored in sections.config JSONB column
 // ═══════════════════════════════════════════════
 
+export interface HeroCtaButton {
+  text:  string
+  url:   string
+  style: 'filled' | 'outline' | 'ghost'
+  color: string | null  // null = use palette.primary
+}
+
+export interface HeroSocialLink {
+  id:         string
+  platform:   string   // 'instagram' | 'soundcloud' | 'spotify' | 'youtube' | 'beatport' | 'ra' | 'tiktok' | 'twitter' | 'bandcamp'
+  url:        string
+  enabled:    boolean
+  sort_order: number
+}
+
 export interface HeroConfig {
-  bg_image:           string | null
-  logo_url:           string | null
+  // Content
   tagline:            string
   sub_tagline:        string
-  cta_text:           string
-  cta_url:            string
+  supporters:         string[]
+
+  // Background
+  bg_image:           string | null
+  logo_url:           string | null
+  video_url:          string | null
+  video_type:         'youtube' | 'vimeo' | 'direct' | null
+
+  // Layout
+  layout:             'centered' | 'left' | 'right' | 'split'
+
+  // Text animation
+  text_animation:     'fade' | 'slide' | 'glitch' | 'typewriter' | 'reveal'
+
+  // CTA buttons
+  cta_text:           string         // legacy fallback
+  cta_url:            string         // legacy fallback
+  cta_primary:        HeroCtaButton
+  cta_secondary:      HeroCtaButton & { enabled: boolean }
+
+  // Social links (ordered, per-link toggle)
+  socials:            HeroSocialLink[]
+
+  // Ticker
+  ticker_speed:       number         // 1–10 (10 = fastest)
+  ticker_separator:   string         // '·' '/' '—' '★' etc.
+
+  // Design
+  overlay_opacity:    number         // 0–1
+  overlay_color:      string
+  parallax_bg:        boolean
+  gradient_animated:  boolean
+  ken_burns:          boolean
+
+  // Effects & visibility
   show_socials:       boolean
   show_scroll:        boolean
-  supporters:         string[]      // for ticker
-  overlay_opacity:    number        // 0-1
-  overlay_color:      string        // hex
-  particles:          boolean
-  particles_density:  number        // 20-200
-  three_bg:           boolean       // Three.js animated bg
-  text_glitch:        boolean
+  particles:          boolean        // legacy canvas particles
+  particles_density:  number
+  three_bg:           boolean
+  three_effect:       'particles' | 'waves' | 'volumetric'
+  three_intensity:    number         // 0–100
+  text_glitch:        boolean        // legacy, use text_animation='glitch'
 }
 
 export interface BioConfig {
@@ -166,20 +212,41 @@ export type SectionConfig =
 // Default configs — used when section is first enabled
 export const DEFAULT_CONFIGS: Record<string, SectionConfig> = {
   hero: {
-    bg_image:           null,
-    logo_url:           null,
     tagline:            'Tu música. Tu mundo.',
     sub_tagline:        'DJ · Productor · Live Act',
+    supporters:         ['Maceo Plex', 'Tale Of Us', 'Amelie Lens', 'Solomun', 'Dixon', 'Peggy Gou'],
+    bg_image:           null,
+    logo_url:           null,
+    video_url:          null,
+    video_type:         null,
+    layout:             'centered',
+    text_animation:     'slide',
     cta_text:           'Solicitar Booking',
     cta_url:            '#contact',
-    show_socials:       true,
-    show_scroll:        true,
-    supporters:         ['Maceo Plex', 'Tale Of Us', 'Amelie Lens', 'Solomun', 'Dixon', 'Peggy Gou'],
+    cta_primary:        { text: 'Solicitar Booking', url: '#contact', style: 'filled', color: null },
+    cta_secondary:      { enabled: false, text: 'Ver Música', url: '#music', style: 'outline', color: null },
+    socials: [
+      { id: '1', platform: 'instagram',  url: '', enabled: false, sort_order: 0 },
+      { id: '2', platform: 'soundcloud', url: '', enabled: false, sort_order: 1 },
+      { id: '3', platform: 'spotify',    url: '', enabled: false, sort_order: 2 },
+      { id: '4', platform: 'youtube',    url: '', enabled: false, sort_order: 3 },
+      { id: '5', platform: 'beatport',   url: '', enabled: false, sort_order: 4 },
+      { id: '6', platform: 'ra',         url: '', enabled: false, sort_order: 5 },
+    ],
+    ticker_speed:       5,
+    ticker_separator:   '·',
     overlay_opacity:    0.5,
     overlay_color:      '#000000',
+    parallax_bg:        true,
+    gradient_animated:  true,
+    ken_burns:          false,
+    show_socials:       true,
+    show_scroll:        true,
     particles:          true,
     particles_density:  60,
     three_bg:           false,
+    three_effect:       'particles',
+    three_intensity:    50,
     text_glitch:        false,
   } as HeroConfig,
 
