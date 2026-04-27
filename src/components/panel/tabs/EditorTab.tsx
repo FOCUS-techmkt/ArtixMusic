@@ -1,11 +1,10 @@
 'use client'
 import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CldUploadWidget } from 'next-cloudinary'
-import Image from 'next/image'
+import ImageUpload from '@/components/shared/ImageUpload'
 import {
   ToggleLeft, ToggleRight, Loader2, Check, RefreshCw,
-  Upload, Smartphone, Monitor, Maximize2, Sun, Moon, Sparkles,
+  Smartphone, Monitor, Maximize2, Sun, Moon, Sparkles,
 } from 'lucide-react'
 import type { TabProps } from '../DashboardClient'
 import { COLOR_PRESETS, LAYOUT_META } from '@/types'
@@ -112,29 +111,21 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
                 {/* Photo upload */}
                 <div className="flex flex-col gap-2">
                   <Label>Foto principal</Label>
-                  <div className="flex items-center gap-3">
-                    <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0"
-                      style={{ background: '#141418', border: '1px solid rgba(255,255,255,0.08)' }}>
-                      {artist.photo_url
-                        ? <Image src={artist.photo_url} alt="Foto" width={56} height={56} className="w-full h-full object-cover" />
-                        : <div className="w-full h-full flex items-center justify-center"><Upload className="w-5 h-5 text-white/20" /></div>}
-                    </div>
-                    <CldUploadWidget uploadPreset={process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? 'presskit_unsigned'}
-                      onSuccess={(result) => {
-                        if (result.info && typeof result.info === 'object' && 'secure_url' in result.info) {
-                          const url = result.info.secure_url as string
-                          supabase.from('artists').update({ photo_url: url }).eq('user_id', artist.user_id)
-                          setArtist(p => ({ ...p, photo_url: url }))
-                        }
-                      }}>
-                      {({ open }) => (
-                        <button onClick={() => open()} className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border border-white/10 text-white/50 hover:text-white hover:border-white/20 transition-all">
-                          <Upload className="w-3.5 h-3.5" />
-                          {artist.photo_url ? 'Cambiar' : 'Subir foto'}
-                        </button>
-                      )}
-                    </CldUploadWidget>
-                  </div>
+                  <ImageUpload
+                    value={artist.photo_url ?? null}
+                    onChange={async url => {
+                      await supabase.from('artists').update({ photo_url: url }).eq('user_id', artist.user_id)
+                      setArtist(p => ({ ...p, photo_url: url }))
+                    }}
+                    onRemove={async () => {
+                      await supabase.from('artists').update({ photo_url: null }).eq('user_id', artist.user_id)
+                      setArtist(p => ({ ...p, photo_url: null }))
+                    }}
+                    folder="avatar"
+                    label="Foto de artista"
+                    aspect="1/1"
+                    accentColor={primary}
+                  />
                 </div>
 
                 {/* Colors */}
