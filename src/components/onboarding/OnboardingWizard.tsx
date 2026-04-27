@@ -13,6 +13,7 @@ import StepColors from './StepColors'
 import StepLayout from './StepLayout'
 import type { Artist, OnboardingData, OnboardingStatus } from '@/types'
 import { ONBOARDING_STEPS } from '@/types'
+import { DEFAULT_CONFIGS } from '@/types/sections'
 
 const stepVariants = {
   enter:  (dir: number) => ({ x: dir > 0 ? 48 : -48, opacity: 0 }),
@@ -100,6 +101,59 @@ export default function OnboardingWizard({ initialArtist }: { initialArtist: Art
       .eq('user_id', initialArtist.user_id)
 
     if (dbError) throw new Error(dbError.message)
+
+    // On completion, pre-configure sections with onboarding data
+    if (isLast) {
+      const { data: artist } = await supabase
+        .from('artists')
+        .select('id')
+        .eq('user_id', initialArtist.user_id)
+        .maybeSingle()
+
+      if (artist?.id) {
+        const { data: sections } = await supabase
+          .from('sections')
+          .select('id, name, config')
+          .eq('artist_id', artist.id)
+
+        if (sections?.length) {
+          await Promise.all(sections.map(s => {
+            const base = { ...(DEFAULT_CONFIGS[s.name] ?? {}) } as Record<string, unknown>
+            let patch: Record<string, unknown> = {}
+
+            if (s.name === 'hero') {
+              patch = {
+                ...base,
+                tagline:     data.artist_name,
+                sub_tagline: [data.role, data.genre].filter(Boolean).join(' · '),
+                supporters:  data.sound_words ?? [],
+                particles:   true,
+              }
+            } else if (s.name === 'bio') {
+              patch = {
+                ...base,
+                text:    data.bio ? `<p>${data.bio}</p>` : base.text,
+                genres:  [data.genre].filter(Boolean),
+                badges:  (data.achievements ?? []).slice(0, 3).map((a: { title: string }) => a.title),
+              }
+            } else if (s.name === 'contact') {
+              patch = {
+                ...base,
+                cta_url: data.booking_email ? `mailto:${data.booking_email}` : '',
+              }
+            } else {
+              patch = base
+            }
+
+            // Only update if config is empty
+            if (!s.config || Object.keys(s.config).length === 0) {
+              return supabase.from('sections').update({ config: patch }).eq('id', s.id)
+            }
+            return Promise.resolve()
+          }))
+        }
+      }
+    }
   }
 
   const handleNext = async () => {

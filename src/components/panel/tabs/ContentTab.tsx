@@ -1,9 +1,10 @@
 'use client'
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Loader2, Check, Plus, Trash2, ExternalLink, GripVertical } from 'lucide-react'
+import { Loader2, Check, Plus, Trash2, ExternalLink } from 'lucide-react'
 import type { TabProps } from '../DashboardClient'
 import type { ArtistLinks } from '@/types'
+import RichTextEditor from '@/components/shared/RichTextEditor'
 
 type SubTab = 'bio' | 'links' | 'music' | 'rider'
 
@@ -168,15 +169,15 @@ export default function ContentTab({ artist, setArtist, palette, supabase }: Tab
             </Section>
 
             <Section title="Biografía">
-              <textarea
+              <RichTextEditor
                 value={bio}
-                onChange={e => setBio(e.target.value)}
-                rows={6}
+                onChange={setBio}
+                accentColor={palette.primary}
                 placeholder="Cuéntale al mundo quién eres, de dónde vienes y qué te hace único como artista..."
-                className={`${input} resize-none leading-relaxed`}
-                style={inputStyle}
               />
-              <p className="text-[10px] text-white/20 font-mono mt-1">{bio.length} caracteres</p>
+              <p className="text-[10px] text-white/20 font-mono mt-1">
+                {bio.replace(/<[^>]+>/g, '').length} caracteres · El texto se guarda con formato
+              </p>
             </Section>
 
             {(artist.achievements ?? []).length > 0 && (

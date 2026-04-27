@@ -8,12 +8,12 @@ const jetbrains = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', 
 const instrumentSerif = Instrument_Serif({ subsets: ['latin'], variable: '--font-serif', weight: ['400'], style: ['normal', 'italic'] })
 
 export const metadata: Metadata = {
-  title: 'PRESSKIT.PRO — Press kits animados para DJs y productores',
-  description: 'Crea tu press kit profesional y animado en menos de 5 minutos. Plataforma diseñada para DJs y productores musicales.',
+  title: 'Artist Pulse — AI-powered software for electronic artists',
+  description: 'Crea tu press kit profesional, gestiona tus fans y crece tu carrera con IA. Diseñado para DJs y productores musicales.',
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
   openGraph: {
-    title: 'PRESSKIT.PRO',
-    description: 'Press kits animados para DJs y productores',
+    title: 'Artist Pulse',
+    description: 'AI-powered software for electronic artists',
     type: 'website',
   },
 }

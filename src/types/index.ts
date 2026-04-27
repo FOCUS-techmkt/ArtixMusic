@@ -83,11 +83,12 @@ export interface FanSubscriber {
 }
 
 export interface Section {
-  id: string
-  artist_id: string
-  name: string
+  id:         string
+  artist_id:  string
+  name:       string
   is_enabled: boolean
   sort_order: number
+  config:     Record<string, unknown>
 }
 
 export interface LiveEvent {

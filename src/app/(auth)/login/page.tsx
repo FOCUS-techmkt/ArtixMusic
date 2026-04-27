@@ -61,7 +61,7 @@ export default function LoginPage() {
 
         <div className="p-8 rounded-3xl border border-white/10 bg-[#111111]/80 backdrop-blur-sm">
           <h1 className="font-display font-bold text-3xl mb-2">Bienvenido de vuelta</h1>
-          <p className="text-white/40 text-sm mb-8">Accede a tu panel de PRESSKIT.PRO</p>
+          <p className="text-white/40 text-sm mb-8">Accede a tu panel de Artist Pulse</p>
 
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
             <div>

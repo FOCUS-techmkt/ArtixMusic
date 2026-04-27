@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import {
   LayoutDashboard, Palette, BarChart2, FileText,
-  Users, Mail, Briefcase, LogOut, Menu, X,
+  Users, Mail, Briefcase, LogOut, Menu, X, Sparkles,
 } from 'lucide-react'
 import type { Artist, Section, FanSubscriber, ArtistPalette } from '@/types'
 import type { AnalyticsRow } from '@/types'
@@ -16,8 +16,10 @@ import ContentTab   from './tabs/ContentTab'
 import FansTab      from './tabs/FansTab'
 import EmailTab     from './tabs/EmailTab'
 import BookerTab    from './tabs/BookerTab'
+import AITab        from './tabs/AITab'
+import { ArtistPulseIcon } from '@/components/shared/ArtistPulseLogo'
 
-export type TabId = 'overview' | 'editor' | 'analytics' | 'content' | 'fans' | 'email' | 'booker'
+export type TabId = 'overview' | 'editor' | 'analytics' | 'content' | 'fans' | 'email' | 'booker' | 'ai'
 
 export interface TabProps {
   artist:      Artist
@@ -39,6 +41,7 @@ const NAV: { id: TabId; label: string; icon: React.ElementType; badge?: string }
   { id: 'fans',       label: 'Fans',           icon: Users },
   { id: 'email',      label: 'Email',          icon: Mail,      badge: 'PRONTO' },
   { id: 'booker',     label: 'Booker Ready',   icon: Briefcase, badge: 'NUEVO' },
+  { id: 'ai',         label: 'AI Coach',       icon: Sparkles,  badge: 'IA'    },
 ]
 
 interface Props {
@@ -94,11 +97,15 @@ export default function DashboardClient({ initialArtist, initialSections, analyt
         style={{ background: '#0A0A0E', borderRight: '1px solid rgba(255,255,255,0.05)' }}
       >
         {/* Logo */}
-        <div className="flex items-center justify-between px-5 h-[60px] shrink-0"
+        <div className="flex items-center justify-between px-4 h-[60px] shrink-0"
           style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-          <span className="font-display font-bold text-[15px] tracking-[0.12em]">
-            PRESSKIT<span style={{ color: palette.primary }}>.PRO</span>
-          </span>
+          <div className="flex items-center gap-2.5">
+            <ArtistPulseIcon color="#AAFF00" size={26} />
+            <div className="leading-none">
+              <p className="font-display font-black text-[13px] tracking-[0.1em] uppercase text-white">Artist Pulse</p>
+              <p className="font-mono text-[8px] tracking-[0.15em] uppercase" style={{ color: '#AAFF00' }}>AI for Artists</p>
+            </div>
+          </div>
           <button onClick={() => setOpen(false)} className="lg:hidden p-1 text-white/30 hover:text-white transition-colors">
             <X className="w-4 h-4" />
           </button>
@@ -164,9 +171,10 @@ export default function DashboardClient({ initialArtist, initialSections, analyt
           <button onClick={() => setOpen(true)} className="text-white/40 hover:text-white transition-colors">
             <Menu className="w-5 h-5" />
           </button>
-          <span className="font-display font-bold text-sm tracking-widest">
-            PRESSKIT<span style={{ color: palette.primary }}>.PRO</span>
-          </span>
+          <div className="flex items-center gap-2">
+            <ArtistPulseIcon color="#AAFF00" size={20} />
+            <span className="font-display font-black text-[13px] tracking-[0.1em] uppercase text-white">Artist Pulse</span>
+          </div>
           <div className="w-8" />
         </div>
 
@@ -188,6 +196,7 @@ export default function DashboardClient({ initialArtist, initialSections, analyt
               {tab === 'fans'      && <FansTab      {...tabProps} />}
               {tab === 'email'     && <EmailTab     {...tabProps} />}
               {tab === 'booker'    && <BookerTab    {...tabProps} />}
+              {tab === 'ai'        && <AITab        {...tabProps} />}
             </motion.div>
           </AnimatePresence>
         </main>

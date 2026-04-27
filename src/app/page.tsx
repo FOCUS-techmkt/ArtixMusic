@@ -82,19 +82,21 @@ function useReveal() {
 
 // ============ LOGO MARK ============
 function LogoMark() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <defs>
-        <linearGradient id="lg" x1="0" y1="0" x2="24" y2="24">
-          <stop offset="0" stopColor="#e8ddff" />
-          <stop offset="0.5" stopColor="#c084fc" />
-          <stop offset="1" stopColor="#7c3aed" />
-        </linearGradient>
-      </defs>
-      <path d="M12 2 L22 20 L17 20 L12 11 L7 20 L2 20 Z" fill="url(#lg)" />
-      <circle cx="12" cy="17" r="1.5" fill="#0a0a12" />
-    </svg>
-  )
+  // Artist Pulse dot-matrix isotipo (mini version for nav)
+  const color = '#AAFF00'
+  const rows = [1,2,3,4,5,6,7]
+  const r = 1.8, gap = 5.2, maxDots = 7
+  const w = (maxDots - 1) * gap + r * 2
+  const h = (rows.length - 1) * gap + r * 2
+  const dots: React.ReactNode[] = []
+  rows.forEach((count, row) => {
+    const offsetX = ((maxDots - count) / 2) * gap
+    for (let col = 0; col < count; col++) {
+      const dist = Math.abs(col - (count-1)/2) / ((count-1)/2 || 1)
+      dots.push(<circle key={`${row}-${col}`} cx={offsetX + col*gap + r} cy={row*gap + r} r={r} fill={color} fillOpacity={1 - dist*0.4} />)
+    }
+  })
+  return <svg viewBox={`0 0 ${w} ${h}`} width="28" height={28*(h/w)} fill="none">{dots}</svg>
 }
 
 // ============ NAV ============
@@ -103,7 +105,7 @@ function Nav() {
     <nav className="top">
       <div className="logo">
         <LogoMark />
-        ARTIX
+        Artist Pulse
       </div>
       <ul>
         <li><a href="#features">Producto</a></li>
@@ -338,12 +340,12 @@ function Problem() {
 
           <div className="compare-divider">
             <div className="compare-arrow">→</div>
-            <div className="compare-arrow-label">ARTIX</div>
+            <div className="compare-arrow-label">Artist Pulse</div>
           </div>
 
           <div className="compare-side compare-after">
             <div className="compare-tag">
-              <span className="led good" />AHORA · tu web ARTIX
+              <span className="led good" />AHORA · tu web Artist Pulse
             </div>
             <div className="compare-site">
               <div className="cs-chrome">
@@ -503,7 +505,7 @@ function Transformation() {
             Perfiles de <span className="serif-italic iridescent">nivel internacional.</span>
           </h2>
           <p style={{ maxWidth: 620, margin: '28px auto 0', color: 'var(--fg-2)', fontSize: '1.1rem' }}>
-            Tres ejemplos reales de lo que los artistas crean en ARTIX. Cámbialos y explora. Todo generado con IA en 3 minutos.
+            Tres ejemplos reales de lo que los artistas crean en Artist Pulse. Cámbialos y explora. Todo generado con IA en 3 minutos.
           </p>
         </div>
 
@@ -654,7 +656,7 @@ function FeatureViz({ kind }: { kind: string }) {
       <div className="pk-row"><span className="l">Bio ES</span><span className="v ok">✓ OK</span></div>
       <div className="pk-row"><span className="l">Rider</span><span className="v ok">v2.1</span></div>
       <div className="pk-row"><span className="l">Fotos HR</span><span className="v">12</span></div>
-      <div className="pk-row full"><span className="l">Enlace pública</span><span className="v">artix.fm/solen/press</span></div>
+      <div className="pk-row full"><span className="l">Enlace pública</span><span className="v">artistpulse.io/solen/press</span></div>
     </div>
   )
   if (kind === 'leads') return (
@@ -979,7 +981,7 @@ function Social() {
       </div>
       <div className="wrap">
         <div className="section-head reveal">
-          <div className="eyebrow">04 · Artistas en ARTIX</div>
+          <div className="eyebrow">04 · Artistas en Artist Pulse</div>
           <h2>La plataforma donde los <span className="serif-italic iridescent">artistas serios</span> construyen carrera.</h2>
         </div>
         <div className="testimonials">
@@ -1099,7 +1101,7 @@ const FAQ_ITEMS = [
   { q: '¿Necesito saber de diseño o programación?', a: 'No. Describes tu estilo en una frase y la IA genera tu web. Luego puedes editar lo que quieras con clicks.' },
   { q: '¿Cuánto tarda la configuración inicial?', a: 'Unos 3 minutos. Generación con IA, conexión de tus redes y dominio. Luego afinas detalles cuando quieras.' },
   { q: '¿Puedo usar mi propio dominio?', a: 'Sí. Conecta cualquier dominio que ya tengas o compra uno desde la plataforma.' },
-  { q: '¿Qué pasa con mis emails si dejo ARTIX?', a: 'Tu lista de leads es tuya. La exportas en CSV cuando quieras, sin restricciones. Cumplimiento GDPR completo.' },
+  { q: '¿Qué pasa con mis emails si dejo Artist Pulse?', a: 'Tu lista de leads es tuya. La exportas en CSV cuando quieras, sin restricciones. Cumplimiento GDPR completo.' },
   { q: '¿Cobráis comisión por venta de tickets?', a: '0% de comisión durante el primer año en plan Founder. Después, la más baja del mercado (2% vs 10-15% habitual).' },
   { q: '¿Cuándo está disponible?', a: 'Abrimos en oleadas desde abril 2026. Los primeros 500 artistas reciben plan Pro gratis durante un año.' },
 ]
@@ -1197,7 +1199,7 @@ function Footer() {
       <div className="wrap">
         <div className="foot-grid">
           <div className="foot-brand">
-            <div className="foot-logo"><LogoMark />ARTIX</div>
+            <div className="foot-logo"><LogoMark />Artist Pulse</div>
             <p>El sistema operativo de la carrera musical. Para artistas que no esperan a nadie.</p>
           </div>
           <div className="foot-col">
@@ -1235,7 +1237,7 @@ function Footer() {
           </div>
         </div>
         <div className="foot-bottom">
-          <div className="copy">© 2026 ARTIX · Todos los derechos reservados</div>
+          <div className="copy">© 2026 Artist Pulse · Todos los derechos reservados</div>
           <div className="socials">
             <a href="#">IG</a>
             <a href="#">X</a>
@@ -1244,7 +1246,7 @@ function Footer() {
           </div>
         </div>
       </div>
-      <div className="foot-mega"><span>ARTIX.</span></div>
+      <div className="foot-mega"><span>ARTIST PULSE.</span></div>
     </footer>
   )
 }
@@ -1266,7 +1268,7 @@ const FONT_PRESETS: Record<string, { display: string; body: string }> = {
 function Tweaks({ values, set, on }: { values: { accent: string; font: string }; set: (p: Partial<{ accent: string; font: string }>) => void; on: boolean }) {
   return (
     <div className={`tweaks-panel ${on ? 'on' : ''}`}>
-      <h4>Tweaks <span className="c">ARTIX · LIVE</span></h4>
+      <h4>Tweaks <span className="c">Artist Pulse · LIVE</span></h4>
       <div className="tw-row">
         <div className="tw-label">Acento</div>
         <div className="swatches">

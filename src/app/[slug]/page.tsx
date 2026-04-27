@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { Metadata } from 'next'
 import SlugClient from './SlugClient'
 import type { ArtistProfile } from './SlugClient'
+import type { Section } from '@/types'
 
 interface Props { params: Promise<{ slug: string }> }
 
@@ -20,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (artist) {
     return {
-      title: `${artist.artist_name} — Press Kit | PRESSKIT.PRO`,
+      title: `${artist.artist_name} — Press Kit | Artist Pulse`,
       description: artist.bio?.slice(0, 160) ?? `Press kit oficial de ${artist.artist_name}`,
       openGraph: {
         title: `${artist.artist_name} — Press Kit`,
@@ -41,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!presskit) return { title: 'Artista no encontrado' }
 
   return {
-    title: `${presskit.artist_name} — Press Kit | PRESSKIT.PRO`,
+    title: `${presskit.artist_name} — Press Kit | Artist Pulse`,
     description: presskit.bio?.slice(0, 160) ?? `Press kit oficial de ${presskit.artist_name}`,
     openGraph: {
       title: `${presskit.artist_name} — Press Kit`,
@@ -63,14 +64,12 @@ export default async function SlugPage({ params }: Props) {
     .maybeSingle()
 
   if (artist) {
-    // Fetch gallery media
-    const { data: media } = await supabase
-      .from('media')
-      .select('url, type')
+    // Fetch sections with configs
+    const { data: sectionsData } = await supabase
+      .from('sections')
+      .select('*')
       .eq('artist_id', artist.id)
-      .eq('type', 'image')
       .order('sort_order')
-      .limit(6)
 
     // Fire-and-forget analytics
     supabase.from('analytics').insert({
@@ -78,32 +77,7 @@ export default async function SlugPage({ params }: Props) {
       event_type: 'page_view',
     }).then(() => {})
 
-    const profile: ArtistProfile = {
-      artistName:        artist.artist_name,
-      slug:              artist.slug,
-      tagline:           artist.tagline        ?? undefined,
-      genres:            artist.genre ? [artist.genre] : (artist.sound_words ?? []).slice(0, 3),
-      bio:               artist.bio            ?? '',
-      location:          artist.location       ?? undefined,
-      photo:             artist.photo_url      ?? undefined,
-      monthlyListeners:  artist.monthly_listeners ?? undefined,
-      totalShows:        artist.total_shows    ?? undefined,
-      countries:         artist.countries_count ?? undefined,
-      tracks:            [],
-      spotifyPlaylistUrl: artist.spotify_playlist_url ?? undefined,
-      raUrl:             artist.ra_url         ?? artist.links?.soundcloud ?? undefined,
-      beatportUrl:       artist.beatport_url   ?? artist.links?.beatport   ?? undefined,
-      instagramUrl:      artist.instagram_url  ?? artist.links?.instagram  ?? undefined,
-      galleryPhotos:     media?.map((m: { url: string }) => m.url) ?? [],
-      bookingEmail:      artist.booking_email  ?? undefined,
-      bookingUrl:        artist.booking_url    ?? undefined,
-      availableDates:    artist.available_dates ?? undefined,
-      supporters:        Array.isArray(artist.supporters) ? artist.supporters : [],
-      primaryColor:      artist.primary_color   ?? '#C026D3',
-      secondaryColor:    artist.secondary_color ?? '#7C3AED',
-    }
-
-    return <SlugClient profile={profile} />
+    return <SlugClient artist={artist} sections={(sectionsData ?? []) as Section[]} />
   }
 
   // ── 2. Fall back to presskits table (wizard / old data) ───────────────────
@@ -123,29 +97,48 @@ export default async function SlugPage({ params }: Props) {
     .eq('slug', slug)
     .then(() => {})
 
-  const profile: ArtistProfile = {
-    artistName:        presskit.artist_name,
-    slug:              presskit.slug,
-    tagline:           presskit.tagline        ?? undefined,
-    genres:            presskit.genres         ?? [],
-    bio:               presskit.bio            ?? '',
-    location:          presskit.location       ?? undefined,
-    photo:             presskit.photo_url      ?? undefined,
-    monthlyListeners:  presskit.monthly_listeners ?? undefined,
-    totalShows:        presskit.total_shows    ?? undefined,
-    countries:         presskit.countries      ?? undefined,
-    tracks:            presskit.tracks         ?? [],
-    spotifyPlaylistUrl: presskit.spotify_playlist_url ?? undefined,
-    raUrl:             presskit.ra_url         ?? undefined,
-    beatportUrl:       presskit.beatport_url   ?? undefined,
-    bookingEmail:      undefined,
-    bookingUrl:        presskit.booking_url    ?? undefined,
-    availableDates:    presskit.available_dates ?? undefined,
-    supporters:        Array.isArray(presskit.supporters) ? presskit.supporters : [],
-    primaryColor:      presskit.primary_color  ?? '#C026D3',
-    secondaryColor:    presskit.secondary_color ?? '#EC4899',
-    views:             presskit.views          ?? 0,
+  // Build a minimal Artist-compatible object from the legacy presskit row
+  const legacyArtist = {
+    id:              presskit.id     ?? '',
+    user_id:         presskit.user_id ?? '',
+    slug:            presskit.slug,
+    artist_name:     presskit.artist_name,
+    role:            'DJ' as const,
+    genre:           (presskit.genres?.[0] ?? 'Other') as import('@/types').GenreType,
+    sound_words:     presskit.genres ?? [],
+    bio:             presskit.bio ?? '',
+    achievements:    [],
+    links:           {},
+    photo_url:       presskit.photo_url ?? null,
+    logo_url:        null,
+    primary_color:   presskit.primary_color  ?? '#C026D3',
+    secondary_color: presskit.secondary_color ?? '#EC4899',
+    bg_dark:         true,
+    layout_variant:  'centered' as const,
+    booking_email:   null,
+    booking_url:     presskit.booking_url ?? null,
+    is_published:    true,
+    onboarding_step: 'complete' as const,
+    tagline:         presskit.tagline ?? null,
+    spotify_playlist_url: presskit.spotify_playlist_url ?? null,
+    supporters:      Array.isArray(presskit.supporters) ? presskit.supporters : [],
+    available_dates: presskit.available_dates ?? null,
+    monthly_listeners: presskit.monthly_listeners ?? null,
+    total_shows:     presskit.total_shows ?? null,
+    countries_count: presskit.countries ?? null,
+    instagram_url:   null,
+    ra_url:          presskit.ra_url ?? null,
+    beatport_url:    presskit.beatport_url ?? null,
+    created_at:      '',
+    updated_at:      '',
   }
 
-  return <SlugClient profile={profile} />
+  // Build legacy sections from presskit data
+  const legacySections: Section[] = [
+    { id: 'hero',    artist_id: presskit.id ?? '', name: 'hero',    is_enabled: true,  sort_order: 0, config: { tagline: presskit.tagline ?? '', sub_tagline: presskit.genres?.join(' · ') ?? '', cta_text: 'Contactar', cta_url: '#contact', show_socials: false, show_scroll: true, particles: true, particles_density: 60, three_bg: false, text_glitch: false, overlay_opacity: 0.5, overlay_color: '#000', bg_image: null, logo_url: null, supporters: Array.isArray(presskit.supporters) ? presskit.supporters.map((s: { name: string }) => s.name) : [] } },
+    { id: 'bio',     artist_id: presskit.id ?? '', name: 'bio',     is_enabled: true,  sort_order: 1, config: { text: `<p>${presskit.bio ?? ''}</p>`, city: presskit.location ?? '', country: '', genres: presskit.genres ?? [], badges: [], stats: [{ label: 'Shows', value: presskit.total_shows ?? '' }, { label: 'Países', value: presskit.countries ?? '' }].filter(s => s.value), parallax: false, bg_image: null, overlay_opacity: 0.6, overlay_color: '#000' } },
+    { id: 'contact', artist_id: presskit.id ?? '', name: 'contact', is_enabled: true,  sort_order: 2, config: { section_title: 'Contacto', response_time: '', availability: presskit.available_dates ?? '', cta_text: 'Booking', cta_url: presskit.booking_url ?? '', show_rider: false, bg_image: null, overlay_opacity: 0.7, overlay_color: '#000' } },
+  ]
+
+  return <SlugClient artist={legacyArtist as import('@/types').Artist} sections={legacySections} />
 }
