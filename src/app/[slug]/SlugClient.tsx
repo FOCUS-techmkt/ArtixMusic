@@ -1,7 +1,7 @@
 'use client'
 import type { Artist, Section, ArtistPalette } from '@/types'
 import { deriveArtistPalette } from '@/types'
-import type { HeroConfig, BioConfig, MusicConfig, CommunityConfig, SupportersConfig, ReleasesConfig, LiveConfig, ContactConfig, FanCaptureConfig } from '@/types/sections'
+import type { HeroConfig, BioConfig, MusicConfig, CommunityConfig, SupportersConfig, ReleasesConfig, LiveConfig, ContactConfig, FanCaptureConfig, GalleryConfig } from '@/types/sections'
 import HeroSection       from './sections/HeroSection'
 import BioSection        from './sections/BioSection'
 import MusicSection      from './sections/MusicSection'
@@ -9,6 +9,7 @@ import CommunitySection  from './sections/CommunitySection'
 import SupportersSection from './sections/SupportersSection'
 import ReleasesSection   from './sections/ReleasesSection'
 import LiveSection       from './sections/LiveSection'
+import GallerySection    from './sections/GallerySection'
 import ContactSection    from './sections/ContactSection'
 import FanCaptureSection from './sections/FanCaptureSection'
 
@@ -65,6 +66,7 @@ function SectionRenderer({ section, artist, palette }: { section: Section; artis
     case 'supporters':  return <SupportersSection config={c as unknown as SupportersConfig} palette={palette} />
     case 'releases':    return <ReleasesSection   config={c as unknown as ReleasesConfig}   palette={palette} />
     case 'live':        return <LiveSection       config={c as unknown as LiveConfig}       palette={palette} />
+    case 'gallery':     return <GallerySection    config={c as unknown as GalleryConfig}    palette={palette} />
     case 'contact':     return <ContactSection    config={c as unknown as ContactConfig}    artist={artist} palette={palette} />
     case 'fan-capture': return <FanCaptureSection config={c as unknown as FanCaptureConfig} artist={artist} palette={palette} />
     default:            return null

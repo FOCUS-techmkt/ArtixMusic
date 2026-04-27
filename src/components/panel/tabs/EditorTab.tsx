@@ -13,7 +13,7 @@ import ImageUpload from '@/components/shared/ImageUpload'
 import {
   ToggleLeft, ToggleRight, Loader2, Check, RefreshCw,
   Smartphone, Monitor, Maximize2, Sun, Moon, GripVertical,
-  ChevronRight, Settings2, Sparkles,
+  ChevronRight, Settings2, Sparkles, Copy,
 } from 'lucide-react'
 import type { TabProps } from '../DashboardClient'
 import { COLOR_PRESETS, LAYOUT_META } from '@/types'
@@ -28,6 +28,7 @@ const SECTION_LABELS: Record<string, { icon: string; label: string }> = {
   supporters:   { icon: '⭐', label: 'Apoyado por' },
   releases:     { icon: '💿', label: 'Discografía' },
   live:         { icon: '🎤', label: 'En Vivo' },
+  gallery:      { icon: '🖼️', label: 'Galería' },
   contact:      { icon: '📬', label: 'Contacto & Booking' },
   'fan-capture':{ icon: '💌', label: 'Fan Database' },
 }
@@ -58,6 +59,7 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
   const [device,    setDevice]    = useState<'desktop' | 'mobile'>('desktop')
   const [panel,     setPanel]     = useState<'sections' | 'design' | 'effects'>('sections')
   const [activeSection, setActiveSection] = useState<Section | null>(null)
+  const [copied,    setCopied]    = useState(false)
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
   const appUrl     = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
@@ -65,6 +67,11 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
 
   const reloadPreview = () => iframeRef.current?.contentWindow?.location.reload()
   const toggleEffect  = (id: string) => setEffects(p => p.includes(id) ? p.filter(e => e !== id) : [...p, id])
+  const copyLink = async () => {
+    await navigator.clipboard.writeText(previewUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
@@ -178,7 +185,7 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
 
               {/* Photo upload */}
               <div className="flex flex-col gap-2">
-                <Label>Foto principal</Label>
+                <Label>Foto de artista</Label>
                 <ImageUpload
                   value={artist.photo_url ?? null}
                   onChange={async url => {
@@ -190,8 +197,29 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
                     setArtist(p => ({ ...p, photo_url: null }))
                   }}
                   folder="avatar"
-                  label="Foto de artista"
+                  label="Subir foto"
                   aspect="1/1"
+                  accentColor={primary}
+                />
+              </div>
+
+              {/* Logo upload */}
+              <div className="flex flex-col gap-2">
+                <Label>Logo / Marca</Label>
+                <ImageUpload
+                  value={artist.logo_url ?? null}
+                  onChange={async url => {
+                    await supabase.from('artists').update({ logo_url: url }).eq('user_id', artist.user_id)
+                    setArtist(p => ({ ...p, logo_url: url }))
+                  }}
+                  onRemove={async () => {
+                    await supabase.from('artists').update({ logo_url: null }).eq('user_id', artist.user_id)
+                    setArtist(p => ({ ...p, logo_url: null }))
+                  }}
+                  folder="logo"
+                  label="Subir logo"
+                  hint="PNG transparente recomendado"
+                  aspect="16/9"
                   accentColor={primary}
                 />
               </div>
@@ -359,11 +387,22 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
           </div>
           <p className="text-[10px] font-mono text-white/20 truncate max-w-[200px]">/{artist.slug}</p>
           <div className="flex items-center gap-1.5">
-            <button onClick={reloadPreview} className="p-2 rounded-lg text-white/30 hover:text-white transition-colors">
+            <button onClick={reloadPreview} className="p-2 rounded-lg text-white/30 hover:text-white transition-colors" title="Recargar">
               <RefreshCw className="w-3.5 h-3.5" />
             </button>
+            <button onClick={copyLink}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono transition-all"
+              style={{
+                background: copied ? '#22C55E18' : palette.primary + '18',
+                color:      copied ? '#22C55E'  : palette.primary,
+                border:     `1px solid ${copied ? '#22C55E30' : palette.primary + '30'}`,
+              }}
+              title="Copiar link público">
+              {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+              {copied ? 'Copiado' : 'Copiar link'}
+            </button>
             <a href={previewUrl} target="_blank" rel="noopener noreferrer"
-              className="p-2 rounded-lg text-white/30 hover:text-white transition-colors">
+              className="p-2 rounded-lg text-white/30 hover:text-white transition-colors" title="Abrir en nueva pestaña">
               <Maximize2 className="w-3.5 h-3.5" />
             </a>
           </div>

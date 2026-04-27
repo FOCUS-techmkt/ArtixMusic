@@ -137,6 +137,19 @@ export interface FanCaptureConfig {
   overlay_color:  string
 }
 
+export interface GalleryConfig {
+  section_title:   string
+  images: {
+    id:      string
+    url:     string
+    caption: string
+  }[]
+  columns:         2 | 3 | 4
+  bg_image:        string | null
+  overlay_opacity: number
+  overlay_color:   string
+}
+
 // Union type for all section configs
 export type SectionConfig =
   | HeroConfig
@@ -148,6 +161,7 @@ export type SectionConfig =
   | LiveConfig
   | ContactConfig
   | FanCaptureConfig
+  | GalleryConfig
 
 // Default configs — used when section is first enabled
 export const DEFAULT_CONFIGS: Record<string, SectionConfig> = {
@@ -257,4 +271,13 @@ export const DEFAULT_CONFIGS: Record<string, SectionConfig> = {
     overlay_opacity: 0.5,
     overlay_color:   '#000000',
   } as FanCaptureConfig,
+
+  gallery: {
+    section_title:   'Galería',
+    images:          [],
+    columns:         3,
+    bg_image:        null,
+    overlay_opacity: 0.6,
+    overlay_color:   '#000000',
+  } as GalleryConfig,
 }

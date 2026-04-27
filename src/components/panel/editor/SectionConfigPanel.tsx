@@ -6,6 +6,7 @@ import type { Section, ArtistPalette } from '@/types'
 import type {
   HeroConfig, BioConfig, MusicConfig, CommunityConfig,
   SupportersConfig, ReleasesConfig, LiveConfig, ContactConfig, FanCaptureConfig,
+  GalleryConfig,
 } from '@/types/sections'
 import { DEFAULT_CONFIGS } from '@/types/sections'
 import ImageUpload from '@/components/shared/ImageUpload'
@@ -62,6 +63,7 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
         {section.name === 'supporters'  && <SupportersPanel  config={config as unknown as SupportersConfig}  set={set} accent={accent} />}
         {section.name === 'releases'    && <ReleasesPanel    config={config as unknown as ReleasesConfig}    set={set} accent={accent} />}
         {section.name === 'live'        && <LivePanel        config={config as unknown as LiveConfig}        set={set} accent={accent} />}
+        {section.name === 'gallery'     && <GalleryPanel     config={config as unknown as GalleryConfig}     set={set} accent={accent} />}
         {section.name === 'contact'     && <ContactPanel     config={config as unknown as ContactConfig}     set={set} accent={accent} />}
         {section.name === 'fan-capture' && <FanCapturePanel  config={config as unknown as FanCaptureConfig}  set={set} accent={accent} />}
       </div>
@@ -465,6 +467,84 @@ function FanCapturePanel({ config, set, accent }: { config: FanCaptureConfig; se
         <ImageUpload value={config.bg_image} onChange={url => set('bg_image', url)} onRemove={() => set('bg_image', null)}
           folder="hero" aspect="16/9" accentColor={accent} />
       </Field>
+    </>
+  )
+}
+
+// ── GALLERY ──────────────────────────────────────────────────
+
+function GalleryPanel({ config, set, accent }: { config: GalleryConfig; set: Setter; accent: string }) {
+  const images = config.images ?? []
+
+  const updateImage = (i: number, field: 'url' | 'caption', val: string) => {
+    set('images', images.map((img, j) => j === i ? { ...img, [field]: val } : img))
+  }
+
+  const removeImage = (i: number) => {
+    set('images', images.filter((_, j) => j !== i))
+  }
+
+  const addSlot = () => {
+    set('images', [...images, { id: Date.now().toString(), url: '', caption: '' }])
+  }
+
+  return (
+    <>
+      <Field label="Título de sección">
+        <TextInput value={config.section_title ?? 'Galería'} onChange={v => set('section_title', v)} />
+      </Field>
+
+      <Field label="Columnas">
+        <div className="grid grid-cols-3 gap-1.5">
+          {([2, 3, 4] as const).map(n => (
+            <button key={n} type="button" onClick={() => set('columns', n)}
+              className="py-2 rounded-xl text-xs font-mono transition-all"
+              style={{
+                background:   (config.columns ?? 3) === n ? accent + '20' : 'rgba(255,255,255,0.03)',
+                color:        (config.columns ?? 3) === n ? accent : 'rgba(255,255,255,0.4)',
+                border:       `1px solid ${(config.columns ?? 3) === n ? accent + '40' : 'rgba(255,255,255,0.07)'}`,
+              }}>
+              {n} col
+            </button>
+          ))}
+        </div>
+      </Field>
+
+      <Field label={`Fotos (${images.length})`}>
+        <div className="flex flex-col gap-3">
+          {images.map((img, i) => (
+            <div key={img.id} className="p-3 rounded-xl flex flex-col gap-2"
+              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-mono text-white/30">Foto #{i + 1}</span>
+                <button type="button" onClick={() => removeImage(i)} className="text-white/20 hover:text-red-400 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <ImageUpload
+                value={img.url || null}
+                onChange={url => updateImage(i, 'url', url)}
+                onRemove={() => updateImage(i, 'url', '')}
+                folder="gallery"
+                aspect="1/1"
+                accentColor={accent}
+              />
+              <SmallInput value={img.caption} onChange={v => updateImage(i, 'caption', v)} placeholder="Descripción opcional..." className="w-full" />
+            </div>
+          ))}
+          <button type="button" onClick={addSlot}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-mono text-white/30 hover:text-white/60 transition-all"
+            style={{ border: '1px dashed rgba(255,255,255,0.1)' }}>
+            <Plus className="w-3 h-3" /> Añadir foto
+          </button>
+        </div>
+      </Field>
+
+      <Field label="Imagen de fondo (opcional)">
+        <ImageUpload value={config.bg_image} onChange={url => set('bg_image', url)} onRemove={() => set('bg_image', null)}
+          folder="hero" aspect="16/9" accentColor={accent} />
+      </Field>
+      <SliderInput value={Math.round((config.overlay_opacity ?? 0.6) * 100)} onChange={v => set('overlay_opacity', v / 100)} min={0} max={100} label={`Opacidad overlay: ${Math.round((config.overlay_opacity ?? 0.6) * 100)}%`} />
     </>
   )
 }
