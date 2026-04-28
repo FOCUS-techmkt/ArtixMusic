@@ -7,7 +7,7 @@ import type { Section, ArtistPalette } from '@/types'
 import type {
   HeroConfig, HeroSocialLink, BioConfig, MusicConfig, CommunityConfig,
   SupportersConfig, ReleasesConfig, LiveConfig, ContactConfig, FanCaptureConfig,
-  GalleryConfig,
+  GalleryConfig, LinksConfig, TestimonialsConfig,
 } from '@/types/sections'
 import { DEFAULT_CONFIGS } from '@/types/sections'
 import ImageUpload from '@/components/shared/ImageUpload'
@@ -83,9 +83,11 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
         {section.name === 'supporters'  && <SupportersPanel  config={config as unknown as SupportersConfig}  set={set} accent={accent} tab={tab} />}
         {section.name === 'releases'    && <ReleasesPanel    config={config as unknown as ReleasesConfig}    set={set} accent={accent} tab={tab} />}
         {section.name === 'live'        && <LivePanel        config={config as unknown as LiveConfig}        set={set} accent={accent} tab={tab} />}
-        {section.name === 'gallery'     && <GalleryPanel     config={config as unknown as GalleryConfig}     set={set} accent={accent} tab={tab} />}
-        {section.name === 'contact'     && <ContactPanel     config={config as unknown as ContactConfig}     set={set} accent={accent} tab={tab} />}
-        {section.name === 'fan-capture' && <FanCapturePanel  config={config as unknown as FanCaptureConfig}  set={set} accent={accent} tab={tab} />}
+        {section.name === 'gallery'      && <GalleryPanel      config={config as unknown as GalleryConfig}      set={set} accent={accent} tab={tab} />}
+        {section.name === 'contact'      && <ContactPanel      config={config as unknown as ContactConfig}      set={set} accent={accent} tab={tab} />}
+        {section.name === 'fan-capture'  && <FanCapturePanel   config={config as unknown as FanCaptureConfig}   set={set} accent={accent} tab={tab} />}
+        {section.name === 'links'        && <LinksPanel        config={config as unknown as LinksConfig}        set={set} accent={accent} tab={tab} />}
+        {section.name === 'testimonials' && <TestimonialsPanel config={config as unknown as TestimonialsConfig} set={set} accent={accent} tab={tab} />}
       </div>
 
       {/* ── Save ── */}
@@ -496,6 +498,25 @@ function BioPanel({ config, set, accent, tab }: { config: BioConfig; set: Setter
 
   if (tab === 'design') return (
     <>
+      <Field label="Posición de foto">
+        <div className="grid grid-cols-3 gap-1.5">
+          {([
+            { key: 'right', label: 'Derecha' },
+            { key: 'left',  label: 'Izquierda' },
+            { key: 'none',  label: 'Sin foto' },
+          ] as const).map(({ key, label }) => (
+            <button key={key} type="button" onClick={() => set('photo_position', key)}
+              className="py-2 rounded-xl text-[10px] font-mono transition-all"
+              style={{
+                background: (config.photo_position ?? 'right') === key ? accent + '20' : 'rgba(255,255,255,0.03)',
+                color:      (config.photo_position ?? 'right') === key ? accent : 'rgba(255,255,255,0.4)',
+                border:     `1px solid ${(config.photo_position ?? 'right') === key ? accent + '40' : 'rgba(255,255,255,0.07)'}`,
+              }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </Field>
       <Field label="Imagen de fondo">
         <ImageUpload value={config.bg_image} onChange={url => set('bg_image', url)} onRemove={() => set('bg_image', null)}
           folder="hero" aspect="16/9" accentColor={accent} />
@@ -740,6 +761,15 @@ function LivePanel({ config, set, accent, tab }: { config: LiveConfig; set: Sett
               <input type="date" value={v.date} onChange={e => update(i, 'date', e.target.value)}
                 className="w-full px-3 py-2 rounded-lg text-xs text-white focus:outline-none"
                 style={{ background: '#0A0A0E', border: '1px solid rgba(255,255,255,0.08)' }} />
+              <div className="grid grid-cols-2 gap-2">
+                <input type="number" step="any" value={v.lat ?? ''} onChange={e => set('venues', venues.map((v2, j) => j === i ? { ...v2, lat: e.target.value ? Number(e.target.value) : null } : v2))}
+                  placeholder="Lat (41.38...)" className="px-3 py-2 rounded-lg text-xs text-white placeholder-white/20 focus:outline-none"
+                  style={{ background: '#0A0A0E', border: '1px solid rgba(255,255,255,0.08)' }} />
+                <input type="number" step="any" value={v.lng ?? ''} onChange={e => set('venues', venues.map((v2, j) => j === i ? { ...v2, lng: e.target.value ? Number(e.target.value) : null } : v2))}
+                  placeholder="Lng (2.17...)" className="px-3 py-2 rounded-lg text-xs text-white placeholder-white/20 focus:outline-none"
+                  style={{ background: '#0A0A0E', border: '1px solid rgba(255,255,255,0.08)' }} />
+              </div>
+              <p className="text-[9px] font-mono text-white/20">Coordenadas para el mapa · busca en maps.google.com</p>
             </div>
           ))}
           <button type="button"
@@ -802,6 +832,116 @@ function FanCapturePanel({ config, set, accent, tab }: { config: FanCaptureConfi
   return <EmptyTab />
 }
 
+// ── LINKS ────────────────────────────────────────────────────
+
+function LinksPanel({ config, set, accent, tab }: { config: LinksConfig; set: Setter; accent: string; tab: ConfigTab }) {
+  const links = config.links ?? []
+  const update = (i: number, field: string, val: string | boolean) => {
+    set('links', links.map((l, j) => j === i ? { ...l, [field]: val } : l))
+  }
+
+  if (tab === 'content') return (
+    <>
+      <Field label="Título"><TextInput value={config.section_title ?? 'Links'} onChange={v => set('section_title', v)} /></Field>
+      <Field label="Links">
+        <div className="flex flex-col gap-2">
+          {links.map((l, i) => (
+            <div key={l.id} className="p-3 rounded-xl flex flex-col gap-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="flex items-center justify-between">
+                <button type="button" onClick={() => update(i, 'enabled', !l.enabled)}
+                  className="text-[10px] font-mono px-2 py-1 rounded-lg transition-all"
+                  style={{
+                    background: l.enabled ? accent + '20' : 'rgba(255,255,255,0.04)',
+                    color:      l.enabled ? accent : 'rgba(255,255,255,0.3)',
+                    border:     `1px solid ${l.enabled ? accent + '35' : 'rgba(255,255,255,0.07)'}`,
+                  }}>
+                  {l.enabled ? 'Visible' : 'Oculto'}
+                </button>
+                <button type="button" onClick={() => set('links', links.filter((_, j) => j !== i))} className="text-white/20 hover:text-red-400 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="grid grid-cols-[60px_1fr] gap-2">
+                <SmallInput value={l.icon} onChange={v => update(i, 'icon', v)} placeholder="🔗" className="w-full text-center" />
+                <SmallInput value={l.label} onChange={v => update(i, 'label', v)} placeholder="Spotify" className="w-full" />
+              </div>
+              <SmallInput value={l.url} onChange={v => update(i, 'url', v)} placeholder="https://..." className="w-full" />
+            </div>
+          ))}
+          <button type="button"
+            onClick={() => set('links', [...links, { id: Date.now().toString(), label: '', url: '', icon: '🔗', enabled: true }])}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-mono text-white/30 hover:text-white/60 transition-all"
+            style={{ border: '1px dashed rgba(255,255,255,0.1)' }}>
+            <Plus className="w-3 h-3" /> Añadir link
+          </button>
+        </div>
+      </Field>
+    </>
+  )
+
+  if (tab === 'design') return (
+    <Field label="Imagen de fondo">
+      <ImageUpload value={config.bg_image} onChange={url => set('bg_image', url)} onRemove={() => set('bg_image', null)}
+        folder="hero" aspect="16/9" accentColor={accent} />
+    </Field>
+  )
+
+  return <EmptyTab />
+}
+
+// ── TESTIMONIALS ─────────────────────────────────────────────
+
+function TestimonialsPanel({ config, set, accent, tab }: { config: TestimonialsConfig; set: Setter; accent: string; tab: ConfigTab }) {
+  const testimonials = config.testimonials ?? []
+  const update = (i: number, field: string, val: string | null) => {
+    set('testimonials', testimonials.map((t, j) => j === i ? { ...t, [field]: val } : t))
+  }
+
+  if (tab === 'content') return (
+    <>
+      <Field label="Título"><TextInput value={config.section_title ?? 'Lo que dicen'} onChange={v => set('section_title', v)} /></Field>
+      <Field label="Testimonios">
+        <div className="flex flex-col gap-3">
+          {testimonials.map((t, i) => (
+            <div key={t.id} className="p-3 rounded-xl flex flex-col gap-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-white/30">#{i + 1}</span>
+                <button type="button" onClick={() => set('testimonials', testimonials.filter((_, j) => j !== i))} className="text-white/20 hover:text-red-400 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <SmallInput value={t.text} onChange={v => update(i, 'text', v)} placeholder="Texto del testimonio..." className="w-full" />
+              <div className="grid grid-cols-2 gap-2">
+                <SmallInput value={t.name} onChange={v => update(i, 'name', v)} placeholder="Nombre" className="w-full" />
+                <SmallInput value={t.role} onChange={v => update(i, 'role', v)} placeholder="DJ / Promoter" className="w-full" />
+              </div>
+              <div className="max-w-[80px]">
+                <ImageUpload value={t.photo} onChange={url => update(i, 'photo', url)} onRemove={() => update(i, 'photo', null)}
+                  folder="misc" aspect="1/1" accentColor={accent} />
+              </div>
+            </div>
+          ))}
+          <button type="button"
+            onClick={() => set('testimonials', [...testimonials, { id: Date.now().toString(), name: '', role: '', text: '', photo: null }])}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-mono text-white/30 hover:text-white/60 transition-all"
+            style={{ border: '1px dashed rgba(255,255,255,0.1)' }}>
+            <Plus className="w-3 h-3" /> Añadir testimonio
+          </button>
+        </div>
+      </Field>
+    </>
+  )
+
+  if (tab === 'design') return (
+    <Field label="Imagen de fondo">
+      <ImageUpload value={config.bg_image} onChange={url => set('bg_image', url)} onRemove={() => set('bg_image', null)}
+        folder="hero" aspect="16/9" accentColor={accent} />
+    </Field>
+  )
+
+  return <EmptyTab />
+}
+
 // ── GALLERY ──────────────────────────────────────────────────
 
 function GalleryPanel({ config, set, accent, tab }: { config: GalleryConfig; set: Setter; accent: string; tab: ConfigTab }) {
@@ -851,6 +991,24 @@ function GalleryPanel({ config, set, accent, tab }: { config: GalleryConfig; set
 
   if (tab === 'design') return (
     <>
+      <Field label="Estilo de grilla">
+        <div className="grid grid-cols-2 gap-1.5">
+          {([
+            { key: 'grid',    label: 'Grid uniforme' },
+            { key: 'masonry', label: 'Masonry' },
+          ] as const).map(({ key, label }) => (
+            <button key={key} type="button" onClick={() => set('layout', key)}
+              className="py-2 rounded-xl text-[10px] font-mono transition-all"
+              style={{
+                background: (config.layout ?? 'grid') === key ? accent + '20' : 'rgba(255,255,255,0.03)',
+                color:      (config.layout ?? 'grid') === key ? accent : 'rgba(255,255,255,0.4)',
+                border:     `1px solid ${(config.layout ?? 'grid') === key ? accent + '40' : 'rgba(255,255,255,0.07)'}`,
+              }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </Field>
       <Field label="Columnas">
         <div className="grid grid-cols-3 gap-1.5">
           {([2, 3, 4] as const).map(n => (

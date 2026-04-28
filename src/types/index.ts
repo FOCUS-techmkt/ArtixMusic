@@ -68,6 +68,7 @@ export interface Artist {
   instagram_url:        string | null
   ra_url:               string | null
   beatport_url:         string | null
+  font_id?:             string | null
   created_at:           string
   updated_at:           string
 }

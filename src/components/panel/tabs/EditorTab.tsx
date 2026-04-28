@@ -19,26 +19,23 @@ import {
 import type { TabProps } from '../DashboardClient'
 import { COLOR_PRESETS, LAYOUT_META } from '@/types'
 import type { LayoutVariant, Section } from '@/types'
+import { FONTS_CATALOG } from '@/lib/fonts'
 import SectionConfigPanel from '../editor/SectionConfigPanel'
 
 const SECTION_LABELS: Record<string, { icon: string; label: string }> = {
-  hero:         { icon: '🎯', label: 'Hero & Portada' },
-  bio:          { icon: '📝', label: 'Biografía' },
-  music:        { icon: '🎵', label: 'Música' },
-  community:    { icon: '👥', label: 'Comunidad' },
-  supporters:   { icon: '⭐', label: 'Apoyado por' },
-  releases:     { icon: '💿', label: 'Discografía' },
-  live:         { icon: '🎤', label: 'En Vivo' },
-  gallery:      { icon: '🖼️', label: 'Galería' },
-  contact:      { icon: '📬', label: 'Contacto & Booking' },
-  'fan-capture':{ icon: '💌', label: 'Fan Database' },
+  hero:           { icon: '🎯', label: 'Hero & Portada' },
+  bio:            { icon: '📝', label: 'Biografía' },
+  music:          { icon: '🎵', label: 'Música' },
+  community:      { icon: '👥', label: 'Comunidad' },
+  supporters:     { icon: '⭐', label: 'Apoyado por' },
+  releases:       { icon: '💿', label: 'Discografía' },
+  live:           { icon: '🎤', label: 'En Vivo' },
+  gallery:        { icon: '🖼️', label: 'Galería' },
+  contact:        { icon: '📬', label: 'Contacto & Booking' },
+  'fan-capture':  { icon: '💌', label: 'Fan Database' },
+  links:          { icon: '🔗', label: 'Links / Linktree' },
+  testimonials:   { icon: '💬', label: 'Testimonios' },
 }
-
-const FONTS = [
-  { id: 'space', label: 'Space Grotesk', css: 'var(--font-display)' },
-  { id: 'inter', label: 'Inter',          css: 'var(--font-inter)'   },
-  { id: 'mono',  label: 'JetBrains Mono', css: 'var(--font-mono)'    },
-]
 
 const EFFECTS = [
   { id: 'particles', label: 'Partículas',   desc: 'Partículas flotantes en hero' },
@@ -52,7 +49,7 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
   const [secondary, setSecondary] = useState(artist.secondary_color ?? '#7C3AED')
   const [bgDark,    setBgDark]    = useState(artist.bg_dark         ?? true)
   const [layout,    setLayout]    = useState<LayoutVariant>(artist.layout_variant ?? 'centered')
-  const [font,      setFont]      = useState('space')
+  const [fontId,    setFontId]    = useState(artist.font_id ?? 'space-grotesk')
   const [effects,   setEffects]   = useState<string[]>(['glow'])
   const [saving,    setSaving]    = useState(false)
   const [toggling,  setToggling]  = useState<string | null>(null)
@@ -103,11 +100,12 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
       secondary_color: secondary,
       bg_dark:         bgDark,
       layout_variant:  layout,
+      font_id:         fontId,
     }).eq('user_id', artist.user_id)
     if (error) {
       toast.error('Error al guardar diseño')
     } else {
-      setArtist(p => ({ ...p, primary_color: primary, secondary_color: secondary, bg_dark: bgDark, layout_variant: layout }))
+      setArtist(p => ({ ...p, primary_color: primary, secondary_color: secondary, bg_dark: bgDark, layout_variant: layout, font_id: fontId }))
       toast.success('Diseño guardado')
       setTimeout(reloadPreview, 400)
     }
@@ -326,23 +324,35 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
               {/* Fonts */}
               <div className="flex flex-col gap-2">
                 <Label>Tipografía</Label>
-                <div className="flex flex-col gap-1.5">
-                  {FONTS.map(f => (
-                    <button key={f.id} onClick={() => setFont(f.id)}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all"
-                      style={{
-                        borderColor:     font === f.id ? primary : 'rgba(255,255,255,0.07)',
-                        backgroundColor: font === f.id ? primary + '10' : 'rgba(255,255,255,0.02)',
-                      }}>
-                      <span className="text-xl font-bold w-8" style={{ fontFamily: f.css, color: font === f.id ? primary : 'rgba(255,255,255,0.5)' }}>
-                        Ag
-                      </span>
-                      <span className="text-[11px] font-mono" style={{ color: font === f.id ? primary : 'rgba(255,255,255,0.4)' }}>
-                        {f.label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+                {Object.entries(
+                  FONTS_CATALOG.reduce<Record<string, typeof FONTS_CATALOG>>((acc, f) => {
+                    ;(acc[f.category] = acc[f.category] ?? []).push(f)
+                    return acc
+                  }, {})
+                ).map(([cat, fonts]) => (
+                  <div key={cat} className="flex flex-col gap-1">
+                    <p className="text-[9px] font-mono uppercase tracking-widest text-white/20 px-1 mt-1">{cat}</p>
+                    {fonts.map(f => {
+                      const active = fontId === f.id
+                      return (
+                        <button key={f.id} onClick={() => setFontId(f.id)}
+                          className="flex items-center gap-3 px-3 py-2 rounded-xl border text-left transition-all"
+                          style={{
+                            borderColor:     active ? primary : 'rgba(255,255,255,0.06)',
+                            backgroundColor: active ? primary + '10' : 'rgba(255,255,255,0.02)',
+                          }}>
+                          <span className="text-lg font-bold w-8 shrink-0"
+                            style={{ fontFamily: `var(${f.cssVar})`, color: active ? primary : 'rgba(255,255,255,0.5)' }}>
+                            {f.preview}
+                          </span>
+                          <span className="text-[11px] font-mono" style={{ color: active ? primary : 'rgba(255,255,255,0.4)' }}>
+                            {f.label}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                ))}
               </div>
 
               {/* Save */}

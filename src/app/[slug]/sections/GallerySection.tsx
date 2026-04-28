@@ -15,7 +15,34 @@ export default function GallerySection({ config, palette }: Props) {
   if (images.length === 0) return null
 
   const cols = config.columns ?? 3
+  const isMasonry = config.layout === 'masonry'
   const gridClass = cols === 2 ? 'grid-cols-2' : cols === 4 ? 'grid-cols-2 md:grid-cols-4' : 'grid-cols-2 md:grid-cols-3'
+
+  const GalleryItem = ({ img }: { img: typeof images[0] }) => (
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      transition={{ duration: 0.25 }}
+      className={`relative overflow-hidden rounded-2xl cursor-pointer group ${isMasonry ? 'mb-3 md:mb-4 break-inside-avoid' : ''}`}
+      style={{ border: `1px solid ${palette.border}` }}
+      onClick={() => setLightbox(img.url)}
+    >
+      <div className={isMasonry ? '' : 'aspect-square'}>
+        <img
+          src={img.url}
+          alt={img.caption || ''}
+          className={`w-full object-cover transition-transform duration-500 group-hover:scale-105 ${isMasonry ? 'h-auto' : 'h-full'}`}
+        />
+      </div>
+      {img.caption && (
+        <div className="absolute inset-x-0 bottom-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }}>
+          <p className="text-xs text-white font-mono truncate">{img.caption}</p>
+        </div>
+      )}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+        style={{ background: `${palette.primary}10` }} />
+    </motion.div>
+  )
 
   return (
     <SectionWrapper
@@ -35,35 +62,19 @@ export default function GallerySection({ config, palette }: Props) {
           </h2>
         </Reveal>
 
-        <StaggerParent className={`grid ${gridClass} gap-3 md:gap-4`}>
-          {images.map((img) => (
-            <StaggerChild key={img.id}>
-              <motion.div
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.25 }}
-                className="relative overflow-hidden rounded-2xl cursor-pointer group"
-                style={{ border: `1px solid ${palette.border}` }}
-                onClick={() => setLightbox(img.url)}
-              >
-                <div className="aspect-square">
-                  <img
-                    src={img.url}
-                    alt={img.caption || ''}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                </div>
-                {img.caption && (
-                  <div className="absolute inset-x-0 bottom-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }}>
-                    <p className="text-xs text-white font-mono truncate">{img.caption}</p>
-                  </div>
-                )}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                  style={{ background: `${palette.primary}10` }} />
-              </motion.div>
-            </StaggerChild>
-          ))}
-        </StaggerParent>
+        {isMasonry ? (
+          <div style={{ columnCount: cols, columnGap: '1rem' }}>
+            {images.map(img => <GalleryItem key={img.id} img={img} />)}
+          </div>
+        ) : (
+          <StaggerParent className={`grid ${gridClass} gap-3 md:gap-4`}>
+            {images.map((img) => (
+              <StaggerChild key={img.id}>
+                <GalleryItem img={img} />
+              </StaggerChild>
+            ))}
+          </StaggerParent>
+        )}
       </div>
 
       {/* Lightbox */}

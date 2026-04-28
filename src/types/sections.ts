@@ -73,6 +73,7 @@ export interface BioConfig {
   country:         string
   genres:          string[]
   badges:          string[]
+  photo_position:  'left' | 'right' | 'none'
   bg_image:        string | null
   overlay_opacity: number
   overlay_color:   string
@@ -191,6 +192,35 @@ export interface GalleryConfig {
     caption: string
   }[]
   columns:         2 | 3 | 4
+  layout:          'grid' | 'masonry'
+  bg_image:        string | null
+  overlay_opacity: number
+  overlay_color:   string
+}
+
+export interface LinksConfig {
+  section_title:   string
+  links: {
+    id:      string
+    label:   string
+    url:     string
+    icon:    string
+    enabled: boolean
+  }[]
+  bg_image:        string | null
+  overlay_opacity: number
+  overlay_color:   string
+}
+
+export interface TestimonialsConfig {
+  section_title:   string
+  testimonials: {
+    id:    string
+    name:  string
+    role:  string
+    text:  string
+    photo: string | null
+  }[]
   bg_image:        string | null
   overlay_opacity: number
   overlay_color:   string
@@ -208,6 +238,8 @@ export type SectionConfig =
   | ContactConfig
   | FanCaptureConfig
   | GalleryConfig
+  | LinksConfig
+  | TestimonialsConfig
 
 // Default configs — used when section is first enabled
 export const DEFAULT_CONFIGS: Record<string, SectionConfig> = {
@@ -256,6 +288,7 @@ export const DEFAULT_CONFIGS: Record<string, SectionConfig> = {
     country:         'España',
     genres:          ['Techno', 'House'],
     badges:          ['Independent', 'International'],
+    photo_position:  'right',
     bg_image:        null,
     overlay_opacity: 0.7,
     overlay_color:   '#000000',
@@ -343,8 +376,25 @@ export const DEFAULT_CONFIGS: Record<string, SectionConfig> = {
     section_title:   'Galería',
     images:          [],
     columns:         3,
+    layout:          'grid',
     bg_image:        null,
     overlay_opacity: 0.6,
     overlay_color:   '#000000',
   } as GalleryConfig,
+
+  links: {
+    section_title:   'Links',
+    links:           [],
+    bg_image:        null,
+    overlay_opacity: 0.5,
+    overlay_color:   '#000000',
+  } as LinksConfig,
+
+  testimonials: {
+    section_title:   'Lo que dicen',
+    testimonials:    [],
+    bg_image:        null,
+    overlay_opacity: 0.6,
+    overlay_color:   '#000000',
+  } as TestimonialsConfig,
 }

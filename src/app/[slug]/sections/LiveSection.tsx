@@ -1,13 +1,17 @@
 'use client'
+import dynamic from 'next/dynamic'
 import { motion } from 'framer-motion'
 import type { ArtistPalette } from '@/types'
 import type { LiveConfig } from '@/types/sections'
 import { Reveal, SectionWrapper, CountUp } from './_shared'
 
+const VenueMap = dynamic(() => import('./VenueMap'), { ssr: false })
+
 interface Props { config: LiveConfig; palette: ArtistPalette }
 
 export default function LiveSection({ config, palette }: Props) {
   const venues = config.venues ?? []
+  const mappedVenues = venues.filter(v => v.lat != null && v.lng != null)
 
   const formatDate = (d: string) => {
     try {
@@ -50,6 +54,14 @@ export default function LiveSection({ config, palette }: Props) {
           )}
         </Reveal>
 
+        {/* Map */}
+        {mappedVenues.length > 0 && (
+          <Reveal className="mb-10">
+            <VenueMap venues={mappedVenues} palette={palette} />
+          </Reveal>
+        )}
+
+        {/* Venue list */}
         {venues.length > 0 ? (
           <div className="flex flex-col" style={{ borderTop: `1px solid ${palette.border}` }}>
             {venues.map((v, i) => (
@@ -62,23 +74,23 @@ export default function LiveSection({ config, palette }: Props) {
                 whileHover={{ x: 6 }}
                 className="flex items-center justify-between py-5 border-b transition-all"
                 style={{ borderColor: palette.border }}>
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-lg"
-                      style={{ background: palette.primary + '15', border: `1px solid ${palette.primary}25` }}>
-                      🎤
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-semibold text-sm md:text-base truncate" style={{ color: palette.text }}>{v.name}</p>
-                      <p className="text-xs font-mono mt-0.5" style={{ color: palette.textMuted }}>
-                        {[v.city, v.country].filter(Boolean).join(', ')}
-                      </p>
-                    </div>
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-lg"
+                    style={{ background: palette.primary + '15', border: `1px solid ${palette.primary}25` }}>
+                    🎤
                   </div>
-                  {v.date && (
-                    <div className="text-right shrink-0 ml-4">
-                      <p className="text-sm font-mono" style={{ color: palette.primary }}>{formatDate(v.date)}</p>
-                    </div>
-                  )}
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm md:text-base truncate" style={{ color: palette.text }}>{v.name}</p>
+                    <p className="text-xs font-mono mt-0.5" style={{ color: palette.textMuted }}>
+                      {[v.city, v.country].filter(Boolean).join(', ')}
+                    </p>
+                  </div>
+                </div>
+                {v.date && (
+                  <div className="text-right shrink-0 ml-4">
+                    <p className="text-sm font-mono" style={{ color: palette.primary }}>{formatDate(v.date)}</p>
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>
