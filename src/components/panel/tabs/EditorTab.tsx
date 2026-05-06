@@ -131,6 +131,7 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
   const [copied,         setCopied]         = useState(false)
   const [mobilePane,     setMobilePane]     = useState<'controls' | 'preview'>('controls')
   const [openAnimPicker, setOpenAnimPicker] = useState<string | null>(null)
+  const [justApplied,   setJustApplied]   = useState<string | null>(null)
 
   const iframeRef   = useRef<HTMLIFrameElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -254,7 +255,10 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
     setFontId(tpl.fontId)
     setEffectIntensities(tpl.effectIntensities)
     latestDesign.current = { primary: tpl.primary, secondary: tpl.secondary, bgDark: tpl.bgDark, layout: tpl.layout, fontId: tpl.fontId }
+    setPanel('design')
+    setJustApplied(tpl.name)
     setTimeout(reloadPreview, 600)
+    setTimeout(() => setJustApplied(null), 6000)
   }
 
   return (
@@ -386,6 +390,29 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
             {/* ── DESIGN PANEL ── */}
             {panel === 'design' && (
               <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-5">
+
+                {/* "Just applied" banner */}
+                <AnimatePresence>
+                  {justApplied && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex items-start gap-2.5 p-3 rounded-xl -mb-1"
+                      style={{ background: palette.primary + '14', border: `1px solid ${palette.primary}30` }}>
+                      <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" style={{ color: palette.primary }} />
+                      <div>
+                        <p className="text-[11px] font-semibold leading-tight" style={{ color: palette.primary }}>
+                          {justApplied} aplicada
+                        </p>
+                        <p className="text-[10px] text-white/35 mt-0.5">
+                          Personaliza colores, fuente y layout →
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Photo */}
                 <div className="flex flex-col gap-2">
