@@ -201,14 +201,34 @@ export default function DashboardShell({
 
         {/* Bottom */}
         <div className="p-3 flex flex-col gap-2.5 shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          <div className="px-3 py-2.5 rounded-[10px]"
-            style={{ background: `${BRAND}10`, border: `1px solid ${BRAND}22` }}>
-            <div className="flex items-center gap-1.5 mb-1">
-              <Zap className="w-3 h-3" style={{ color: BRAND }} />
-              <span className="font-mono text-[9px] tracking-[0.18em]" style={{ color: '#FF8BFF' }}>PLAN PRO</span>
-            </div>
-            <p className="text-[11px] text-white/40">{planDaysLeft} días restantes</p>
-          </div>
+          {(() => {
+            const urgentColor = planDaysLeft <= 7 ? '#EF4444' : planDaysLeft <= 15 ? '#F59E0B' : BRAND
+            const pct = Math.max(0, Math.min(100, Math.round((planDaysLeft / 30) * 100)))
+            return (
+              <div className="px-3 py-2.5 rounded-[10px] flex flex-col gap-2"
+                style={{ background: `${urgentColor}10`, border: `1px solid ${urgentColor}25` }}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Zap className="w-3 h-3" style={{ color: urgentColor }} />
+                    <span className="font-mono text-[9px] tracking-[0.18em]" style={{ color: urgentColor === BRAND ? '#FF8BFF' : urgentColor }}>PLAN PRO</span>
+                  </div>
+                  <span className="font-mono text-[9px]" style={{ color: urgentColor === BRAND ? 'rgba(255,255,255,0.3)' : urgentColor }}>
+                    {planDaysLeft}d
+                  </span>
+                </div>
+                <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                  <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: urgentColor }} />
+                </div>
+                {planDaysLeft <= 15 && (
+                  <a href="/dashboard/settings?section=plan"
+                    className="text-center text-[9px] font-mono font-semibold py-1 rounded-md transition-opacity hover:opacity-80"
+                    style={{ background: urgentColor, color: '#fff' }}>
+                    Renovar plan →
+                  </a>
+                )}
+              </div>
+            )
+          })()}
           <div className="flex items-center gap-2.5 px-1 py-1">
             {photoUrl ? (
               <img src={photoUrl} alt={artistName} className="w-8 h-8 rounded-full object-cover shrink-0" />

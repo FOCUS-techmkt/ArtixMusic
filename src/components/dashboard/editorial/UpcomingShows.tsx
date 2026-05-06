@@ -13,7 +13,7 @@ export function UpcomingShows({ upcoming }: Props) {
     <div className="border border-white/[0.06] rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.015)' }}>
       <div className="flex items-baseline justify-between px-6 py-5 border-b border-white/[0.04]">
         <h3 className="font-display font-semibold text-[18px] tracking-[-0.02em]">Próximos shows</h3>
-        <Link href="/panel" className="font-mono text-[11px] text-magenta-400 flex items-center gap-1 hover:text-magenta-300 transition-colors">
+        <Link href="/dashboard?tab=content" className="font-mono text-[11px] text-magenta-400 flex items-center gap-1 hover:text-magenta-300 transition-colors">
           <Plus className="w-3 h-3" /> Agregar
         </Link>
       </div>
@@ -22,7 +22,7 @@ export function UpcomingShows({ upcoming }: Props) {
         <div className="px-6 py-10 flex flex-col items-center gap-3">
           <CalendarDays className="w-7 h-7 text-white/10" aria-hidden="true" />
           <p className="text-[12px] text-white/25 font-mono">Sin fechas próximas</p>
-          <Link href="/panel" className="text-[12px] font-mono text-magenta-400 hover:text-magenta-300 transition-colors">
+          <Link href="/dashboard?tab=content" className="text-[12px] font-mono text-magenta-400 hover:text-magenta-300 transition-colors">
             Añadir fechas en el editor →
           </Link>
         </div>

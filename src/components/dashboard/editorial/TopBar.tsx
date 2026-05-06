@@ -39,7 +39,7 @@ export function TopBar({ pressMeta }: Props) {
         </button>
 
         <Link
-          href={`https://${url}`}
+          href={url.startsWith('http') ? url : `https://${url}`}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[12px] font-semibold transition-opacity hover:opacity-80"

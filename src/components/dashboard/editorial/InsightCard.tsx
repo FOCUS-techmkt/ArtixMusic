@@ -56,7 +56,7 @@ export function InsightCard({ pressMeta, kpis }: Props) {
 
       <p className="text-[14px] text-white/55 leading-[1.55] mb-6 max-w-[520px]">
         {hasGrowth
-          ? <>Tus visitas pasaron de <strong className="text-white/80">{visits.sub}</strong>. Aprovecha el momentum para activar más contactos de booking.</>
+          ? <>Tus visitas crecieron <strong className="text-white/80">{visits.change}%</strong> respecto al período anterior. Es el momento de capturar más contactos de booking.</>
           : <>Completa tu perfil y activa las secciones para que tu presskit destaque. Cada campo que llenas aumenta tu visibilidad.</>
         }
       </p>

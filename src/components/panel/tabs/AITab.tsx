@@ -124,30 +124,50 @@ export default function AITab({ artist, sections, palette }: TabProps) {
 
       {/* Empty state */}
       {!result && !loading && !error && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center justify-center py-20 rounded-2xl text-center"
-          style={{ border: `1px dashed ${palette.border}` }}>
-          <motion.div
-            animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
-            transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
-            className="text-6xl mb-5">
-            🤖
-          </motion.div>
-          <h3 className="font-display font-bold text-xl mb-2" style={{ color: palette.text }}>
-            Tu asesor personal de IA
-          </h3>
-          <p className="text-sm max-w-sm" style={{ color: palette.textMuted }}>
-            Analiza tu press kit completo y recibe recomendaciones específicas para atraer más bookers y fans
-          </p>
-          <div className="flex flex-wrap justify-center gap-2 mt-6">
-            {['Contenido', 'Diseño', 'Visibilidad', 'Conversión'].map(tag => (
-              <span key={tag} className="px-3 py-1 rounded-full text-xs font-mono"
-                style={{ background: palette.primary + '15', color: palette.primary, border: `1px solid ${palette.primary}25` }}>
-                {tag}
-              </span>
-            ))}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-6">
+          {/* Hero */}
+          <div className="flex flex-col items-center text-center py-10 px-6 rounded-2xl"
+            style={{ border: `1px dashed ${palette.border}`, background: palette.primary + '06' }}>
+            <motion.div
+              animate={{ scale: [1, 1.08, 1] }}
+              transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
+              className="text-5xl mb-4">
+              🤖
+            </motion.div>
+            <h3 className="font-display font-bold text-xl mb-2" style={{ color: palette.text }}>
+              AI Coach — tu asesor personal
+            </h3>
+            <p className="text-sm max-w-sm mb-5" style={{ color: palette.textMuted }}>
+              Analiza todo tu press kit en segundos y genera recomendaciones específicas para atraer más bookers, shows y fans.
+            </p>
+            <motion.button
+              onClick={analyze}
+              disabled={loading || remaining <= 0}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white"
+              style={{ background: `linear-gradient(135deg, ${palette.primary}, ${palette.secondary})` }}>
+              <Sparkles className="w-4 h-4" /> Analizar mi perfil ahora
+            </motion.button>
+          </div>
+
+          {/* Suggestion cards */}
+          <div>
+            <p className="text-[10px] font-mono text-white/25 uppercase tracking-wider mb-3">Qué analiza el AI Coach</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { icon: '📝', title: 'Contenido', desc: 'Bio, géneros, logros, rider. Detecta huecos que frenan a los bookers.' },
+                { icon: '🎨', title: 'Diseño & SEO', desc: 'Colores, tipografía, estructura visual y posicionamiento.' },
+                { icon: '⚡', title: 'Conversión', desc: 'CTAs, formularios, links de booking. Qué te hace perder contactos.' },
+              ].map(({ icon, title, desc }) => (
+                <div key={title} className="p-4 rounded-2xl flex flex-col gap-2"
+                  style={{ background: '#0E0E12', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span className="text-2xl">{icon}</span>
+                  <p className="text-sm font-semibold text-white/80">{title}</p>
+                  <p className="text-[11px] text-white/35 leading-relaxed">{desc}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </motion.div>
       )}

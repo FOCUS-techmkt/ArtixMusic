@@ -26,7 +26,7 @@ function dailyBuckets(events: { created_at: string }[], days: number, since: Dat
 function fmtNum(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
   if (n >= 1_000)     return n >= 10_000 ? `${(n / 1_000).toFixed(0)}K` : `${(n / 1_000).toFixed(1)}K`
-  return n.toLocaleString('es')
+  return String(n)
 }
 
 const PANEL_TABS = ['editor', 'analytics', 'content', 'fans', 'email', 'booker', 'ai']
@@ -204,7 +204,19 @@ export default async function DashboardPage({
   const activity: ActivityItem[] = analytics.slice(0, 6).map((e, i) => {
     const m    = TAG_MAP[e.event_type] ?? { tag: 'EVT', color: '#6B7280', text: () => e.event_type }
     const mins = Math.round((now.getTime() - new Date(e.created_at).getTime()) / 60000)
-    return { id: String(i), tag: m.tag, color: m.color, text: m.text(e), time: mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins/60)}h` : `${Math.floor(mins/1440)}d` }
+    const source = e.referrer
+      ? e.referrer.includes('instagram') ? 'Instagram'
+        : e.referrer.includes('google')  ? 'Google'
+        : e.referrer.includes('twitter') || e.referrer.includes('x.com') ? 'Twitter'
+        : e.referrer.includes('facebook') ? 'Facebook'
+        : 'Externo'
+      : 'Directo'
+    return {
+      id: String(i), tag: m.tag, color: m.color, text: m.text(e),
+      time: mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins/60)}h` : `${Math.floor(mins/1440)}d`,
+      country: e.country ?? undefined,
+      source,
+    }
   })
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://artix-music.vercel.app'

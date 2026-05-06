@@ -74,6 +74,8 @@ export interface ActivityItem {
   color: string
   text: string
   time: string
+  country?: string
+  source?: string
 }
 
 export const ACTIVITY: ActivityItem[] = [

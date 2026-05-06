@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   Eye, MousePointerClick, Headphones, Users,
@@ -29,7 +29,9 @@ function getGreeting(name: string): { line: string; sub: string } {
 
 export default function OverviewTab({ artist, sections, analytics, fans, palette, supabase, setTab }: TabProps) {
   const [copied, setCopied] = useState(false)
-  const { line, sub } = getGreeting(artist.artist_name)
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+  const { line, sub } = mounted ? getGreeting(artist.artist_name) : { line: `Hola, ${artist.artist_name.split(' ')[0]}`, sub: '' }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
   const kitUrl = `${appUrl}/${artist.slug}`

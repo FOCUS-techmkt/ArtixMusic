@@ -4,6 +4,14 @@ import { motion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 import { CHECKLIST, type ChecklistItem } from '@/lib/dashboard-mocks'
 
+const MICROCOPY: Record<string, string> = {
+  photo:   'Tu cara conecta emocionalmente con bookers y promotores',
+  bio:     'Una bio sólida triplica la credibilidad de tu perfil',
+  music:   'Los bookers siempre escuchan antes de contactar',
+  gallery: 'Las fotos profesionales generan más consultas de shows',
+  booking: 'Para que los promotores te contacten directamente',
+}
+
 interface Props { checklist?: ChecklistItem[] }
 
 export function ProfileChecklist({ checklist }: Props) {
@@ -37,14 +45,14 @@ export function ProfileChecklist({ checklist }: Props) {
         />
       </div>
 
-      <div className="flex flex-col gap-2.5">
+      <div className="flex flex-col gap-3">
         {data.map(({ id, label, done: isDone, href }, i) => (
           <motion.div
             key={id}
             initial={{ opacity: 0, x: 4 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 + i * 0.06, duration: 0.35 }}
-            style={{ opacity: isDone ? 0.5 : 1 }}
+            style={{ opacity: isDone ? 0.45 : 1 }}
           >
             {isDone ? (
               <div className="flex items-center gap-2.5">
@@ -59,10 +67,15 @@ export function ProfileChecklist({ checklist }: Props) {
                 <span className="text-[13px] text-white/40 line-through flex-1">{label}</span>
               </div>
             ) : (
-              <Link href={href} className="flex items-center gap-2.5 group">
-                <div className="w-4 h-4 rounded-full shrink-0" style={{ border: '1.5px solid rgba(255,255,255,0.20)' }} />
-                <span className="text-[13px] text-white flex-1 group-hover:text-white/80 transition-colors">{label}</span>
-                <ArrowRight className="w-3 h-3 text-white/25 group-hover:text-white/50 transition-colors shrink-0" />
+              <Link href={href} className="flex items-start gap-2.5 group">
+                <div className="w-4 h-4 rounded-full shrink-0 mt-0.5" style={{ border: '1.5px solid rgba(255,255,255,0.20)' }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] text-white group-hover:text-white/80 transition-colors">{label}</p>
+                  {MICROCOPY[id] && (
+                    <p className="text-[10px] text-white/30 mt-0.5 leading-tight">{MICROCOPY[id]}</p>
+                  )}
+                </div>
+                <ArrowRight className="w-3 h-3 text-white/25 group-hover:text-white/50 transition-colors shrink-0 mt-1" />
               </Link>
             )}
           </motion.div>

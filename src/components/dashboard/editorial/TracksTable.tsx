@@ -19,7 +19,7 @@ export function TracksTable({ tracks }: Props) {
           Tus tracks{' '}
           <span className="font-serif italic font-normal text-white/40">esta semana</span>
         </h2>
-        <Link href="/panel" className="font-mono text-[10px] text-white/25 uppercase tracking-[0.18em] hover:text-white/50 transition-colors">
+        <Link href="/dashboard?tab=editor" className="font-mono text-[10px] text-white/25 uppercase tracking-[0.18em] hover:text-white/50 transition-colors">
           Gestionar →
         </Link>
       </div>
@@ -29,7 +29,7 @@ export function TracksTable({ tracks }: Props) {
           <Music className="w-8 h-8 text-white/10" />
           <div>
             <p className="text-[13px] text-white/40 mb-1">Sin tracks configurados</p>
-            <Link href="/panel" className="text-[12px] font-mono text-magenta-400 hover:text-magenta-300 transition-colors">
+            <Link href="/dashboard?tab=editor" className="text-[12px] font-mono text-magenta-400 hover:text-magenta-300 transition-colors">
               Añadir tracks en el editor →
             </Link>
           </div>

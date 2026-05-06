@@ -1,4 +1,5 @@
 'use client'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Avatar } from '@/components/dashboard/Avatar'
 import { PulseDot } from '@/components/dashboard/PulseDot'
@@ -8,9 +9,12 @@ import { ARTIST, KPIS } from '@/lib/dashboard-mocks'
 
 const fade = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } } }
 
-function getGreeting(firstName: string): { greeting: string; sub: string } {
-  const h   = new Date().getHours()
-  const day = new Date().getDay()
+const DAYS   = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+
+function buildGreeting(firstName: string, now: Date): { greeting: string; sub: string } {
+  const h   = now.getHours()
+  const day = now.getDay()
   if (h >= 0  && h < 5)  return { greeting: 'Madrugada,',    sub: 'Los nocturnos crean los mejores sets.' }
   if (h >= 5  && h < 9)  return { greeting: 'Buen día,',     sub: 'Perfecta hora para revisar tus métricas.' }
   if (h >= 9  && h < 12) return { greeting: 'Buenos días,',  sub: day === 1 ? 'Semana nueva, energía nueva.' : 'La mañana es para los que crean.' }
@@ -21,14 +25,11 @@ function getGreeting(firstName: string): { greeting: string; sub: string } {
   return { greeting: 'Buenas noches,', sub: 'Los mejores tracks nacen de noche.' }
 }
 
-function useEditionInfo() {
-  const now = new Date()
-  const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
-  const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+function buildEditionInfo(now: Date) {
   const weekNum = Math.ceil((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000))
   return {
-    dayName: days[now.getDay()],
-    dateStr: `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`,
+    dayName: DAYS[now.getDay()],
+    dateStr: `${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`,
     vol: '014',
     week: String(weekNum).padStart(2, '0'),
   }
@@ -40,13 +41,20 @@ interface Props {
 }
 
 export function EditorialHero({ pressMeta, kpis }: Props) {
-  const firstName  = pressMeta?.firstName  ?? ARTIST.firstName
-  const initials   = pressMeta?.initials   ?? ARTIST.initials
-  const photoUrl   = pressMeta?.photoUrl   ?? null
-  const planDays   = pressMeta?.planDaysLeft ?? ARTIST.planDaysLeft
-  const visits     = kpis?.[0] ?? KPIS[0]
-  const ed         = useEditionInfo()
-  const { greeting, sub: greetingSub } = getGreeting(firstName)
+  const firstName = pressMeta?.firstName  ?? ARTIST.firstName
+  const initials  = pressMeta?.initials   ?? ARTIST.initials
+  const photoUrl  = pressMeta?.photoUrl   ?? null
+  const planDays  = pressMeta?.planDaysLeft ?? ARTIST.planDaysLeft
+  const visits    = kpis?.[0] ?? KPIS[0]
+
+  // Hydration-safe: start with a fixed server value, update after mount
+  const [now, setNow] = useState<Date | null>(null)
+  useEffect(() => { setNow(new Date()) }, [])
+
+  const ed          = now ? buildEditionInfo(now) : { dayName: '—', dateStr: '—', vol: '014', week: '—' }
+  const { greeting, sub: greetingSub } = now
+    ? buildGreeting(firstName, now)
+    : { greeting: 'Hola,', sub: '' }
 
   return (
     <motion.div
@@ -82,7 +90,11 @@ export function EditorialHero({ pressMeta, kpis }: Props) {
               {firstName}.
             </span>
           </motion.h1>
-          <motion.p variants={fade} className="text-[13px] text-white/35 mb-4 font-mono tracking-wide">{greetingSub}</motion.p>
+          {greetingSub && (
+            <motion.p variants={fade} className="text-[13px] text-white/35 mb-4 font-mono tracking-wide">
+              {greetingSub}
+            </motion.p>
+          )}
 
           <motion.p variants={fade} className="text-[17px] text-white/50 max-w-[580px] leading-[1.45]">
             Tu presskit recibió{' '}

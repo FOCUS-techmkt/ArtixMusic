@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Copy, Check, ExternalLink, Share2 } from 'lucide-react'
 import { PulseDot } from '@/components/dashboard/PulseDot'
 import type { PressMeta } from '@/app/(dashboard)/dashboard/_components/DashboardContent'
@@ -10,12 +11,12 @@ interface Props { pressMeta?: PressMeta }
 export function PresskitURLCard({ pressMeta }: Props) {
   const [copied, setCopied] = useState(false)
   const url     = pressMeta?.url ?? ARTIST.url
-  const fullUrl = `https://${url}`
+  const fullUrl = url.startsWith('http') ? url : `https://${url}`
 
   function handleCopy() {
     navigator.clipboard.writeText(fullUrl)
     setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   async function handleShare() {
@@ -28,9 +29,26 @@ export function PresskitURLCard({ pressMeta }: Props) {
 
   return (
     <div
-      className="rounded-2xl p-5 flex flex-col gap-4"
+      className="rounded-2xl p-5 flex flex-col gap-4 relative overflow-hidden"
       style={{ border: '1px solid rgba(192,38,211,0.18)', background: 'linear-gradient(180deg, rgba(192,38,211,0.06) 0%, rgba(192,38,211,0) 100%)' }}
     >
+      {/* Toast */}
+      <AnimatePresence>
+        {copied && (
+          <motion.div
+            key="toast"
+            initial={{ opacity: 0, y: -8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.96 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="absolute top-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-semibold text-white shadow-lg"
+            style={{ background: '#22C55E', boxShadow: '0 4px 20px rgba(34,197,94,0.35)' }}
+          >
+            <Check className="w-3.5 h-3.5" /> Link copiado
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex items-center gap-2">
         <PulseDot />
         <span className="font-mono text-[10px] text-magenta-400 uppercase tracking-[0.22em]">

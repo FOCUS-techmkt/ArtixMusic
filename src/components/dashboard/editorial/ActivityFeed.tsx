@@ -3,6 +3,15 @@ import { motion } from 'framer-motion'
 import { PulseDot } from '@/components/dashboard/PulseDot'
 import { ACTIVITY, type ActivityItem } from '@/lib/dashboard-mocks'
 
+const SOURCE_ICONS: Record<string, string> = {
+  Instagram: '📸',
+  Google:    '🔍',
+  Twitter:   '𝕏',
+  Facebook:  '👤',
+  Externo:   '🔗',
+  Directo:   '🎯',
+}
+
 interface Props { activity?: ActivityItem[] }
 
 export function ActivityFeed({ activity }: Props) {
@@ -39,7 +48,17 @@ export function ActivityFeed({ activity }: Props) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[12px] text-white/70 leading-[1.4]">{item.text}</p>
-                <p className="font-mono text-[10px] text-white/25 mt-0.5 uppercase tracking-[0.06em]">Hace {item.time}</p>
+                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                  {item.source && (
+                    <span className="font-mono text-[9px] text-white/25 flex items-center gap-1">
+                      {SOURCE_ICONS[item.source] ?? '🔗'} {item.source}
+                    </span>
+                  )}
+                  {item.country && (
+                    <span className="font-mono text-[9px] text-white/25">· {item.country}</span>
+                  )}
+                  <span className="font-mono text-[9px] text-white/20 uppercase tracking-[0.06em]">Hace {item.time}</span>
+                </div>
               </div>
             </motion.div>
           ))}

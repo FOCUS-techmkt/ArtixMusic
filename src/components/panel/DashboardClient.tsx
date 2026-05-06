@@ -1,10 +1,10 @@
 'use client'
-import { useState, Suspense } from 'react'
+import { Component, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
+import { Loader2, AlertCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { Palette, BarChart2, FileText, Users, Mail, Briefcase, Sparkles } from 'lucide-react'
+import { useState } from 'react'
 import type { Artist, Section, FanSubscriber, ArtistPalette } from '@/types'
 import type { AnalyticsRow } from '@/types'
 import { deriveArtistPalette } from '@/types'
@@ -32,16 +32,6 @@ export interface TabProps {
 
 const VALID_TABS: TabId[] = ['editor', 'analytics', 'content', 'fans', 'email', 'booker', 'ai']
 
-const TABS: { id: TabId; label: string; icon: React.ElementType; badge?: string }[] = [
-  { id: 'editor',     label: 'Mi Sitio',    icon: Palette         },
-  { id: 'analytics',  label: 'Stats',       icon: BarChart2       },
-  { id: 'content',    label: 'Contenido',   icon: FileText        },
-  { id: 'fans',       label: 'Fans',        icon: Users           },
-  { id: 'email',      label: 'Email',       icon: Mail,     badge: 'PRONTO' },
-  { id: 'booker',     label: 'Booker',      icon: Briefcase, badge: 'NUEVO' },
-  { id: 'ai',         label: 'AI',          icon: Sparkles,  badge: 'IA'    },
-]
-
 interface Props {
   initialArtist:   Artist
   initialSections: Section[]
@@ -49,16 +39,48 @@ interface Props {
   fans:            FanSubscriber[]
 }
 
-// Inner component that reads URL params (Suspense required)
+// Error boundary so a crashing tab never shows a black screen
+class TabErrorBoundary extends Component<
+  { children: React.ReactNode; tabKey: string },
+  { hasError: boolean }
+> {
+  state = { hasError: false }
+
+  static getDerivedStateFromError() { return { hasError: true } }
+
+  componentDidUpdate(prev: { tabKey: string }) {
+    if (prev.tabKey !== this.props.tabKey) this.setState({ hasError: false })
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center gap-4 py-24 text-center px-8">
+          <AlertCircle className="w-8 h-8 text-white/20" />
+          <p className="text-sm text-white/40">Esta sección no pudo cargarse.</p>
+          <button
+            onClick={() => this.setState({ hasError: false })}
+            className="text-xs font-mono text-magenta-400 hover:text-magenta-300 transition-colors"
+          >
+            Reintentar →
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
+// Inner component that reads URL params (Suspense required for useSearchParams)
 function DashboardClientInner({ initialArtist, initialSections, analytics, fans }: Props) {
   const sp     = useSearchParams()
   const router = useRouter()
 
-  const urlTab  = sp.get('tab') as TabId | null
-  const initTab = urlTab && VALID_TABS.includes(urlTab) ? urlTab : 'editor'
+  // Derive tab ALWAYS from URL — never stale local state
+  const urlTab = sp.get('tab')
+  const tab: TabId = urlTab && VALID_TABS.includes(urlTab as TabId) ? (urlTab as TabId) : 'editor'
 
   const supabase  = createClient()
-  const [tab, _setTab]           = useState<TabId>(initTab)
   const [artist, setArtist]     = useState<Artist>(initialArtist)
   const [sections, setSections] = useState<Section[]>(initialSections)
 
@@ -69,50 +91,15 @@ function DashboardClientInner({ initialArtist, initialSections, analytics, fans 
   )
 
   const setTab = (t: TabId) => {
-    _setTab(t)
     router.replace(`/dashboard?tab=${t}`, { scroll: false })
   }
 
   const tabProps: TabProps = { artist, setArtist, sections, setSections, analytics, fans, palette, supabase, setTab }
 
   return (
-    <div className="flex flex-col h-full" style={{ minHeight: 'calc(100dvh - 56px)' }}>
-
-      {/* Horizontal tab bar */}
-      <div
-        className="flex items-center gap-0 overflow-x-auto shrink-0 sticky top-0 z-20"
-        style={{ background: '#08080C', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
-      >
-        {TABS.map(({ id, label, icon: Icon, badge }) => {
-          const active = tab === id
-          return (
-            <button
-              key={id}
-              onClick={() => setTab(id)}
-              className="flex items-center gap-2 px-4 py-3.5 text-[12px] font-medium whitespace-nowrap shrink-0 transition-all border-b-2"
-              style={{
-                color:       active ? '#FF8BFF' : 'rgba(255,255,255,0.35)',
-                borderColor: active ? '#FF2DFF' : 'transparent',
-                background:  active ? 'rgba(255,45,255,0.06)' : 'transparent',
-              }}
-            >
-              <Icon className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden sm:inline">{label}</span>
-              {badge && (
-                <span
-                  className="font-mono text-[8px] px-1.5 py-0.5 rounded-full hidden sm:inline"
-                  style={{ background: 'rgba(255,45,255,0.15)', color: '#FF8BFF' }}
-                >
-                  {badge}
-                </span>
-              )}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Tab content — editor gets overflow-hidden, rest scroll */}
-      <div className={`flex-1 min-h-0 ${tab === 'editor' ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+    <div className={`flex flex-col h-full ${tab === 'editor' ? 'overflow-hidden' : 'overflow-y-auto'}`}
+      style={{ minHeight: 'calc(100dvh - 56px)' }}>
+      <TabErrorBoundary tabKey={tab}>
         <AnimatePresence mode="wait">
           <motion.div
             key={tab}
@@ -120,7 +107,7 @@ function DashboardClientInner({ initialArtist, initialSections, analytics, fans 
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className={tab === 'editor' ? 'h-full' : undefined}
+            className={tab === 'editor' ? 'h-full flex flex-col' : undefined}
           >
             {tab === 'editor'    && <EditorTab    {...tabProps} />}
             {tab === 'analytics' && <AnalyticsTab {...tabProps} />}
@@ -131,7 +118,7 @@ function DashboardClientInner({ initialArtist, initialSections, analytics, fans 
             {tab === 'ai'        && <AITab        {...tabProps} />}
           </motion.div>
         </AnimatePresence>
-      </div>
+      </TabErrorBoundary>
     </div>
   )
 }
