@@ -105,7 +105,7 @@ export default function ContentTab({ artist, setArtist, palette, supabase }: Tab
   const inputStyle = { background: '#141418', border: '1px solid rgba(255,255,255,0.08)', outline: 'none' }
 
   return (
-    <div className="px-6 lg:px-8 py-8 max-w-3xl mx-auto flex flex-col gap-6">
+    <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-3xl mx-auto flex flex-col gap-6">
 
       {/* Header */}
       <div>
@@ -114,11 +114,11 @@ export default function ContentTab({ artist, setArtist, palette, supabase }: Tab
       </div>
 
       {/* Sub-nav */}
-      <div className="flex gap-1 p-1 rounded-xl w-fit"
+      <div className="flex gap-1 p-1 rounded-xl overflow-x-auto"
         style={{ background: '#0E0E12', border: '1px solid rgba(255,255,255,0.06)' }}>
         {SUBTABS.map(({ id, label }) => (
           <button key={id} onClick={() => setSub(id)}
-            className="px-4 py-2 rounded-[10px] text-[12px] font-medium transition-all"
+            className="px-3 lg:px-4 py-2 rounded-[10px] text-[11px] lg:text-[12px] font-medium transition-all whitespace-nowrap shrink-0"
             style={{
               background: sub === id ? palette.primary + '22' : 'transparent',
               color:      sub === id ? palette.primary : 'rgba(255,255,255,0.4)',

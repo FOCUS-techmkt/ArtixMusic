@@ -4,22 +4,32 @@ import { motion } from 'framer-motion'
 import {
   Eye, MousePointerClick, Headphones, Users,
   ExternalLink, Copy, Check, ArrowUpRight, Zap,
-  TrendingUp, ArrowRight,
+  TrendingUp, ArrowRight, Radio,
 } from 'lucide-react'
 import type { TabProps } from '../DashboardClient'
 
 const item = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { ease: 'easeOut', duration: 0.4 } } }
 const list = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } }
 
-function getHour(): string {
-  const h = new Date().getHours()
-  if (h < 13) return 'Buenos días'
-  if (h < 20) return 'Buenas tardes'
-  return 'Buenas noches'
+function getGreeting(name: string): { line: string; sub: string } {
+  const h   = new Date().getHours()
+  const day = new Date().getDay() // 0=dom, 5=vie, 6=sáb
+
+  const firstName = name.split(' ')[0]
+
+  if (h >= 0 && h < 5)  return { line: `🌙 Madrugada, ${firstName}`,  sub: 'Los nocturnos crean los mejores sets.' }
+  if (h >= 5 && h < 9)  return { line: `☀️ Buen día, ${firstName}`,   sub: 'Perfecta hora para revisar tus métricas.' }
+  if (h >= 9 && h < 12) return { line: `☀️ Buenos días, ${firstName}`, sub: day === 1 ? 'Semana nueva, energía nueva.' : 'La mañana es para los que crean.' }
+  if (h >= 12 && h < 14)return { line: `🌤️ Buenas tardes, ${firstName}`, sub: 'El momentum está de tu lado.' }
+  if (h >= 14 && h < 17)return { line: `🌤️ Buenas tardes, ${firstName}`, sub: day === 5 ? '¡Viernes! La escena te espera.' : 'Tarde productiva para tu música.' }
+  if (h >= 17 && h < 20)return { line: `🌆 Buenas tardes, ${firstName}`, sub: day >= 5 ? 'El fin de semana empieza.' : 'El atardecer suena mejor con beats.' }
+  if (h >= 20 && h < 23)return { line: `🌃 Buenas noches, ${firstName}`, sub: 'La noche es cuando todo cobra vida.' }
+  return { line: `🌙 Buenas noches, ${firstName}`, sub: 'Los mejores tracks nacen de noche.' }
 }
 
 export default function OverviewTab({ artist, sections, analytics, fans, palette, supabase, setTab }: TabProps) {
   const [copied, setCopied] = useState(false)
+  const { line, sub } = getGreeting(artist.artist_name)
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
   const kitUrl = `${appUrl}/${artist.slug}`
@@ -29,15 +39,12 @@ export default function OverviewTab({ artist, sections, analytics, fans, palette
   const totalPlays  = analytics.filter(a => a.event_type === 'music_play').length
   const totalFans   = fans.length
 
-  // Last 7 days views
-  const cutoff7 = new Date(); cutoff7.setDate(cutoff7.getDate() - 7)
-  const views7  = analytics.filter(a => a.event_type === 'page_view' && new Date(a.created_at) > cutoff7).length
-
-  // Prior 7 days for trend
-  const cutoff14 = new Date(); cutoff14.setDate(cutoff14.getDate() - 14)
-  const viewsPrev7 = analytics.filter(a => a.event_type === 'page_view'
-    && new Date(a.created_at) > cutoff14 && new Date(a.created_at) <= cutoff7).length
-  const trend = viewsPrev7 > 0 ? Math.round(((views7 - viewsPrev7) / viewsPrev7) * 100) : null
+  // 7-day trend
+  const cutoff7    = new Date(); cutoff7.setDate(cutoff7.getDate() - 7)
+  const cutoff14   = new Date(); cutoff14.setDate(cutoff14.getDate() - 14)
+  const views7     = analytics.filter(a => a.event_type === 'page_view' && new Date(a.created_at) > cutoff7).length
+  const viewsPrev7 = analytics.filter(a => a.event_type === 'page_view' && new Date(a.created_at) > cutoff14 && new Date(a.created_at) <= cutoff7).length
+  const trend      = viewsPrev7 > 0 ? Math.round(((views7 - viewsPrev7) / viewsPrev7) * 100) : null
 
   // Enabled sections count
   const enabledCount = sections.filter(s => s.is_enabled).length
@@ -61,14 +68,13 @@ export default function OverviewTab({ artist, sections, analytics, fans, palette
   ]
 
   return (
-    <div className="px-6 lg:px-8 py-8 max-w-5xl mx-auto">
+    <div className="px-4 lg:px-8 py-6 lg:py-8 max-w-5xl mx-auto">
       <motion.div variants={list} initial="hidden" animate="show" className="flex flex-col gap-7">
 
         {/* Greeting */}
         <motion.div variants={item}>
-          <p className="text-xs font-mono text-white/25 tracking-[0.15em] uppercase mb-1">{getHour()}</p>
           <h1 className="font-display font-extrabold text-3xl lg:text-4xl tracking-tight">
-            {artist.artist_name}
+            {line}
             {artist.is_published && (
               <span className="ml-3 align-middle text-[10px] font-mono px-2 py-1 rounded-full"
                 style={{ background: '#22C55E18', color: '#22C55E', border: '1px solid #22C55E30' }}>
@@ -76,18 +82,25 @@ export default function OverviewTab({ artist, sections, analytics, fans, palette
               </span>
             )}
           </h1>
+          <p className="mt-1.5 text-sm text-white/35">{sub}</p>
           {trend !== null && (
-            <p className="mt-1.5 text-sm" style={{ color: trend >= 0 ? '#22C55E' : '#F87171' }}>
-              {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}% visitas vs. semana anterior
-            </p>
+            <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium"
+              style={{
+                background: trend >= 0 ? '#22C55E15' : '#F8717115',
+                color:      trend >= 0 ? '#22C55E'   : '#F87171',
+                border:     `1px solid ${trend >= 0 ? '#22C55E25' : '#F8717125'}`,
+              }}>
+              <TrendingUp className="w-3.5 h-3.5" />
+              {trend >= 0 ? '+' : ''}{trend}% visitas vs. semana anterior
+            </div>
           )}
         </motion.div>
 
         {/* Stats */}
         <motion.div variants={item} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {STATS.map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="p-5 rounded-2xl flex flex-col gap-3"
-              style={{ background: '#0E0E12', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div key={label} className="p-5 rounded-2xl flex flex-col gap-3 transition-all hover:scale-[1.02]"
+              style={{ background: '#0E0E12', border: `1px solid ${color}18` }}>
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-mono uppercase tracking-wider text-white/30">{label}</span>
                 <div className="w-7 h-7 rounded-lg flex items-center justify-center"
@@ -168,19 +181,19 @@ export default function OverviewTab({ artist, sections, analytics, fans, palette
             <p className="text-[10px] font-mono text-white/20">{enabledCount}/{sections.length} visibles</p>
           </div>
 
-          {/* Booker Ready nudge */}
+          {/* AI Pulse card */}
           <div className="p-5 rounded-2xl flex flex-col justify-between gap-4"
             style={{
               background: `linear-gradient(135deg, ${palette.primary}12, ${palette.secondary}08)`,
-              border: `1px solid ${palette.primary}25`,
+              border:     `1px solid ${palette.primary}25`,
             }}>
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <Zap className="w-4 h-4" style={{ color: palette.primary }} />
+                <Radio className="w-4 h-4" style={{ color: palette.primary }} />
                 <p className="text-[10px] font-mono uppercase tracking-wider" style={{ color: palette.primary }}>Booker Ready</p>
               </div>
               <p className="text-sm text-white/60 leading-relaxed">
-                Activa el modo booker para que promotores y managers vean tu perfil optimizado para bookings.
+                Activa el modo booker para que promotores y managers vean tu perfil optimizado.
               </p>
             </div>
             <button onClick={() => setTab('booker')}
@@ -192,7 +205,7 @@ export default function OverviewTab({ artist, sections, analytics, fans, palette
           </div>
         </motion.div>
 
-        {/* Recent analytics */}
+        {/* Recent activity */}
         {analytics.length > 0 && (
           <motion.div variants={item} className="p-5 rounded-2xl"
             style={{ background: '#0E0E12', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -205,7 +218,7 @@ export default function OverviewTab({ artist, sections, analytics, fans, palette
               </button>
             </div>
             <div className="flex flex-col gap-2">
-              {analytics.slice(0, 5).map((a, i) => {
+              {analytics.slice(0, 6).map((a, i) => {
                 const labels: Record<string, string> = {
                   page_view:     '👁  Visita al press kit',
                   contact_click: '✉️  Click en contacto',
@@ -213,12 +226,12 @@ export default function OverviewTab({ artist, sections, analytics, fans, palette
                   music_play:    '🎵  Reproducción de música',
                 }
                 const date = new Date(a.created_at)
+                const mins = Math.round((Date.now() - date.getTime()) / 60000)
+                const timeStr = mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins/60)}h` : `${Math.floor(mins/1440)}d`
                 return (
                   <div key={i} className="flex items-center justify-between py-1.5 border-b border-white/[0.04] last:border-0">
                     <span className="text-xs text-white/50">{labels[a.event_type] ?? a.event_type}</span>
-                    <span className="text-[10px] font-mono text-white/20">
-                      {date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
-                    </span>
+                    <span className="text-[10px] font-mono text-white/20">{timeStr}</span>
                   </div>
                 )
               })}

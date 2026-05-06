@@ -58,6 +58,7 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
   const [activeSection,  setActiveSection]  = useState<Section | null>(null)
   const [lastEditedId,   setLastEditedId]   = useState<string | null>(null)
   const [copied,         setCopied]         = useState(false)
+  const [mobilePane,     setMobilePane]     = useState<'controls' | 'preview'>('controls')
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
   const appUrl     = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
@@ -113,10 +114,26 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
   }
 
   return (
-    <div className="flex h-full flex-col lg:flex-row" style={{ minHeight: 'calc(100vh - 60px)' }}>
+    <div className="flex h-full flex-col" style={{ minHeight: 'calc(100dvh - 112px)' }}>
+
+      {/* Mobile toggle — controles vs preview (hidden on lg) */}
+      <div className="flex lg:hidden border-b border-white/[0.05] shrink-0" style={{ background: '#0A0A0E' }}>
+        {(['controls', 'preview'] as const).map(v => (
+          <button key={v} onClick={() => setMobilePane(v)}
+            className="flex-1 py-3 text-[11px] font-mono uppercase tracking-wider transition-all"
+            style={{
+              color:        mobilePane === v ? palette.primary : 'rgba(255,255,255,0.3)',
+              borderBottom: mobilePane === v ? `2px solid ${palette.primary}` : '2px solid transparent',
+            }}>
+            {v === 'controls' ? '⚙ Controles' : '👁 Vista previa'}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
 
       {/* ── LEFT PANEL ─────────────────────────────────── */}
-      <div className="w-full lg:w-[300px] shrink-0 flex flex-col"
+      <div className={`w-full lg:w-[300px] shrink-0 flex flex-col ${mobilePane === 'preview' ? 'hidden lg:flex' : 'flex'}`}
         style={{ background: '#0A0A0E', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
 
         {/* Top header */}
@@ -155,22 +172,33 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
           {/* ── SECTIONS PANEL ── */}
           {panel === 'sections' && !activeSection && (
             <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
-              <p className="text-[10px] font-mono text-white/25 px-1 mb-1">Arrastra para reordenar · Click para editar</p>
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
-                  {[...sections].sort((a, b) => a.sort_order - b.sort_order).map(section => (
-                    <SortableSection
-                      key={section.id}
-                      section={section}
-                      palette={palette}
-                      toggling={toggling}
-                      isActive={lastEditedId === section.id}
-                      onToggle={() => toggleSection(section.id, section.is_enabled)}
-                      onEdit={() => { setActiveSection(section); setLastEditedId(section.id) }}
-                    />
-                  ))}
-                </SortableContext>
-              </DndContext>
+              {sections.length === 0 ? (
+                <EmptySections
+                  palette={palette}
+                  artistId={artist.id}
+                  supabase={supabase}
+                  onCreated={setSections}
+                />
+              ) : (
+                <>
+                  <p className="text-[10px] font-mono text-white/25 px-1 mb-1">Arrastra para reordenar · Click para editar</p>
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <SortableContext items={sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                      {[...sections].sort((a, b) => a.sort_order - b.sort_order).map(section => (
+                        <SortableSection
+                          key={section.id}
+                          section={section}
+                          palette={palette}
+                          toggling={toggling}
+                          isActive={lastEditedId === section.id}
+                          onToggle={() => toggleSection(section.id, section.is_enabled)}
+                          onEdit={() => { setActiveSection(section); setLastEditedId(section.id) }}
+                        />
+                      ))}
+                    </SortableContext>
+                  </DndContext>
+                </>
+              )}
             </div>
           )}
 
@@ -398,7 +426,7 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
       </div>
 
       {/* ── PREVIEW PANE ─────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-h-0" style={{ background: '#070709' }}>
+      <div className={`flex-1 flex flex-col min-h-0 ${mobilePane === 'controls' ? 'hidden lg:flex' : 'flex'}`} style={{ background: '#070709' }}>
         <div className="flex items-center justify-between px-4 py-2.5 shrink-0"
           style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
           <div className="flex items-center gap-1.5">
@@ -450,6 +478,8 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
           </div>
         </div>
       </div>
+
+      </div>{/* end inner flex row */}
     </div>
   )
 }
@@ -535,4 +565,52 @@ function SortableSection({ section, palette, toggling, isActive, onToggle, onEdi
 
 function Label({ children }: { children: React.ReactNode }) {
   return <p className="text-[10px] font-mono uppercase tracking-wider text-white/25">{children}</p>
+}
+
+// ── Empty sections recovery ───────────────────────────────────
+
+const DEFAULT_SECTION_NAMES = ['hero', 'bio', 'music', 'live', 'gallery', 'contact', 'links', 'testimonials'] as const
+
+function EmptySections({ palette, artistId, supabase, onCreated }: {
+  palette:    ReturnType<typeof import('@/types').deriveArtistPalette>
+  artistId:   string
+  supabase:   ReturnType<typeof import('@/lib/supabase/client').createClient>
+  onCreated:  (sections: import('@/types').Section[]) => void
+}) {
+  const [creating, setCreating] = useState(false)
+
+  const create = async () => {
+    setCreating(true)
+    const rows = DEFAULT_SECTION_NAMES.map((name, i) => ({
+      artist_id:  artistId,
+      name,
+      sort_order: i,
+      is_enabled: true,
+      config:     {},
+    }))
+    const { data, error } = await supabase.from('sections').insert(rows).select()
+    if (!error && data) onCreated(data)
+    setCreating(false)
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center gap-4 py-12 px-4 text-center">
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+        style={{ background: palette.primary + '18', border: `1px solid ${palette.primary}25` }}>
+        🎯
+      </div>
+      <div>
+        <p className="text-[13px] text-white/60 font-medium mb-1">No hay secciones todavía</p>
+        <p className="text-[11px] font-mono text-white/25">Crea las secciones por defecto para empezar</p>
+      </div>
+      <button
+        onClick={create}
+        disabled={creating}
+        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[12px] font-semibold text-white disabled:opacity-60 transition-all"
+        style={{ background: palette.primary }}>
+        {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+        {creating ? 'Creando…' : 'Crear secciones'}
+      </button>
+    </div>
+  )
 }

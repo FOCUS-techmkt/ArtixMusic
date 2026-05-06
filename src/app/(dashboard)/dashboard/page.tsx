@@ -1,303 +1,235 @@
-'use client'
-import { useState } from 'react'
-import {
-  TrendingUp,
-  MousePointerClick,
-  Download,
-  Share2,
-  ExternalLink,
-  Copy,
-  Check,
-  CheckCircle2,
-  Circle,
-  Music,
-  Image,
-  FileText,
-  User,
-  Link2,
-  Zap,
-  ChevronRight,
-} from 'lucide-react'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import type { Artist } from '@/types'
+import type { KpiItem, TrackItem, ShowItem, ChecklistItem, ActivityItem } from '@/lib/dashboard-mocks'
+import DashboardContent from './_components/DashboardContent'
+import DashboardClient  from '@/components/panel/DashboardClient'
 
-const STATS = [
-  {
-    label: 'Visitas totales',
-    value: '1,247',
-    change: '+12%',
-    positive: true,
-    icon: TrendingUp,
-    color: '#C026D3',
-  },
-  {
-    label: 'Clics booking',
-    value: '38',
-    change: '+34%',
-    positive: true,
-    icon: MousePointerClick,
-    color: '#7C3AED',
-  },
-  {
-    label: 'Descargas EPK',
-    value: '12',
-    change: '+8%',
-    positive: true,
-    icon: Download,
-    color: '#0EA5E9',
-  },
-  {
-    label: 'Links compartidos',
-    value: '5',
-    change: '0%',
-    positive: false,
-    icon: Share2,
-    color: '#10B981',
-  },
-]
+// ── helpers ──────────────────────────────────────────────────
 
-const CHECKLIST = [
-  { label: 'Añade tu foto de perfil', done: true, icon: User },
-  { label: 'Escribe tu biografía', done: true, icon: FileText },
-  { label: 'Conecta tus plataformas de música', done: true, icon: Music },
-  { label: 'Sube fotos a tu galería', done: false, icon: Image },
-  { label: 'Configura tu link de booking', done: false, icon: Link2 },
-]
-
-const QUICK_ACCESS = [
-  { label: 'Subir música', icon: Music, color: '#C026D3', href: '/dashboard/customize' },
-  { label: 'Editar bio', icon: FileText, color: '#7C3AED', href: '/dashboard/customize' },
-  { label: 'Ver analytics', icon: TrendingUp, color: '#0EA5E9', href: '/dashboard/analytics' },
-]
-
-function StatCard({
-  label,
-  value,
-  change,
-  positive,
-  icon: Icon,
-  color,
-}: (typeof STATS)[0]) {
-  return (
-    <div className="flex-1 min-w-0 border border-white/[0.06] bg-white/[0.02] rounded-2xl p-5 flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-mono text-white/40 uppercase tracking-widest">{label}</span>
-        <div
-          className="w-8 h-8 rounded-xl flex items-center justify-center"
-          style={{ background: `${color}20` }}
-        >
-          <Icon className="w-4 h-4" style={{ color }} />
-        </div>
-      </div>
-      <div>
-        <p className="text-3xl font-black tracking-tighter text-white">{value}</p>
-        <p
-          className={`text-xs font-mono mt-1 ${
-            positive ? 'text-emerald-400' : 'text-white/30'
-          }`}
-        >
-          {change} vs. periodo anterior
-        </p>
-      </div>
-    </div>
-  )
+function pct(current: number, prev: number) {
+  if (prev === 0) return current > 0 ? 100 : 0
+  return Math.round(((current - prev) / prev) * 100)
 }
 
-export default function DashboardPage() {
-  const [copied, setCopied] = useState(false)
-  const url = 'presskit.pro/valentina-m'
+function dailyBuckets(events: { created_at: string }[], days: number, since: Date) {
+  return Array.from({ length: days }, (_, i) => {
+    const day  = new Date(since.getTime() + i * 86_400_000)
+    const next = new Date(day.getTime() + 86_400_000)
+    return events.filter(e => {
+      const t = new Date(e.created_at).getTime()
+      return t >= day.getTime() && t < next.getTime()
+    }).length
+  })
+}
 
-  function handleCopy() {
-    navigator.clipboard.writeText('https://' + url)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+function fmtNum(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000)     return n >= 10_000 ? `${(n / 1_000).toFixed(0)}K` : `${(n / 1_000).toFixed(1)}K`
+  return n.toLocaleString('es')
+}
+
+const PANEL_TABS = ['editor', 'analytics', 'content', 'fans', 'email', 'booker', 'ai']
+
+// ── page ─────────────────────────────────────────────────────
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: { tab?: string }
+}) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { data: artist } = await supabase
+    .from('artists').select('*').eq('user_id', user.id).single()
+
+  if (!artist) redirect('/onboarding')
+  if (artist.onboarding_step !== 'complete') redirect('/onboarding')
+
+  const tab = searchParams.tab
+
+  // ── Panel tabs: render DashboardClient ───────────────────
+  if (tab && PANEL_TABS.includes(tab)) {
+    const [
+      { data: sections },
+      { data: analytics },
+      { data: fans },
+    ] = await Promise.all([
+      supabase.from('sections').select('*').eq('artist_id', artist.id).order('sort_order'),
+      supabase.from('analytics').select('event_type, created_at, country, referrer')
+        .eq('artist_id', artist.id).order('created_at', { ascending: false }).limit(1000),
+      supabase.from('fan_subscribers').select('*')
+        .eq('artist_slug', artist.slug).order('created_at', { ascending: false }).limit(500),
+    ])
+    return (
+      <DashboardClient
+        initialArtist={artist}
+        initialSections={sections ?? []}
+        analytics={analytics ?? []}
+        fans={fans ?? []}
+      />
+    )
   }
 
-  const doneCount = CHECKLIST.filter((i) => i.done).length
+  // ── Editorial overview (default, no tab) ──────────────────
+  const now   = new Date()
+  const d14   = new Date(now.getTime() - 14 * 86_400_000)
+  const d28   = new Date(now.getTime() - 28 * 86_400_000)
+
+  const [
+    { data: analyticsRaw },
+    { data: liveEventsRaw },
+    { data: sections },
+    { data: fans },
+  ] = await Promise.all([
+    supabase.from('analytics').select('*')
+      .eq('artist_id', artist.id)
+      .gte('created_at', d28.toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1000),
+    supabase.from('live_events').select('*')
+      .eq('artist_id', artist.id)
+      .gte('event_date', now.toISOString().split('T')[0])
+      .order('event_date').limit(5),
+    supabase.from('sections').select('*')
+      .eq('artist_id', artist.id).order('sort_order'),
+    supabase.from('fan_subscribers').select('id')
+      .eq('artist_slug', artist.slug),
+  ])
+
+  const analytics  = analyticsRaw  ?? []
+  const liveEvents = liveEventsRaw ?? []
+  const secs       = sections      ?? []
+  const fanCount   = fans?.length  ?? 0
+
+  const current  = analytics.filter(e => new Date(e.created_at) >= d14)
+  const previous = analytics.filter(e => new Date(e.created_at) < d14)
+
+  const views    = (arr: typeof analytics) => arr.filter(e => e.event_type === 'page_view')
+  const contacts = (arr: typeof analytics) => arr.filter(e => e.event_type === 'contact_click')
+  const plays    = (arr: typeof analytics) => arr.filter(e => e.event_type === 'music_play')
+  const links    = (arr: typeof analytics) => arr.filter(e => e.event_type === 'link_click')
+
+  const curViews   = views(current).length
+  const prevViews  = views(previous).length
+  const curContact = contacts(current).length
+  const prevContact = contacts(previous).length
+  const curPlays   = plays(current).length
+  const prevPlays  = plays(previous).length
+  const curLinks   = links(current).length
+  const prevLinks  = links(previous).length
+
+  const kpis: KpiItem[] = [
+    {
+      id:        'visits',
+      label:     'Visitas · 14 días',
+      display:   fmtNum(curViews),
+      value:     curViews,
+      change:    pct(curViews, prevViews),
+      positive:  curViews >= prevViews,
+      sub:       `${curViews - prevViews >= 0 ? '+' : ''}${curViews - prevViews} vs período anterior`,
+      sparkData: dailyBuckets(views(analytics), 14, d14).length > 0 ? dailyBuckets(views(analytics), 14, d14) : [0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    },
+    {
+      id:        'contact',
+      label:     'Clics Booking',
+      display:   String(curContact),
+      value:     curContact,
+      change:    pct(curContact, prevContact),
+      positive:  curContact >= prevContact,
+      sub:       prevContact > 0 ? `${prevContact} período anterior` : 'primer período',
+      sparkData: dailyBuckets(contacts(analytics), 14, d14),
+    },
+    {
+      id:        'plays',
+      label:     'Reproducciones',
+      display:   fmtNum(curPlays),
+      value:     curPlays,
+      change:    pct(curPlays, prevPlays),
+      positive:  curPlays >= prevPlays,
+      sub:       `${fmtNum(curLinks)} clics en links`,
+      sparkData: dailyBuckets(plays(analytics), 14, d14),
+    },
+    {
+      id:        'fans',
+      label:     'Fan Database',
+      display:   fmtNum(fanCount),
+      value:     fanCount,
+      change:    0,
+      positive:  true,
+      sub:       'suscriptores totales',
+      sparkData: [0,0,0,0,0,0,0,0,0,0,0,0,0,fanCount],
+    },
+  ]
+
+  // Tracks from music section config
+  const musicCfg  = secs.find(s => s.name === 'music')?.config as Record<string, unknown> | null
+  const rawTracks = (musicCfg?.tracks as { id: string; title: string; platform: string; url: string }[] | undefined) ?? []
+  const tracks: TrackItem[] = rawTracks.map((t, i) => ({
+    id:       t.id ?? String(i),
+    title:    t.title || 'Sin título',
+    label:    t.platform,
+    platform: (t.platform as TrackItem['platform']) || 'spotify',
+    plays:    0, change: 0, positive: true, length: '',
+    sparkData: [0,0,0,0,0,0,0],
+  }))
+
+  // Upcoming shows
+  const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC']
+  const upcoming: ShowItem[] = liveEvents.map(ev => {
+    const d = new Date(ev.event_date + 'T12:00:00')
+    return { id: ev.id, date: `${MONTHS[d.getMonth()]} ${d.getDate()}`, city: ev.city ?? '', venue: ev.venue_name, country: '', status: 'Confirmado' as const }
+  })
+
+  // Checklist
+  const bioText   = (secs.find(s => s.name === 'bio')?.config as { text?: string } | null)?.text ?? artist.bio ?? ''
+  const galImages = (secs.find(s => s.name === 'gallery')?.config as { images?: unknown[] } | null)?.images ?? []
+  const checklist: ChecklistItem[] = [
+    { id: 'photo',   label: 'Foto de artista',        done: !!artist.photo_url,                           href: '/dashboard?tab=editor' },
+    { id: 'bio',     label: 'Biografía',               done: bioText.trim().length > 10,                   href: '/dashboard?tab=content' },
+    { id: 'music',   label: 'Tracks de música',        done: rawTracks.length > 0,                         href: '/dashboard?tab=editor' },
+    { id: 'gallery', label: 'Galería de fotos',        done: galImages.length > 0,                         href: '/dashboard?tab=editor' },
+    { id: 'booking', label: 'Link / email de booking', done: !!(artist.booking_url || artist.booking_email), href: '/dashboard?tab=content' },
+  ]
+
+  // Activity feed
+  const TAG_MAP: Record<string, { tag: string; color: string; text: (e: typeof analytics[0]) => string }> = {
+    page_view:     { tag: 'VIEW', color: '#0EA5E9', text: e => `Visita${e.country ? ` desde ${e.country}` : ''}` },
+    contact_click: { tag: 'BOOK', color: '#C026D3', text: () => 'Click en contacto / booking' },
+    link_click:    { tag: 'LINK', color: '#7C3AED', text: () => 'Click en link externo' },
+    music_play:    { tag: 'PLAY', color: '#F59E0B', text: () => 'Reproducción de música' },
+  }
+  const activity: ActivityItem[] = analytics.slice(0, 6).map((e, i) => {
+    const m    = TAG_MAP[e.event_type] ?? { tag: 'EVT', color: '#6B7280', text: () => e.event_type }
+    const mins = Math.round((now.getTime() - new Date(e.created_at).getTime()) / 60000)
+    return { id: String(i), tag: m.tag, color: m.color, text: m.text(e), time: mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins/60)}h` : `${Math.floor(mins/1440)}d` }
+  })
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://artix-music.vercel.app'
+  const pressMeta = {
+    url:          `${appUrl}/${artist.slug}`,
+    artistName:   artist.artist_name,
+    firstName:    artist.artist_name.split(' ')[0],
+    initials:     artist.artist_name.split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2),
+    genre:        artist.genre,
+    photoUrl:     artist.photo_url,
+    plan:         'PRO',
+    planDaysLeft: 30,
+  }
 
   return (
-    <div className="p-8 max-w-6xl mx-auto flex flex-col gap-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-black tracking-tighter text-white">
-          Hola, Valentina 👋
-        </h1>
-        <p className="text-white/40 text-sm mt-1 font-mono">
-          Tu presskit está activo y recibiendo visitas. Aquí tu resumen del día.
-        </p>
-      </div>
-
-      {/* Stats row */}
-      <div className="flex gap-4">
-        {STATS.map((s) => (
-          <StatCard key={s.label} {...s} />
-        ))}
-      </div>
-
-      {/* Presskit card + checklist row */}
-      <div className="grid grid-cols-5 gap-6">
-        {/* Presskit preview card */}
-        <div className="col-span-3 border border-white/[0.06] bg-white/[0.02] rounded-2xl p-6 flex flex-col gap-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-black tracking-tighter text-lg">Tu presskit</h2>
-              <p className="text-white/40 text-xs font-mono mt-0.5">{url}</p>
-            </div>
-            <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full">
-              ACTIVO
-            </span>
-          </div>
-
-          {/* Mini iPhone */}
-          <div className="flex justify-center">
-            <div
-              className="relative rounded-[28px] border-2 border-white/10 overflow-hidden"
-              style={{
-                width: 160,
-                height: 280,
-                background: '#0D0D12',
-                boxShadow: '0 0 60px #C026D330',
-              }}
-            >
-              {/* Notch */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-4 bg-black rounded-b-xl z-10" />
-              {/* Content */}
-              <div className="absolute inset-0 flex flex-col">
-                {/* Hero */}
-                <div
-                  className="flex-1 flex flex-col items-center justify-center gap-1"
-                  style={{
-                    background: 'linear-gradient(180deg, #2D003A 0%, #07070B 100%)',
-                  }}
-                >
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#C026D3] to-[#7C3AED] mt-5" />
-                  <p className="text-white text-[10px] font-black tracking-tight mt-1">
-                    VALENTINA M.
-                  </p>
-                  <p className="text-[#C026D3] text-[7px] font-mono tracking-widest">
-                    HOUSE DJ
-                  </p>
-                </div>
-                {/* Bottom nav mock */}
-                <div className="h-8 border-t border-white/10 flex items-center justify-around px-3">
-                  {[...Array(4)].map((_, i) => (
-                    <div key={i} className="w-4 h-1 rounded-full bg-white/20" />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3">
-            <a
-              href={`https://${url}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#C026D3] text-white text-sm font-semibold hover:bg-[#A21CAF] transition-colors"
-            >
-              <ExternalLink className="w-4 h-4" />
-              Ver en vivo
-            </a>
-            <button
-              onClick={handleCopy}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 bg-white/[0.03] text-white/70 text-sm font-semibold hover:bg-white/[0.06] transition-colors"
-            >
-              {copied ? (
-                <>
-                  <Check className="w-4 h-4 text-emerald-400" />
-                  <span className="text-emerald-400">Copiado</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-4 h-4" />
-                  Compartir URL
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Checklist */}
-        <div className="col-span-2 border border-white/[0.06] bg-white/[0.02] rounded-2xl p-6 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-black tracking-tighter text-lg">Completa tu perfil</h2>
-            <span className="text-xs font-mono text-white/40">
-              {doneCount}/{CHECKLIST.length}
-            </span>
-          </div>
-
-          {/* Progress bar */}
-          <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-[#C026D3] to-[#7C3AED] transition-all"
-              style={{ width: `${(doneCount / CHECKLIST.length) * 100}%` }}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            {CHECKLIST.map(({ label, done, icon: Icon }) => (
-              <div
-                key={label}
-                className={`flex items-center gap-3 p-2.5 rounded-xl transition-colors ${
-                  done ? 'opacity-50' : 'bg-white/[0.02] border border-white/[0.04]'
-                }`}
-              >
-                {done ? (
-                  <CheckCircle2 className="w-4 h-4 text-[#C026D3] shrink-0" />
-                ) : (
-                  <Circle className="w-4 h-4 text-white/20 shrink-0" />
-                )}
-                <Icon className="w-3.5 h-3.5 text-white/30 shrink-0" />
-                <span
-                  className={`text-sm ${
-                    done ? 'line-through text-white/30' : 'text-white/70'
-                  }`}
-                >
-                  {label}
-                </span>
-                {!done && (
-                  <ChevronRight className="w-3.5 h-3.5 text-white/20 ml-auto shrink-0" />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Quick access */}
-      <div>
-        <h2 className="font-black tracking-tighter text-lg mb-4">Accesos rápidos</h2>
-        <div className="grid grid-cols-3 gap-4">
-          {QUICK_ACCESS.map(({ label, icon: Icon, color, href }) => (
-            <a
-              key={label}
-              href={href}
-              className="group border border-white/[0.06] bg-white/[0.02] rounded-2xl p-5 flex items-center gap-4 hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-150"
-            >
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: `${color}20` }}
-              >
-                <Icon className="w-5 h-5" style={{ color }} />
-              </div>
-              <div className="min-w-0">
-                <p className="font-semibold text-white text-sm">{label}</p>
-                <p className="text-xs text-white/30 font-mono mt-0.5">Ir ahora →</p>
-              </div>
-            </a>
-          ))}
-
-          {/* Upgrade nudge */}
-          <div className="border border-[#C026D3]/20 bg-[#C026D3]/[0.04] rounded-2xl p-5 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-[#C026D3]/20 flex items-center justify-center shrink-0">
-              <Zap className="w-5 h-5 text-[#C026D3]" />
-            </div>
-            <div className="min-w-0">
-              <p className="font-semibold text-[#E879F9] text-sm">Plan PRO activo</p>
-              <p className="text-xs text-white/30 font-mono mt-0.5">12 días restantes</p>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="flex-1 overflow-y-auto">
+      <DashboardContent
+        artist={artist as Artist}
+        pressMeta={pressMeta}
+        kpis={kpis}
+        tracks={tracks}
+        upcoming={upcoming}
+        checklist={checklist}
+        activity={activity}
+      />
     </div>
   )
 }

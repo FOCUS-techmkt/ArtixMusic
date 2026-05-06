@@ -15,6 +15,11 @@ const config: Config = {
         serif:   ['var(--font-serif)',    'serif'],
       },
       colors: {
+        page: '#0A0A0F',
+        magenta: {
+          400: '#E879F9',
+          500: '#C026D3',
+        },
         // Dark Rave
         rave: {
           bg: '#080808',

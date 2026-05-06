@@ -50,18 +50,27 @@ function initialData(artist: Artist): OnboardingData {
   }
 }
 
+function LogoMark({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="32" height="32" rx="7" fill="#C026D3" />
+      <path d="M9 8h8.5C20.5 8 23 10.2 23 13.2c0 3-2.5 5.2-5.5 5.2H13v5.6H9V8zm4 8.2h4c1.4 0 2.5-.9 2.5-2.2 0-1.3-1.1-2.2-2.5-2.2h-4v4.4z" fill="white" />
+    </svg>
+  )
+}
+
 export default function OnboardingWizard({ initialArtist }: { initialArtist: Artist }) {
   const router = useRouter()
   const supabase = createClient()
 
-  const [step, setStep]       = useState(() => {
+  const [step, setStep]     = useState(() => {
     const idx = ONBOARDING_STEPS.indexOf(initialArtist.onboarding_step as OnboardingStatus)
     return idx >= 0 ? idx : 0
   })
-  const [dir, setDir]         = useState(1)
-  const [data, setData]       = useState<OnboardingData>(() => initialData(initialArtist))
-  const [saving, setSaving]   = useState(false)
-  const [error, setError]     = useState('')
+  const [dir, setDir]       = useState(1)
+  const [data, setData]     = useState<OnboardingData>(() => initialData(initialArtist))
+  const [saving, setSaving] = useState(false)
+  const [error, setError]   = useState('')
 
   const update = useCallback((partial: Partial<OnboardingData>) => {
     setData(p => ({ ...p, ...partial }))
@@ -96,25 +105,19 @@ export default function OnboardingWizard({ initialArtist }: { initialArtist: Art
         bg_dark:         data.bg_dark,
         layout_variant:  data.layout_variant,
         onboarding_step,
-        is_published: isLast,
+        is_published:    isLast,
       })
       .eq('user_id', initialArtist.user_id)
 
     if (dbError) throw new Error(dbError.message)
 
-    // On completion, pre-configure sections with onboarding data
     if (isLast) {
       const { data: artist } = await supabase
-        .from('artists')
-        .select('id')
-        .eq('user_id', initialArtist.user_id)
-        .maybeSingle()
+        .from('artists').select('id').eq('user_id', initialArtist.user_id).maybeSingle()
 
       if (artist?.id) {
         const { data: sections } = await supabase
-          .from('sections')
-          .select('id, name, config')
-          .eq('artist_id', artist.id)
+          .from('sections').select('id, name, config').eq('artist_id', artist.id)
 
         if (sections?.length) {
           await Promise.all(sections.map(s => {
@@ -122,30 +125,15 @@ export default function OnboardingWizard({ initialArtist }: { initialArtist: Art
             let patch: Record<string, unknown> = {}
 
             if (s.name === 'hero') {
-              patch = {
-                ...base,
-                tagline:     data.artist_name,
-                sub_tagline: [data.role, data.genre].filter(Boolean).join(' · '),
-                supporters:  data.sound_words ?? [],
-                particles:   true,
-              }
+              patch = { ...base, tagline: data.artist_name, sub_tagline: [data.role, data.genre].filter(Boolean).join(' · '), supporters: data.sound_words ?? [], particles: true }
             } else if (s.name === 'bio') {
-              patch = {
-                ...base,
-                text:    data.bio ? `<p>${data.bio}</p>` : base.text,
-                genres:  [data.genre].filter(Boolean),
-                badges:  (data.achievements ?? []).slice(0, 3).map((a: { title: string }) => a.title),
-              }
+              patch = { ...base, text: data.bio ? `<p>${data.bio}</p>` : base.text, genres: [data.genre].filter(Boolean), badges: (data.achievements ?? []).slice(0, 3).map((a: { title: string }) => a.title) }
             } else if (s.name === 'contact') {
-              patch = {
-                ...base,
-                cta_url: data.booking_email ? `mailto:${data.booking_email}` : '',
-              }
+              patch = { ...base, cta_url: data.booking_email ? `mailto:${data.booking_email}` : '' }
             } else {
               patch = base
             }
 
-            // Only update if config is empty
             if (!s.config || Object.keys(s.config).length === 0) {
               return supabase.from('sections').update({ config: patch }).eq('id', s.id)
             }
@@ -162,7 +150,7 @@ export default function OnboardingWizard({ initialArtist }: { initialArtist: Art
     setSaving(true)
     try {
       await saveProgress(step)
-      if (step >= STEP_COMPONENTS.length - 1) { router.push('/panel'); return }
+      if (step >= STEP_COMPONENTS.length - 1) { router.push('/dashboard'); return }
       setDir(1)
       setStep(s => s + 1)
     } catch (e) {
@@ -180,35 +168,43 @@ export default function OnboardingWizard({ initialArtist }: { initialArtist: Art
 
   const StepComponent = STEP_COMPONENTS[step]
   const isLast = step === STEP_COMPONENTS.length - 1
-  const accentColor = data.primary_color || '#C026D3'
 
   return (
-    <div className="min-h-screen bg-[#080808] text-white flex flex-col">
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-5 border-b border-white/5">
-        <span className="font-display font-bold tracking-widest">
-          PRESSKIT<span style={{ color: accentColor }}>.PRO</span>
-        </span>
-        <span className="text-xs font-mono text-white/30">{data.artist_name || 'Setup'}</span>
-      </header>
-
-      {/* Background glow from artist's color */}
+    <div className="min-h-screen text-white flex flex-col" style={{ background: '#0A0A0F' }}>
+      {/* Background glow */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <motion.div
-          key={`${step}-${accentColor}`}
+          key={step}
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1 }}
           className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full blur-[150px]"
-          style={{ backgroundColor: accentColor + '0A' }}
+          style={{ backgroundColor: 'rgba(192,38,211,0.06)' }}
         />
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+      {/* Header */}
+      <header
+        className="flex items-center justify-between px-6 py-[22px] relative z-10"
+        style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+      >
+        <div className="flex items-center gap-2.5">
+          <LogoMark size={26} />
+          <div className="flex flex-col leading-none">
+            <span className="font-display font-semibold text-[14px] tracking-[0.04em]">
+              PRESSKIT<span style={{ color: '#C026D3' }}>.PRO</span>
+            </span>
+            <span className="font-mono text-[9px] text-white/25 tracking-[0.18em] mt-1">SETUP</span>
+          </div>
+        </div>
+        <span className="font-mono text-[11px] text-white/25">{data.artist_name || '···'}</span>
+      </header>
+
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 relative z-10">
         <div className="w-full max-w-lg">
           {/* Progress */}
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
-            <ProgressBar currentStep={step} accentColor={accentColor} />
+            <ProgressBar currentStep={step} accentColor="#C026D3" />
           </motion.div>
 
           {/* Step content */}
@@ -232,37 +228,46 @@ export default function OnboardingWizard({ initialArtist }: { initialArtist: Art
           <AnimatePresence>
             {error && (
               <motion.p
-                initial={{ opacity: 0, y: -8, x: 0 }}
+                initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0, x: [0, -8, 8, -8, 8, 0] }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.4 }}
-                className="mt-4 text-red-400 text-sm text-center"
+                className="mt-4 text-rose-400 text-[13px] text-center font-mono"
               >
                 {error}
               </motion.p>
             )}
           </AnimatePresence>
 
-          {/* Nav */}
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
+          {/* Navigation */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
             className="mt-10 flex items-center justify-between"
           >
             <button
-              type="button" onClick={handleBack} disabled={step === 0}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-white/40 hover:text-white disabled:opacity-0 transition-all"
+              type="button"
+              onClick={handleBack}
+              disabled={step === 0}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] text-white/35 hover:text-white disabled:opacity-0 transition-all"
             >
               <ArrowLeft className="w-4 h-4" /> Atrás
             </button>
 
             <motion.button
-              type="button" onClick={handleNext} disabled={saving}
-              whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-              className="flex items-center gap-2 px-8 py-3 rounded-full text-white font-semibold transition-colors disabled:opacity-70"
-              style={{ backgroundColor: accentColor }}
+              type="button"
+              onClick={handleNext}
+              disabled={saving}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="flex items-center gap-2 px-8 py-3 rounded-xl text-[14px] text-white font-semibold transition-colors disabled:opacity-70"
+              style={{ background: '#C026D3' }}
             >
-              {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                <>{isLast ? '¡Publicar mi kit!' : 'Continuar'}<ArrowRight className="w-5 h-5" /></>
-              )}
+              {saving
+                ? <Loader2 className="w-5 h-5 animate-spin" />
+                : <>{isLast ? '¡Publicar mi kit!' : 'Continuar'}<ArrowRight className="w-5 h-5" /></>
+              }
             </motion.button>
           </motion.div>
         </div>

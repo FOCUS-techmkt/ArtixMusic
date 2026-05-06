@@ -23,10 +23,24 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  let user = null
+  try {
+    const { data } = await supabase.auth.getUser()
+    user = data.user
+  } catch {
+    // Supabase unreachable — allow the request through; server components will handle auth
+  }
 
   const { pathname } = request.nextUrl
-  if ((pathname.startsWith('/panel') || pathname.startsWith('/onboarding')) && !user) {
+
+  // Redirect logged-in users away from auth pages
+  if (user && (pathname === '/login' || pathname === '/signup')) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  // Protect private routes
+  const protectedPrefixes = ['/dashboard', '/panel', '/onboarding']
+  if (protectedPrefixes.some((p) => pathname.startsWith(p)) && !user) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 

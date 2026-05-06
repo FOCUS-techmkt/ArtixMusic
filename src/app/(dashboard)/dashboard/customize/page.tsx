@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 
-// The real editor lives at /panel (EditorTab → "Mi sitio").
-// This route is kept for backward compatibility with old bookmarks.
-export default function CustomizeRedirect() {
+// Editor completo en /panel — redirige preservando auth
+export default function CustomizePage() {
   redirect('/panel')
 }

@@ -69,7 +69,7 @@ export default function SignupPage() {
 
   if (needsConfirm) {
     return (
-      <div className="min-h-screen bg-[#080808] flex items-center justify-center px-6">
+      <div className="min-h-screen flex items-center justify-center px-6" style={{ background: '#0A0A0F' }}>
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -98,7 +98,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080808] flex items-center justify-center px-6">
+    <div className="min-h-screen flex items-center justify-center px-6" style={{ background: '#0A0A0F' }}>
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-[#C026D3]/8 blur-[100px]" />
       </div>
