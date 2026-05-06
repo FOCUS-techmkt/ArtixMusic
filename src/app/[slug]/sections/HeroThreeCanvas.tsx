@@ -140,11 +140,11 @@ export default function HeroThreeCanvas({ effect, intensity, primaryColor }: Pro
         }
       }
 
-      const clock = new THREE.Clock()
+      const startTime = performance.now()
       const animate = () => {
         if (disposed) return
         rafId = requestAnimationFrame(animate)
-        updateFn(clock.getElapsedTime())
+        updateFn((performance.now() - startTime) / 1000)
         renderer.render(scene, camera)
       }
       animate()

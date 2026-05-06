@@ -14,9 +14,10 @@ interface Props {
 
 export default function RichTextEditor({ value, onChange, placeholder = 'Escribe aquí...', accentColor = '#C026D3' }: Props) {
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit,
-      Link.configure({ openOnClick: false }),
+      Link.configure({ openOnClick: false, autolink: true }),
       Placeholder.configure({ placeholder }),
     ],
     content:   value,
