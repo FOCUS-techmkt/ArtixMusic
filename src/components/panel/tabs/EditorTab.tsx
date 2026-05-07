@@ -264,18 +264,24 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
   return (
     <div className="flex h-full flex-col" style={{ minHeight: 'calc(100dvh - 112px)' }}>
 
-      {/* Mobile toggle */}
-      <div className="flex lg:hidden border-b border-white/[0.05] shrink-0" style={{ background: '#0A0A0E' }}>
-        {(['controls', 'preview'] as const).map(v => (
-          <button key={v} onClick={() => setMobilePane(v)}
-            className="flex-1 py-3 text-[11px] font-mono uppercase tracking-wider transition-all"
-            style={{
-              color:        mobilePane === v ? palette.primary : 'rgba(255,255,255,0.3)',
-              borderBottom: mobilePane === v ? `2px solid ${palette.primary}` : '2px solid transparent',
-            }}>
-            {v === 'controls' ? '⚙ Controles' : '👁 Vista previa'}
-          </button>
-        ))}
+      {/* Mobile toggle — pill style */}
+      <div className="flex lg:hidden items-center justify-center gap-1 px-4 py-2 shrink-0"
+        style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: '#0A0A0E' }}>
+        <div className="flex p-1 rounded-xl gap-0.5" style={{ background: 'rgba(255,255,255,0.05)' }}>
+          {([
+            { v: 'controls' as const, icon: '⚙', label: 'Controles' },
+            { v: 'preview'  as const, icon: '👁', label: 'Vista previa' },
+          ]).map(({ v, icon, label }) => (
+            <button key={v} onClick={() => setMobilePane(v)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[11px] font-mono transition-all"
+              style={{
+                background: mobilePane === v ? palette.primary : 'transparent',
+                color:      mobilePane === v ? '#fff' : 'rgba(255,255,255,0.4)',
+              }}>
+              <span>{icon}</span> {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
@@ -300,21 +306,37 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
           </div>
 
           {/* Panel tabs */}
-          <div className="flex border-b border-white/[0.05] sticky top-0 z-10 shrink-0 overflow-x-auto" style={{ background: '#0A0A0E' }}>
-            {([ 'templates', 'sections', 'design', 'effects'] as PanelId[]).map(p => (
-              <button key={p} onClick={() => { setPanel(p); setActiveSection(null) }}
-                className="flex-1 min-w-[60px] py-3 text-[10px] font-mono uppercase tracking-wider transition-all whitespace-nowrap px-1"
-                style={{
-                  color:        panel === p ? palette.primary : 'rgba(255,255,255,0.3)',
-                  borderBottom: panel === p ? `2px solid ${palette.primary}` : '2px solid transparent',
-                }}>
-                {p === 'templates' ? '🎨' : p === 'sections' ? 'Secc.' : p === 'design' ? 'Diseño' : 'FX'}
+          <div className="flex border-b border-white/[0.05] sticky top-0 z-10 shrink-0" style={{ background: '#0A0A0E' }}>
+            {([
+              { id: 'templates', emoji: '🎨', label: 'Plantillas' },
+              { id: 'sections',  emoji: '⊞',  label: 'Secciones'  },
+              { id: 'design',    emoji: '◐',  label: 'Diseño'     },
+              { id: 'effects',   emoji: '✦',  label: 'Efectos'    },
+            ] as { id: PanelId; emoji: string; label: string }[]).map(({ id, emoji, label }) => (
+              <button key={id} onClick={() => { setPanel(id); setActiveSection(null) }}
+                className="flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-all relative"
+                style={{ color: panel === id ? palette.primary : 'rgba(255,255,255,0.28)' }}>
+                <span className="text-[13px] leading-none">{emoji}</span>
+                <span className="text-[8px] font-mono uppercase tracking-wider">{label}</span>
+                {panel === id && (
+                  <motion.span layoutId="panel-indicator"
+                    className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full"
+                    style={{ background: palette.primary }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 40 }} />
+                )}
               </button>
             ))}
           </div>
 
           {/* Panel content */}
           <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <AnimatePresence mode="wait" initial={false}>
+            <motion.div key={panel + (activeSection?.id ?? '')}
+              initial={{ opacity: 0, x: 6 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -6 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              className="flex-1 min-h-0 flex flex-col overflow-hidden">
 
             {/* ── TEMPLATES PANEL ── */}
             {panel === 'templates' && (
@@ -335,7 +357,7 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
 
             {/* ── SECTIONS PANEL ── */}
             {panel === 'sections' && !activeSection && (
-              <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
+              <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 overscroll-contain">
                 {sections.length === 0 ? (
                   <EmptySections palette={palette} artistId={artist.id} supabase={supabase} onCreated={setSections} />
                 ) : (
@@ -395,7 +417,7 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
 
             {/* ── DESIGN PANEL ── */}
             {panel === 'design' && (
-              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-5">
+              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-5 overscroll-contain">
 
                 {/* "Just applied" banner */}
                 <AnimatePresence>
@@ -457,21 +479,29 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
                 {/* Colors */}
                 <div className="flex flex-col gap-3">
                   <Label>Colores</Label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="flex flex-col gap-2">
                     {[
-                      { label: 'Principal',  value: primary,   onChange: handlePrimary },
-                      { label: 'Secundario', value: secondary, onChange: handleSecondary },
+                      { label: 'Color principal',   value: primary,   onChange: handlePrimary },
+                      { label: 'Color secundario',  value: secondary, onChange: handleSecondary },
                     ].map(({ label, value, onChange }) => (
                       <div key={label} className="flex items-center gap-2 p-2.5 rounded-xl"
                         style={{ background: '#141418', border: '1px solid rgba(255,255,255,0.06)' }}>
-                        <div className="relative w-8 h-8 rounded-lg overflow-hidden shrink-0">
+                        <div className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 shadow-lg cursor-pointer"
+                          style={{ boxShadow: `0 0 16px ${value}50` }}>
                           <input type="color" value={value} onChange={e => onChange(e.target.value)}
-                            className="absolute inset-0 w-full h-full cursor-pointer opacity-0" />
-                          <div className="w-full h-full rounded-lg" style={{ background: value }} />
+                            className="absolute inset-0 w-[200%] h-[200%] -translate-x-1/4 -translate-y-1/4 cursor-pointer opacity-0" />
+                          <div className="w-full h-full rounded-xl" style={{ background: value }} />
                         </div>
-                        <div>
-                          <p className="text-[10px] font-mono" style={{ color: value }}>{value.toUpperCase()}</p>
-                          <p className="text-[9px] text-white/20">{label}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[9px] text-white/30 mb-0.5">{label}</p>
+                          <input
+                            type="text"
+                            value={value.toUpperCase()}
+                            onChange={e => { if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) onChange(e.target.value) }}
+                            className="w-full text-[11px] font-mono bg-transparent border-none outline-none"
+                            style={{ color: value }}
+                            maxLength={7}
+                          />
                         </div>
                       </div>
                     ))}
@@ -534,7 +564,7 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
                   </div>
                 </div>
 
-                {/* Fonts at 72px height */}
+                {/* Fonts */}
                 <div className="flex flex-col gap-2">
                   <Label>Tipografía</Label>
                   {Object.entries(
@@ -551,7 +581,7 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
                           <button key={f.id} onClick={() => handleFontId(f.id)}
                             className="flex items-center px-3 rounded-xl border text-left transition-all overflow-hidden"
                             style={{
-                              height: '72px',
+                              height: '60px',
                               borderColor:     active ? primary : 'rgba(255,255,255,0.06)',
                               backgroundColor: active ? primary + '10' : 'rgba(255,255,255,0.02)',
                             }}>
@@ -579,12 +609,12 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
 
             {/* ── EFFECTS PANEL ── */}
             {panel === 'effects' && (
-              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 overscroll-contain">
                 <div className="flex items-center gap-2 p-3 rounded-xl"
                   style={{ background: palette.primary + '10', border: `1px solid ${palette.primary}25` }}>
                   <Sparkles className="w-4 h-4 shrink-0" style={{ color: palette.primary }} />
                   <p className="text-[11px] text-white/60 leading-relaxed">
-                    Los efectos activos se guardan automáticamente.
+                    Los efectos se guardan automáticamente al activar.
                   </p>
                 </div>
                 {EFFECTS.map(({ id, label, desc, emoji }) => {
@@ -641,59 +671,98 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
                 })}
               </div>
             )}
+
+            </motion.div>
+            </AnimatePresence>
           </div>
         </div>
 
         {/* ── PREVIEW PANE ──────────────────────────────────────── */}
         <div className={`flex-1 flex flex-col min-h-0 ${mobilePane === 'controls' ? 'hidden lg:flex' : 'flex'}`} style={{ background: '#070709' }}>
-          <div className="flex items-center justify-between px-4 py-2.5 shrink-0"
+
+          {/* Preview toolbar */}
+          <div className="flex items-center justify-between px-3 py-2 shrink-0"
             style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <div className="flex items-center gap-1.5">
-              {[{ v: 'desktop' as const, Icon: Monitor }, { v: 'mobile' as const, Icon: Smartphone }].map(({ v, Icon }) => (
+            {/* Device switcher as pill */}
+            <div className="flex items-center gap-0.5 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)' }}>
+              {[{ v: 'desktop' as const, Icon: Monitor, label: 'Desktop' }, { v: 'mobile' as const, Icon: Smartphone, label: 'Móvil' }].map(({ v, Icon, label }) => (
                 <button key={v} onClick={() => setDevice(v)}
-                  className="p-2 rounded-lg transition-all"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-mono transition-all"
                   style={{
-                    background: device === v ? palette.primary + '20' : 'transparent',
-                    color:      device === v ? palette.primary : 'rgba(255,255,255,0.3)',
+                    background: device === v ? palette.primary + '25' : 'transparent',
+                    color:      device === v ? palette.primary : 'rgba(255,255,255,0.28)',
                   }}>
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-3.5 h-3.5" /> {label}
                 </button>
               ))}
             </div>
-            <p className="text-[10px] font-mono text-white/20 truncate max-w-[200px]">/{artist.slug}</p>
-            <div className="flex items-center gap-1.5">
-              <button onClick={reloadPreview} className="p-2 rounded-lg text-white/30 hover:text-white transition-colors" title="Recargar">
+
+            <p className="text-[10px] font-mono truncate max-w-[140px]"
+              style={{ color: palette.primary + 'AA' }}>/{artist.slug}</p>
+
+            <div className="flex items-center gap-1">
+              <button onClick={reloadPreview}
+                className="p-2 rounded-lg transition-colors hover:bg-white/[0.04]"
+                style={{ color: 'rgba(255,255,255,0.3)' }} title="Recargar">
                 <RefreshCw className="w-3.5 h-3.5" />
               </button>
               <button onClick={copyLink}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono transition-all"
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-mono transition-all"
                 style={{
-                  background: copied ? '#22C55E18' : palette.primary + '18',
+                  background: copied ? '#22C55E18' : palette.primary + '15',
                   color:      copied ? '#22C55E'  : palette.primary,
-                  border:     `1px solid ${copied ? '#22C55E30' : palette.primary + '30'}`,
+                  border:     `1px solid ${copied ? '#22C55E30' : palette.primary + '25'}`,
                 }}>
                 {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                {copied ? 'Copiado' : 'Copiar link'}
+                {copied ? 'Copiado' : 'Link'}
               </button>
               <a href={previewUrl} target="_blank" rel="noopener noreferrer"
-                className="p-2 rounded-lg text-white/30 hover:text-white transition-colors" title="Abrir en nueva pestaña">
+                className="p-2 rounded-lg transition-colors hover:bg-white/[0.04]"
+                style={{ color: 'rgba(255,255,255,0.3)' }} title="Abrir en nueva pestaña">
                 <Maximize2 className="w-3.5 h-3.5" />
               </a>
             </div>
           </div>
-          <div className="flex-1 flex items-start justify-center overflow-auto p-4">
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl transition-all duration-500"
+
+          {/* Preview canvas */}
+          <div className="flex-1 flex items-start justify-center overflow-auto p-4"
+            style={{ background: device === 'mobile' ? '#050507' : '#070709' }}>
+            <motion.div
+              layout
+              className="relative overflow-hidden shadow-2xl"
+              animate={{
+                width:  device === 'mobile' ? 390 : undefined,
+              }}
+              transition={{ type: 'spring', stiffness: 300, damping: 35 }}
               style={{
                 width:       device === 'mobile' ? '390px' : '100%',
                 maxWidth:    device === 'desktop' ? '100%' : '390px',
                 aspectRatio: device === 'mobile' ? '390/844' : undefined,
-                height:      device === 'desktop' ? 'calc(100vh - 180px)' : undefined,
-                border:      '1px solid rgba(255,255,255,0.08)',
-                boxShadow:   `0 0 60px ${palette.primary}20`,
+                height:      device === 'desktop' ? 'calc(100dvh - 176px)' : undefined,
+                borderRadius: device === 'mobile' ? '44px' : '12px',
+                border:      device === 'mobile' ? '8px solid #1a1a1f' : '1px solid rgba(255,255,255,0.07)',
+                boxShadow:   device === 'mobile'
+                  ? `0 0 0 1px rgba(255,255,255,0.08), 0 32px 80px rgba(0,0,0,0.8), 0 0 60px ${palette.primary}15`
+                  : `0 0 60px ${palette.primary}18`,
               }}>
+              {/* Phone notch */}
+              {device === 'mobile' && (
+                <div className="absolute top-0 left-0 right-0 flex justify-center pt-2 z-20 pointer-events-none">
+                  <div className="w-28 h-6 rounded-full flex items-center justify-center gap-2"
+                    style={{ background: '#1a1a1f' }}>
+                    <div className="w-2 h-2 rounded-full bg-black/60" />
+                    <div className="w-10 h-1.5 rounded-full bg-black/40" />
+                  </div>
+                </div>
+              )}
               <iframe ref={iframeRef} src={previewUrl}
-                className="w-full h-full" style={{ border: 'none' }} title="Press kit preview" />
-            </div>
+                className="w-full h-full"
+                style={{
+                  border: 'none',
+                  borderRadius: device === 'mobile' ? '36px' : '6px',
+                }}
+                title="Press kit preview" />
+            </motion.div>
           </div>
         </div>
 
@@ -772,7 +841,7 @@ function SortableSection({ section, palette, toggling, isActive, openAnimPicker,
             ? `0 8px 32px rgba(0,0,0,0.5), 0 0 20px ${palette.primary}25`
             : isActive ? `0 0 0 1px ${palette.primary}20` : 'none',
         }}
-        className="flex items-center gap-2 p-3 rounded-xl transition-all duration-150">
+        className="flex items-center gap-2 p-3 rounded-xl transition-all duration-150 min-h-[52px]">
 
         <button {...attributes} {...listeners}
           className="p-1 text-white/15 hover:text-white/40 cursor-grab active:cursor-grabbing transition-colors shrink-0">

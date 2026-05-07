@@ -92,8 +92,24 @@ export interface HeroConfig {
   letter_spacing:       number   // -5–20
   text_align:           'left' | 'center' | 'right'
 
+  // ── Sub-tagline customization ─────────────────
+  sub_tagline_size:  number          // 8–40 px
+  sub_tagline_color: string | null   // null = palette.textMuted
+
+  // ── Glow behind artist name ──────────────────
+  glow_behind_name:           boolean
+  glow_behind_name_intensity: number   // 0–100
+  glow_behind_name_color:     string | null
+
+  // ── Content layout ────────────────────────────
+  content_padding_y: number   // extra vertical padding 0–120px
+
+  // ── Background pattern overlay ────────────────
+  bg_pattern:         'none' | 'dots' | 'grid' | 'diagonal' | 'noise'
+  bg_pattern_opacity: number   // 0–100
+
   // ── Text animation ───────────────────────────
-  text_animation: 'fade' | 'slide' | 'slide-down' | 'glitch' | 'typewriter' | 'reveal' | 'word-by-word' | 'scale-up'
+  text_animation: 'fade' | 'slide' | 'slide-down' | 'glitch' | 'typewriter' | 'reveal' | 'word-by-word' | 'scale-up' | 'blur-in' | 'float'
 
   // ── Background animations ────────────────────
   parallax_bg:           boolean

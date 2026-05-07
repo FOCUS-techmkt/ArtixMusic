@@ -152,6 +152,26 @@ function AnimText({ text, animation = 'slide', delay = 0, className = '', style 
       </motion.div>
     )
   }
+  if (animation === 'blur-in') {
+    return (
+      <motion.div className={className} style={style}
+        initial={{ opacity: 0, filter: 'blur(18px)' }}
+        animate={{ opacity: 1, filter: 'blur(0px)' }}
+        transition={{ duration: 0.9, delay, ease: [0.22, 1, 0.36, 1] }}>
+        {text}
+      </motion.div>
+    )
+  }
+  if (animation === 'float') {
+    return (
+      <motion.div className={className} style={style}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: [20, 0, -4, 0] }}
+        transition={{ duration: 1.1, delay, ease: [0.22, 1, 0.36, 1] }}>
+        {text}
+      </motion.div>
+    )
+  }
   const variants = {
     fade:  { initial: { opacity: 0 },        animate: { opacity: 1 } },
     slide: { initial: { opacity: 0, y: 36 }, animate: { opacity: 1, y: 0 } },
@@ -452,6 +472,20 @@ function buildImageFilter(config: HeroConfig): string {
   return parts.length ? parts.join(' ') : 'none'
 }
 
+// ── Background pattern ───────────────────────────────────────────
+function buildBgPattern(config: HeroConfig): React.CSSProperties | null {
+  const p = config.bg_pattern ?? 'none'
+  if (p === 'none') return null
+  const opacity = (config.bg_pattern_opacity ?? 15) / 100
+  const patternStyles: Record<string, React.CSSProperties> = {
+    dots:     { backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '22px 22px', opacity },
+    grid:     { backgroundImage: 'linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '32px 32px', opacity },
+    diagonal: { backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,1) 0, rgba(255,255,255,1) 1px, transparent 0, transparent 50%)', backgroundSize: '20px 20px', opacity },
+    noise:    { opacity, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`, backgroundSize: '180px 180px' },
+  }
+  return patternStyles[p] ?? null
+}
+
 // ── Overlay style ────────────────────────────────────────────────
 function buildOverlay(config: HeroConfig): React.CSSProperties {
   const oc = config.overlay_color ?? '#000000'
@@ -515,6 +549,10 @@ export default function HeroSection({ config, artist, palette }: Props) {
   const overlayStyle = buildOverlay(config)
   const nameStyle    = getTextStyle(config, palette.text)
   const taglineColor = config.text_color ?? palette.primary
+  const patternStyle = buildBgPattern(config)
+  const extraPadY    = config.content_padding_y ?? 0
+  const glowColor    = config.glow_behind_name_color ?? palette.primary
+  const glowSize     = 200 + (config.glow_behind_name_intensity ?? 50) * 4
 
   const alignItems   = textAlign === 'center' ? 'items-center' : textAlign === 'right' ? 'items-end' : 'items-start'
   const textAlignCSS = textAlign as React.CSSProperties['textAlign']
@@ -596,6 +634,11 @@ export default function HeroSection({ config, artist, palette }: Props) {
           backgroundSize: '200px 200px',
         }} />
       )}
+
+      {/* Background pattern overlay */}
+      {patternStyle && (
+        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 5, ...patternStyle }} />
+      )}
     </>
   )
 
@@ -663,10 +706,22 @@ export default function HeroSection({ config, artist, palette }: Props) {
           </motion.div>
         )}
 
-        <h1 className="font-display font-black"
-          style={{ fontSize: `${config.name_size ?? 72}px`, lineHeight: 1, letterSpacing: `${config.letter_spacing ?? 0}px`, ...nameStyle }}>
-          <AnimText text={artist.artist_name} animation={textAnim} delay={0.05} />
-        </h1>
+        <div className="relative">
+          {config.glow_behind_name && (
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+              style={{
+                width: `${glowSize}px`, height: `${glowSize / 2}px`,
+                borderRadius: '50%',
+                background: `radial-gradient(ellipse, ${glowColor}40 0%, transparent 70%)`,
+                filter: 'blur(30px)',
+                zIndex: -1,
+              }} />
+          )}
+          <h1 className="font-display font-black"
+            style={{ fontSize: `${config.name_size ?? 72}px`, lineHeight: 1, letterSpacing: `${config.letter_spacing ?? 0}px`, ...nameStyle }}>
+            <AnimText text={artist.artist_name} animation={textAnim} delay={0.05} />
+          </h1>
+        </div>
 
         {config.tagline && (
           <p className="font-light max-w-xl"
@@ -676,7 +731,11 @@ export default function HeroSection({ config, artist, palette }: Props) {
         )}
 
         {config.sub_tagline && (
-          <p className="text-xs font-mono uppercase tracking-[0.2em]" style={{ color: palette.textMuted }}>
+          <p className="font-mono uppercase tracking-[0.2em]"
+            style={{
+              fontSize: `${config.sub_tagline_size ?? 11}px`,
+              color: config.sub_tagline_color ?? palette.textMuted,
+            }}>
             <AnimText text={config.sub_tagline} animation={textAnim} delay={0.3} />
           </p>
         )}
@@ -758,7 +817,7 @@ export default function HeroSection({ config, artist, palette }: Props) {
 
       {/* FULLSCREEN CENTERED + IMMERSIVE 3D */}
       {(heroLayout === 'fullscreen-centered' || heroLayout === 'immersive-3d') && (
-        <div className="relative flex-1 flex flex-col justify-center px-6 md:px-12 py-24" style={{ zIndex: 10 }}>
+        <div className="relative flex-1 flex flex-col justify-center px-6 md:px-12" style={{ zIndex: 10, paddingTop: `${96 + extraPadY}px`, paddingBottom: `${96 + extraPadY}px` }}>
           <div className={`max-w-4xl mx-auto w-full flex flex-col ${alignItems}`} style={{ textAlign: textAlignCSS }}>
             {textBlock('center')}
           </div>
@@ -767,7 +826,7 @@ export default function HeroSection({ config, artist, palette }: Props) {
 
       {/* SPLIT */}
       {heroLayout === 'split' && (
-        <div className="relative flex-1 flex flex-col justify-center px-6 md:px-12 py-24" style={{ zIndex: 10 }}>
+        <div className="relative flex-1 flex flex-col justify-center px-6 md:px-12" style={{ zIndex: 10, paddingTop: `${96 + extraPadY}px`, paddingBottom: `${96 + extraPadY}px` }}>
           <div className="max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             {config.split_photo_side === 'right' ? (
               <>{textBlock('left')}{photoPanel}</>

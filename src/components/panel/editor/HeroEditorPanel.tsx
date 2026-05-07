@@ -24,7 +24,7 @@ function TextInput({ value, onChange, placeholder, type = 'text' }: {
 }) {
   return (
     <input type={type} value={value ?? ''} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-      className="w-full px-3 py-2.5 rounded-xl text-sm text-white placeholder-white/20 focus:outline-none"
+      className="w-full px-3 py-3 rounded-xl text-sm text-white placeholder-white/20 focus:outline-none min-h-[44px]"
       style={{ background: '#0A0A0E', border: '1px solid rgba(255,255,255,0.08)' }} />
   )
 }
@@ -34,7 +34,7 @@ function SmallInput({ value, onChange, placeholder, className = '' }: {
 }) {
   return (
     <input value={value ?? ''} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-      className={`px-3 py-2 rounded-lg text-xs text-white placeholder-white/20 focus:outline-none ${className}`}
+      className={`px-3 py-2.5 rounded-lg text-xs text-white placeholder-white/20 focus:outline-none min-h-[40px] ${className}`}
       style={{ background: '#0A0A0E', border: '1px solid rgba(255,255,255,0.08)' }} />
   )
 }
@@ -46,9 +46,9 @@ function Toggle({ value, onChange, label, accent }: {
     <div className="flex items-center justify-between py-1">
       <span className="text-xs text-white/60">{label}</span>
       <button type="button" onClick={() => onChange(!value)}
-        className="w-11 h-6 rounded-full transition-all relative shrink-0"
+        className="w-12 h-7 rounded-full transition-all relative shrink-0"
         style={{ background: value ? accent : 'rgba(255,255,255,0.1)' }}>
-        <span className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all"
+        <span className="absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-all"
           style={{ left: value ? '22px' : '2px' }} />
       </button>
     </div>
@@ -362,6 +362,15 @@ export default function HeroEditorPanel({ config, set, accent }: Props) {
                 accent={accent}
               />
             </Field>
+
+            {/* Vertical padding */}
+            <Slider
+              value={config.content_padding_y ?? 0}
+              onChange={v => set('content_padding_y', v)}
+              min={0} max={120}
+              label="Espacio vertical extra"
+              unit="px"
+            />
           </>
         )}
 
@@ -604,6 +613,33 @@ export default function HeroEditorPanel({ config, set, accent }: Props) {
             <Section title="Fondo Animado" defaultOpen={false}>
               <Toggle value={config.gradient_animated ?? true} onChange={v => set('gradient_animated', v)} label="Blobs de gradiente" accent={accent} />
             </Section>
+
+            {/* Pattern overlay */}
+            <Section title="Patrón de Textura" defaultOpen={false}>
+              <Field label="Patrón">
+                <Pills
+                  options={[
+                    { key: 'none',     label: 'Ninguno'   },
+                    { key: 'dots',     label: 'Puntos'    },
+                    { key: 'grid',     label: 'Cuadrícula'},
+                    { key: 'diagonal', label: 'Diagonal'  },
+                    { key: 'noise',    label: 'Ruido'     },
+                  ]}
+                  value={config.bg_pattern ?? 'none'}
+                  onChange={v => set('bg_pattern', v)}
+                  accent={accent}
+                />
+              </Field>
+              {(config.bg_pattern ?? 'none') !== 'none' && (
+                <Slider
+                  value={config.bg_pattern_opacity ?? 15}
+                  onChange={v => set('bg_pattern_opacity', v)}
+                  min={2} max={60}
+                  label="Opacidad del patrón"
+                  unit="%"
+                />
+              )}
+            </Section>
           </>
         )}
 
@@ -613,7 +649,19 @@ export default function HeroEditorPanel({ config, set, accent }: Props) {
             <Section title="Tamaños">
               <Slider value={config.name_size ?? 72} onChange={v => set('name_size', v)} min={40} max={200} label="Nombre del artista" unit="px" />
               <Slider value={config.tagline_size ?? 20} onChange={v => set('tagline_size', v)} min={12} max={80} label="Tagline" unit="px" />
+              <Slider value={config.sub_tagline_size ?? 11} onChange={v => set('sub_tagline_size', v)} min={8} max={40} label="Sub-tagline" unit="px" />
               <Slider value={config.letter_spacing ?? 0} onChange={v => set('letter_spacing', v)} min={-5} max={20} label="Letter spacing" unit="px" />
+            </Section>
+
+            <Section title="Color Sub-tagline" defaultOpen={false}>
+              <Toggle
+                value={config.sub_tagline_color !== null && config.sub_tagline_color !== undefined}
+                onChange={v => set('sub_tagline_color', v ? 'rgba(255,255,255,0.5)' : null)}
+                label="Color personalizado" accent={accent}
+              />
+              {config.sub_tagline_color != null && (
+                <ColorPicker value={config.sub_tagline_color} onChange={v => set('sub_tagline_color', v)} label="Color sub-tagline" accent={accent} />
+              )}
             </Section>
 
             <Section title="Color">
@@ -663,6 +711,29 @@ export default function HeroEditorPanel({ config, set, accent }: Props) {
                 </>
               )}
             </Section>
+
+            <Section title="Halo detrás del nombre" defaultOpen={false}>
+              <Toggle value={config.glow_behind_name ?? false} onChange={v => set('glow_behind_name', v)} label="Activar halo" accent={accent} />
+              {config.glow_behind_name && (
+                <>
+                  <Slider
+                    value={config.glow_behind_name_intensity ?? 50}
+                    onChange={v => set('glow_behind_name_intensity', v)}
+                    min={10} max={100}
+                    label="Intensidad"
+                    unit="%"
+                  />
+                  <Toggle
+                    value={config.glow_behind_name_color !== null && config.glow_behind_name_color !== undefined}
+                    onChange={v => set('glow_behind_name_color', v ? accent : null)}
+                    label="Color personalizado" accent={accent}
+                  />
+                  {config.glow_behind_name_color != null && (
+                    <ColorPicker value={config.glow_behind_name_color} onChange={v => set('glow_behind_name_color', v)} label="Color halo" accent={accent} />
+                  )}
+                </>
+              )}
+            </Section>
           </>
         )}
 
@@ -678,8 +749,10 @@ export default function HeroEditorPanel({ config, set, accent }: Props) {
                   { key: 'glitch',      label: 'Glitch'      },
                   { key: 'typewriter',  label: 'Typewriter'  },
                   { key: 'reveal',      label: 'Reveal'      },
-                  { key: 'word-by-word',label: 'Palabra x palabra' },
+                  { key: 'word-by-word',label: 'Palabra × palabra' },
                   { key: 'scale-up',    label: 'Scale Up'    },
+                  { key: 'blur-in',     label: 'Blur In'     },
+                  { key: 'float',       label: 'Float'       },
                 ] as const).map(({ key, label }) => (
                   <button key={key} type="button" onClick={() => set('text_animation', key)}
                     className="py-2 px-2 rounded-xl text-[10px] font-mono transition-all text-left"
