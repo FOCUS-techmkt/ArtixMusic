@@ -12,14 +12,23 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    // ── Rate limit: count AI calls today for this user ────────
+    // Fetch the artist record to use the correct artist.id throughout
+    const { data: artistRecord } = await supabase
+      .from('artists')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    const artistId = artistRecord?.id ?? user.id
+
+    // ── Rate limit: count AI calls today for this artist ────────
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
 
     const { count } = await supabase
       .from('analytics')
       .select('*', { count: 'exact', head: true })
-      .eq('artist_id', user.id)          // using user_id as artist_id proxy for the check
+      .eq('artist_id', artistId)
       .eq('event_type', 'ai_analysis' as never)
       .gte('created_at', todayStart.toISOString())
 
@@ -40,49 +49,92 @@ export async function POST(request: NextRequest) {
     const heroConfig  = sections?.find((s: { name: string }) => s.name === 'hero')?.config  ?? {}
     const bioConfig   = sections?.find((s: { name: string }) => s.name === 'bio')?.config   ?? {}
     const musicConfig = sections?.find((s: { name: string }) => s.name === 'music')?.config ?? {}
+    const liveConfig  = sections?.find((s: { name: string }) => s.name === 'live')?.config  ?? {}
+    const linksConfig = sections?.find((s: { name: string }) => s.name === 'links')?.config ?? {}
 
-    const prompt = `Eres un consultor de marketing para artistas de música electrónica. Analiza este press kit y da recomendaciones específicas y accionables en español.
+    const bioText = (bioConfig.text ?? '').replace(/<[^>]+>/g, '').trim()
+    const hasBio = bioText.length > 40
+    const hasTagline = (heroConfig.tagline ?? '').length > 10
+    const hasPhoto = !!artist.photo_url
+    const hasBooking = !!artist.booking_email
+    const trackCount = (musicConfig.tracks ?? []).length
+    const showCount = (liveConfig.shows ?? []).length
+    const linkCount = Object.values(linksConfig.links ?? {}).filter(Boolean).length
+    const socialLinks = [
+      artist.links?.instagram && 'Instagram',
+      artist.links?.soundcloud && 'SoundCloud',
+      artist.links?.spotify && 'Spotify',
+      artist.links?.beatport && 'Beatport',
+      artist.links?.youtube && 'YouTube',
+      artist.links?.tiktok && 'TikTok',
+    ].filter(Boolean)
 
-DATOS DEL ARTISTA:
-- Nombre: ${artist.artist_name}
-- Rol: ${artist.role}
-- Género: ${artist.genre}
-- Bio: "${(artist.bio ?? '').slice(0, 300)}"
-- Palabras de sonido: ${(artist.sound_words ?? []).join(', ')}
-- Logros: ${(artist.achievements ?? []).map((a: { title: string }) => a.title).join(', ') || 'ninguno'}
-- Email de booking: ${artist.booking_email ? 'configurado' : 'FALTA'}
-- Foto: ${artist.photo_url ? 'subida' : 'FALTA'}
-- Publicado: ${artist.is_published ? 'sí' : 'no'}
-- Links: Instagram: ${artist.links?.instagram ? 'sí' : 'no'}, SoundCloud: ${artist.links?.soundcloud ? 'sí' : 'no'}, Spotify: ${artist.links?.spotify ? 'sí' : 'no'}
+    const prompt = `Eres un consultor senior de marketing para artistas de música electrónica con 10+ años de experiencia en la industria.
 
-SECCIONES ACTIVAS: ${enabledSections.join(', ') || 'ninguna'}
-SECCIONES INACTIVAS: ${disabledSections.join(', ') || 'ninguna'}
+Analiza este press kit de ${artist.artist_name} y genera un diagnóstico honesto con recomendaciones específicas y accionables. Sé directo — si algo falta o está mal, dilo claramente.
 
-HERO: tagline="${heroConfig.tagline ?? ''}", partículas=${heroConfig.particles ?? false}, imagen_fondo=${heroConfig.bg_image ? 'sí' : 'no'}
-BIO: texto="${(bioConfig.text ?? '').replace(/<[^>]+>/g, '').slice(0, 200)}", stats=${(bioConfig.stats ?? []).length}
-MÚSICA: tracks=${(musicConfig.tracks ?? []).length}
+═══════════════════════════════
+DATOS DEL ARTISTA
+═══════════════════════════════
+Nombre: ${artist.artist_name}
+Rol: ${artist.role ?? 'DJ/Producer'}
+Géneros: ${Array.isArray(artist.genres) ? artist.genres.join(', ') : (artist.genre ?? 'no especificado')}
+Bio disponible: ${hasBio ? `Sí (${bioText.length} chars): "${bioText.slice(0, 250)}"` : 'NO — falta completamente'}
+Tagline: ${hasTagline ? `"${heroConfig.tagline}"` : 'NO — falta'}
+Palabras de sonido: ${(artist.sound_words ?? []).join(', ') || 'ninguna'}
+Logros: ${(artist.achievements ?? []).map((a: { title: string }) => a.title).join(', ') || 'ninguno registrado'}
+Ubicación: ${artist.location ?? 'no especificada'}
 
-Devuelve EXACTAMENTE este JSON sin ningún texto adicional:
+PERFIL VISUAL:
+- Foto: ${hasPhoto ? 'Subida ✓' : 'FALTA — crítico para bookers'}
+- Logo: ${artist.logo_url ? 'Subido ✓' : 'No tiene'}
+- Colores: primario=${artist.primary_color ?? 'no'}, secundario=${artist.secondary_color ?? 'no'}
+
+CONTACTO & BOOKING:
+- Email de booking: ${hasBooking ? `${artist.booking_email} ✓` : 'FALTA — imposible contratar sin esto'}
+- Publicado: ${artist.is_published ? 'Sí ✓' : 'NO — nadie puede verlo'}
+
+REDES SOCIALES: ${socialLinks.length > 0 ? socialLinks.join(', ') : 'ninguna configurada'}
+
+SECCIONES ACTIVAS (${enabledSections.length}): ${enabledSections.join(', ') || 'ninguna'}
+SECCIONES INACTIVAS (${disabledSections.length}): ${disabledSections.join(', ') || 'ninguna'}
+
+CONTENIDO:
+- Tracks en Music: ${trackCount} ${trackCount === 0 ? '⚠️ vacío' : trackCount < 3 ? '(pocos)' : '✓'}
+- Shows en Live: ${showCount} ${showCount === 0 ? '(ninguno)' : '✓'}
+- Links externos: ${linkCount} ${linkCount === 0 ? '(ninguno)' : '✓'}
+- Hero con imagen de fondo: ${heroConfig.bg_image ? 'Sí ✓' : 'No'}
+- Stats en bio: ${(bioConfig.stats ?? []).length}
+
+═══════════════════════════════
+INSTRUCCIONES
+═══════════════════════════════
+Calcula un score real del 0-100 basado en qué tan completo y efectivo está este press kit para atraer bookers y fans. Sé riguroso: un press kit sin foto, sin bio o sin booking email no puede pasar de 40.
+
+Da entre 6 y 8 recomendaciones. Las de prioridad "high" deben ser problemas que están actualmente bloqueando oportunidades reales. Las "medium" son mejoras significativas. Las "low" son pulido y optimización.
+
+Devuelve EXACTAMENTE este JSON sin texto adicional:
 {
-  "score": <número 0-100 que indica qué tan completo está el press kit>,
+  "score": <número entero 0-100>,
+  "summary": "<1 oración resumiendo el estado actual del press kit — sé específico con el nombre>",
   "recommendations": [
     {
-      "id": "unique_id",
+      "id": "unique_snake_case_id",
       "priority": "high|medium|low",
-      "category": "contenido|diseño|seo|conversión|visibilidad",
-      "title": "título corto",
-      "description": "descripción de 1-2 oraciones explicando el problema",
-      "action": "acción específica a tomar",
-      "impact": "qué mejora esto"
+      "category": "contenido|diseño|seo|conversión|visibilidad|redes",
+      "title": "<título corto, máx 6 palabras>",
+      "description": "<2 oraciones: qué está mal y por qué importa>",
+      "action": "<acción específica y concreta que se puede hacer hoy>",
+      "impact": "<resultado esperado en números o términos concretos>"
     }
   ]
 }
 
-Da entre 5 y 8 recomendaciones ordenadas por prioridad. Sé específico con el nombre del artista y sus datos reales.`
+Ordena las recomendaciones: primero las high, luego medium, luego low.`
 
     const message = await anthropic.messages.create({
-      model:      'claude-haiku-4-5-20251001',
-      max_tokens: 1500,
+      model:      'claude-sonnet-4-6',
+      max_tokens: 2000,
       messages:   [{ role: 'user', content: prompt }],
     })
 
@@ -92,9 +144,9 @@ Da entre 5 y 8 recomendaciones ordenadas por prioridad. Sé específico con el n
 
     const data = JSON.parse(jsonMatch[0])
 
-    // ── Log this call ─────────────────────────────────────────
+    // ── Log this call with the correct artist ID ────────────────
     await supabase.from('analytics').insert({
-      artist_id:  artist.id,
+      artist_id:  artistId,
       event_type: 'ai_analysis' as never,
     })
 
