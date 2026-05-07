@@ -13,17 +13,19 @@ import { DEFAULT_CONFIGS } from '@/types/sections'
 import ImageUpload from '@/components/shared/ImageUpload'
 import RichTextEditor from '@/components/shared/RichTextEditor'
 import TagInput from '@/components/shared/TagInput'
+import HeroEditorPanel from './HeroEditorPanel'
 
 type ConfigTab = 'content' | 'design' | 'anim'
 
 interface Props {
-  section:  Section
-  palette:  ArtistPalette
-  supabase: SupabaseClient
-  onSaved:  (section: Section) => void
+  section:         Section
+  palette:         ArtistPalette
+  supabase:        SupabaseClient
+  onSaved:         (section: Section) => void
+  onPreviewUpdate?: (name: string, config: Record<string, unknown>) => void
 }
 
-export default function SectionConfigPanel({ section, palette, supabase, onSaved }: Props) {
+export default function SectionConfigPanel({ section, palette, supabase, onSaved, onPreviewUpdate }: Props) {
   const [config, setConfig] = useState<Record<string, unknown>>(
     Object.keys(section.config ?? {}).length > 0
       ? section.config as Record<string, unknown>
@@ -41,6 +43,11 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
     setTab('content')
   }, [section.id])
 
+  // Real-time preview via postMessage
+  useEffect(() => {
+    onPreviewUpdate?.(section.name, config)
+  }, [config]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const set = <T,>(key: string, value: T) => setConfig(prev => ({ ...prev, [key]: value }))
 
   const save = async () => {
@@ -56,6 +63,24 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
   }
 
   const accent = palette.primary
+
+  // Hero uses its own multi-tab editor (HeroEditorPanel)
+  if (section.name === 'hero') {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-hidden">
+          <HeroEditorPanel config={config as unknown as HeroConfig} set={set} accent={accent} />
+        </div>
+        <div className="p-4 shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <button onClick={save} disabled={saving}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-60 transition-all active:scale-[0.98]"
+            style={{ background: accent }}>
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar Hero'}
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -76,7 +101,6 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
 
       {/* ── Panel body ── */}
       <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-5">
-        {section.name === 'hero'        && <HeroPanel        config={config as unknown as HeroConfig}        set={set} accent={accent} tab={tab} />}
         {section.name === 'bio'         && <BioPanel         config={config as unknown as BioConfig}         set={set} accent={accent} tab={tab} />}
         {section.name === 'music'       && <MusicPanel       config={config as unknown as MusicConfig}       set={set} accent={accent} tab={tab} />}
         {section.name === 'community'   && <CommunityPanel   config={config as unknown as CommunityConfig}   set={set} accent={accent} tab={tab} />}

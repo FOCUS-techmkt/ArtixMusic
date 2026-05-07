@@ -1,4 +1,5 @@
 'use client'
+import { useState, useEffect } from 'react'
 import { useScroll } from 'framer-motion'
 import { motion } from 'framer-motion'
 import type { Artist, Section, ArtistPalette } from '@/types'
@@ -186,6 +187,18 @@ function ScrollProgressBar({ palette }: { palette: ArtistPalette }) {
 }
 
 export default function SlugClient({ artist, sections }: Props) {
+  const [heroOverride, setHeroOverride] = useState<Record<string, unknown> | null>(null)
+
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.data?.type === 'ARTIX_PREVIEW_UPDATE' && e.data?.section === 'hero') {
+        setHeroOverride(prev => ({ ...prev, ...e.data.config }))
+      }
+    }
+    window.addEventListener('message', handler)
+    return () => window.removeEventListener('message', handler)
+  }, [])
+
   const palette = deriveArtistPalette(
     artist.primary_color   ?? '#C026D3',
     artist.secondary_color ?? '#7C3AED',
@@ -237,7 +250,12 @@ export default function SlugClient({ artist, sections }: Props) {
 
         {sorted.map(section => (
           <AnimatedSection key={section.id} section={section}>
-            <SectionRenderer section={section} artist={artist} palette={palette} />
+            <SectionRenderer
+              section={section}
+              artist={artist}
+              palette={palette}
+              heroOverride={section.name === 'hero' ? heroOverride : null}
+            />
           </AnimatedSection>
         ))}
 
@@ -252,10 +270,16 @@ export default function SlugClient({ artist, sections }: Props) {
   )
 }
 
-function SectionRenderer({ section, artist, palette }: { section: Section; artist: Artist; palette: ArtistPalette }) {
+function SectionRenderer({ section, artist, palette, heroOverride }: {
+  section: Section; artist: Artist; palette: ArtistPalette
+  heroOverride?: Record<string, unknown> | null
+}) {
   const c = (section.config ?? {}) as Record<string, unknown>
   switch (section.name) {
-    case 'hero':         return <HeroSection        config={c as unknown as HeroConfig}         artist={artist} palette={palette} />
+    case 'hero': {
+      const heroConfig = heroOverride ? { ...c, ...heroOverride } : c
+      return <HeroSection config={heroConfig as unknown as HeroConfig} artist={artist} palette={palette} />
+    }
     case 'bio':          return <BioSection         config={c as unknown as BioConfig}          artist={artist} palette={palette} />
     case 'music':        return <MusicSection       config={c as unknown as MusicConfig}        palette={palette} />
     case 'community':    return <CommunitySection   config={c as unknown as CommunityConfig}    palette={palette} />

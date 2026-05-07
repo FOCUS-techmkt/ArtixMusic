@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react'
 import type * as THREE from 'three'
 
 interface Props {
-  effect:       'particles' | 'waves' | 'volumetric'
+  effect:       'particles' | 'waves' | 'volumetric' | 'neural' | 'polygons'
   intensity:    number   // 0-100
   primaryColor: string
 }
@@ -107,6 +107,100 @@ export default function HeroThreeCanvas({ effect, intensity, primaryColor }: Pro
         updateFn = (t: number) => {
           beams.forEach((b, i) => {
             b.rotation.y = t * 0.12 * (i % 2 === 0 ? 1 : -1)
+          })
+        }
+
+      // ── Effect: neural ────────────────────────────────────────
+      } else if (effect === 'neural') {
+        camera.position.set(0, 0, 8)
+        camera.lookAt(0, 0, 0)
+
+        const nodeCount = 60 + Math.round(norm * 80)
+        const nodePosArr = new Float32Array(nodeCount * 3)
+        const nodeVel    = new Float32Array(nodeCount * 3)
+        for (let i = 0; i < nodeCount; i++) {
+          nodePosArr[i * 3]     = (Math.random() - 0.5) * 14
+          nodePosArr[i * 3 + 1] = (Math.random() - 0.5) * 10
+          nodePosArr[i * 3 + 2] = (Math.random() - 0.5) * 6
+          nodeVel[i * 3]        = (Math.random() - 0.5) * 0.006
+          nodeVel[i * 3 + 1]    = (Math.random() - 0.5) * 0.006
+          nodeVel[i * 3 + 2]    = (Math.random() - 0.5) * 0.003
+        }
+        const nodeGeo = new THREE.BufferGeometry()
+        nodeGeo.setAttribute('position', new THREE.BufferAttribute(nodePosArr.slice(), 3))
+        const nodeMat = new THREE.PointsMaterial({ color, size: 0.06 + norm * 0.06, transparent: true, opacity: 0.8 })
+        scene.add(new THREE.Points(nodeGeo, nodeMat))
+
+        const threshold   = 2.8 + norm * 1.5
+        const maxLines    = nodeCount * 6
+        const linePosBuf  = new Float32Array(maxLines * 6)
+        const lineGeo     = new THREE.BufferGeometry()
+        lineGeo.setAttribute('position', new THREE.BufferAttribute(linePosBuf, 3))
+        const lineMat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.12 + norm * 0.1 })
+        const lineSegs = new THREE.LineSegments(lineGeo, lineMat)
+        scene.add(lineSegs)
+
+        updateFn = () => {
+          // drift nodes
+          for (let i = 0; i < nodeCount; i++) {
+            nodePosArr[i * 3]     += nodeVel[i * 3]
+            nodePosArr[i * 3 + 1] += nodeVel[i * 3 + 1]
+            nodePosArr[i * 3 + 2] += nodeVel[i * 3 + 2]
+            if (Math.abs(nodePosArr[i * 3])     > 7)  nodeVel[i * 3]     *= -1
+            if (Math.abs(nodePosArr[i * 3 + 1]) > 5)  nodeVel[i * 3 + 1] *= -1
+            if (Math.abs(nodePosArr[i * 3 + 2]) > 3)  nodeVel[i * 3 + 2] *= -1
+          }
+          const nodeAttr = nodeGeo.attributes.position as THREE.BufferAttribute
+          nodeAttr.array.set(nodePosArr)
+          nodeAttr.needsUpdate = true
+
+          // rebuild connections
+          let lineIdx = 0
+          for (let i = 0; i < nodeCount && lineIdx < maxLines - 1; i++) {
+            for (let j = i + 1; j < nodeCount && lineIdx < maxLines - 1; j++) {
+              const dx = nodePosArr[i*3]   - nodePosArr[j*3]
+              const dy = nodePosArr[i*3+1] - nodePosArr[j*3+1]
+              const dz = nodePosArr[i*3+2] - nodePosArr[j*3+2]
+              if (Math.sqrt(dx*dx + dy*dy + dz*dz) < threshold) {
+                linePosBuf[lineIdx*6]   = nodePosArr[i*3];   linePosBuf[lineIdx*6+1] = nodePosArr[i*3+1]; linePosBuf[lineIdx*6+2] = nodePosArr[i*3+2]
+                linePosBuf[lineIdx*6+3] = nodePosArr[j*3];   linePosBuf[lineIdx*6+4] = nodePosArr[j*3+1]; linePosBuf[lineIdx*6+5] = nodePosArr[j*3+2]
+                lineIdx++
+              }
+            }
+          }
+          lineGeo.setDrawRange(0, lineIdx * 2)
+          const lineAttr = lineGeo.attributes.position as THREE.BufferAttribute
+          lineAttr.array.set(linePosBuf)
+          lineAttr.needsUpdate = true
+        }
+
+      // ── Effect: polygons ──────────────────────────────────────
+      } else if (effect === 'polygons') {
+        camera.position.set(0, 0, 9)
+        camera.lookAt(0, 0, 0)
+
+        const shapes: THREE.Mesh[] = []
+        const configs = [
+          { geo: new THREE.IcosahedronGeometry(1.2, 0),   pos: [-3, 1, -1],  speed: 0.003 },
+          { geo: new THREE.OctahedronGeometry(0.9, 0),    pos: [3, -1, 0],   speed: -0.005 },
+          { geo: new THREE.TetrahedronGeometry(1.0, 0),   pos: [-1, -2, 1],  speed: 0.004 },
+          { geo: new THREE.IcosahedronGeometry(0.7, 0),   pos: [2, 2, -2],   speed: -0.003 },
+          { geo: new THREE.OctahedronGeometry(0.55, 0),   pos: [0, 1.5, 2],  speed: 0.007 },
+        ]
+        configs.forEach(({ geo, pos, speed }) => {
+          const mat = new THREE.MeshBasicMaterial({ color, wireframe: true, transparent: true, opacity: 0.08 + norm * 0.14 })
+          const mesh = new THREE.Mesh(geo, mat)
+          mesh.position.set(...(pos as [number, number, number]))
+          mesh.userData.speed = speed
+          scene.add(mesh)
+          shapes.push(mesh)
+        })
+
+        updateFn = (t: number) => {
+          shapes.forEach(m => {
+            m.rotation.x = t * (m.userData.speed as number)
+            m.rotation.y = t * (m.userData.speed as number) * 1.3
+            m.position.y += Math.sin(t * 0.4 + m.position.x) * 0.0006
           })
         }
 

@@ -382,6 +382,12 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
                       setActiveSection(updated)
                       reloadPreview()
                     }}
+                    onPreviewUpdate={(name, cfg) => {
+                      iframeRef.current?.contentWindow?.postMessage(
+                        { type: 'ARTIX_PREVIEW_UPDATE', section: name, config: cfg },
+                        '*',
+                      )
+                    }}
                   />
                 </div>
               </div>
