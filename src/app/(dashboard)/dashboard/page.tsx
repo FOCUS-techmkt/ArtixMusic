@@ -219,7 +219,9 @@ export default async function DashboardPage({
     }
   })
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://artix-music.vercel.app'
+  // Avoid localhost URL being embedded at build time — fall back to the production domain
+  const rawAppUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
+  const appUrl = rawAppUrl && !rawAppUrl.includes('localhost') ? rawAppUrl : 'https://artix-music.vercel.app'
   const pressMeta = {
     url:          `${appUrl}/${artist.slug}`,
     artistName:   artist.artist_name,

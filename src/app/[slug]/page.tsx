@@ -11,12 +11,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const supabase = await createClient()
 
-  // Try artists table first
+  // Try artists table first — no is_published filter; RLS handles visibility
   const { data: artist } = await supabase
     .from('artists')
     .select('artist_name, bio, photo_url, tagline')
     .eq('slug', slug)
-    .eq('is_published', true)
     .maybeSingle()
 
   if (artist) {
@@ -36,7 +35,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .from('presskits')
     .select('artist_name, bio, photo_url')
     .eq('slug', slug)
-    .eq('is_published', true)
     .maybeSingle()
 
   if (!presskit) return { title: 'Artista no encontrado' }
@@ -56,11 +54,13 @@ export default async function SlugPage({ params }: Props) {
   const supabase = await createClient()
 
   // ── 1. Try artists table (new architecture) ───────────────────────────────
+  // No is_published filter here — Supabase RLS policies handle access control:
+  //   artists_public_read: allows select when is_published = true (anonymous)
+  //   artists_owner_read:  allows select when auth.uid() = user_id (logged-in owner)
   const { data: artist } = await supabase
     .from('artists')
     .select('*')
     .eq('slug', slug)
-    .eq('is_published', true)
     .maybeSingle()
 
   if (artist) {
@@ -85,7 +85,6 @@ export default async function SlugPage({ params }: Props) {
     .from('presskits')
     .select('*')
     .eq('slug', slug)
-    .eq('is_published', true)
     .maybeSingle()
 
   if (!presskit) notFound()

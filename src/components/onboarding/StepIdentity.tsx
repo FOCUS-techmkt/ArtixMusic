@@ -1,14 +1,16 @@
 'use client'
 import { motion } from 'framer-motion'
-import type { OnboardingData, ArtistRole } from '@/types'
+import type { OnboardingData, ArtistRole, GenreType } from '@/types'
 import { staggerContainer, fadeUpItem } from '@/lib/utils'
 
 const ROLES: { value: ArtistRole; icon: string; desc: string }[] = [
-  { value: 'DJ', icon: '🎛️', desc: 'Mezclas en vivo' },
+  { value: 'DJ',       icon: '🎛️', desc: 'Mezclas en vivo' },
   { value: 'Producer', icon: '🎹', desc: 'Producción en estudio' },
-  { value: 'Both', icon: '🔥', desc: 'DJ + Productor' },
+  { value: 'Both',     icon: '🔥', desc: 'DJ + Productor' },
   { value: 'Live Act', icon: '🎸', desc: 'Acto en vivo' },
 ]
+
+const GENRES: GenreType[] = ['Techno', 'House', 'Trap', 'Reggaeton', 'Afrobeats', 'Ambient', 'Other']
 
 interface Props {
   data: OnboardingData
@@ -63,6 +65,26 @@ export default function StepIdentity({ data, onChange }: Props) {
               <span className="relative text-2xl">{role.icon}</span>
               <span className="relative font-display font-bold">{role.value}</span>
               <span className="relative text-xs text-white/40">{role.desc}</span>
+            </button>
+          ))}
+        </div>
+      </motion.div>
+
+      <motion.div variants={fadeUpItem} className="flex flex-col gap-3">
+        <label className="text-xs font-mono text-white/40 tracking-wider uppercase">Género principal</label>
+        <div className="flex flex-wrap gap-2">
+          {GENRES.map((genre) => (
+            <button
+              key={genre}
+              type="button"
+              onClick={() => onChange({ genre })}
+              className={`px-4 py-2.5 rounded-full border text-sm font-medium transition-all duration-200 ${
+                data.genre === genre
+                  ? 'border-[#C026D3] bg-[#C026D3]/15 text-[#E879F9]'
+                  : 'border-white/10 text-white/50 hover:border-white/20 hover:text-white'
+              }`}
+            >
+              {genre}
             </button>
           ))}
         </div>

@@ -244,9 +244,19 @@ export default function SlugClient({ artist, sections }: Props) {
       {scanlinesLevel > 0 && <ScanlinesOverlay intensity={scanlinesLevel} />}
       {auroraLevel    > 0 && <AuroraOverlay intensity={auroraLevel} primary={palette.primary} secondary={palette.secondary} />}
 
+      {/* Draft banner — only visible when presskit is not published yet */}
+      {!artist.is_published && (
+        <div className="fixed top-0 left-0 right-0 z-[9999] flex items-center justify-center gap-3 py-2.5 px-4 text-[12px] font-mono"
+          style={{ background: '#F59E0B', color: '#000' }}>
+          <span>⚠</span>
+          <span>Vista previa — tu presskit no está publicado todavía.</span>
+          <a href="/panel" className="underline font-semibold">Ir al editor</a>
+        </div>
+      )}
+
       <main
         className={mainClass}
-        style={{ background: palette.bg, color: palette.text, fontFamily: 'var(--font-inter)', position: 'relative', ...fontStyle }}>
+        style={{ background: palette.bg, color: palette.text, fontFamily: 'var(--font-inter)', position: 'relative', paddingTop: !artist.is_published ? '40px' : undefined, ...fontStyle }}>
 
         {sorted.map(section => (
           <AnimatedSection key={section.id} section={section}>

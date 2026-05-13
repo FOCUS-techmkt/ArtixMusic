@@ -46,7 +46,9 @@ export function ProfileChecklist({ checklist }: Props) {
       </div>
 
       <div className="flex flex-col gap-3">
-        {data.map(({ id, label, done: isDone, href }, i) => (
+        {data.map(({ id, label, done: isDone, href }, i) => {
+          const isCritical = !isDone && id === 'booking'
+          return (
           <motion.div
             key={id}
             initial={{ opacity: 0, x: 4 }}
@@ -67,19 +69,30 @@ export function ProfileChecklist({ checklist }: Props) {
                 <span className="text-[13px] text-white/40 line-through flex-1">{label}</span>
               </div>
             ) : (
-              <Link href={href} className="flex items-start gap-2.5 group">
-                <div className="w-4 h-4 rounded-full shrink-0 mt-0.5" style={{ border: '1.5px solid rgba(255,255,255,0.20)' }} />
+              <Link href={href}
+                className="flex items-start gap-2.5 group rounded-xl transition-all"
+                style={isCritical ? { background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', padding: '8px 10px', margin: '-8px -10px' } : {}}>
+                <div className="w-4 h-4 rounded-full shrink-0 mt-0.5"
+                  style={{ border: `1.5px solid ${isCritical ? 'rgba(239,68,68,0.6)' : 'rgba(255,255,255,0.20)'}` }} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13px] text-white group-hover:text-white/80 transition-colors">{label}</p>
-                  {MICROCOPY[id] && (
+                  <p className="text-[13px] transition-colors"
+                    style={{ color: isCritical ? '#FCA5A5' : 'white' }}>{label}</p>
+                  {isCritical && (
+                    <p className="text-[10px] mt-0.5 leading-tight" style={{ color: 'rgba(239,68,68,0.7)' }}>
+                      Sin esto, los bookers no pueden contactarte
+                    </p>
+                  )}
+                  {!isCritical && MICROCOPY[id] && (
                     <p className="text-[10px] text-white/30 mt-0.5 leading-tight">{MICROCOPY[id]}</p>
                   )}
                 </div>
-                <ArrowRight className="w-3 h-3 text-white/25 group-hover:text-white/50 transition-colors shrink-0 mt-1" />
+                <ArrowRight className="w-3 h-3 text-white/25 group-hover:text-white/50 transition-colors shrink-0 mt-1"
+                  style={isCritical ? { color: 'rgba(239,68,68,0.5)' } : {}} />
               </Link>
             )}
           </motion.div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

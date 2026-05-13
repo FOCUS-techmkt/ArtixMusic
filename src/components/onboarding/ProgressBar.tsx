@@ -2,7 +2,7 @@
 import { motion } from 'framer-motion'
 import { Check } from 'lucide-react'
 
-const STEP_LABELS = ['Identidad', 'Sonido', 'Logros', 'Links', 'Colores', 'Layout']
+const STEP_LABELS = ['Identidad', 'Template', 'Foto & Color', 'Esenciales']
 
 interface ProgressBarProps {
   currentStep: number
@@ -11,7 +11,7 @@ interface ProgressBarProps {
 
 export default function ProgressBar({ currentStep, accentColor = '#C026D3' }: ProgressBarProps) {
   const total    = STEP_LABELS.length
-  const progress = (currentStep / (total - 1)) * 100
+  const progress = total > 1 ? (currentStep / (total - 1)) * 100 : 0
 
   return (
     <div className="w-full max-w-lg mx-auto">

@@ -127,23 +127,28 @@ export interface OnboardingData {
   // Step 1 — Identity
   artist_name: string
   role: ArtistRole
-  // Step 2 — Sound
-  sound_words: string[]
   genre: GenreType
-  // Step 3 — Achievements + Bio
-  achievements: Achievement[]
-  bio: string
-  // Step 4 — Links + Media
+  // Step 2 — Template
+  template_id: string
+  sound_words: string[]
+  // Step 3 — Photo + Colors
   photo_url: string | null
   logo_url: string | null
-  links: ArtistLinks
-  booking_email: string
-  // Step 5 — Color identity
   primary_color: string
   secondary_color: string
   bg_dark: boolean
-  // Step 6 — Layout
   layout_variant: LayoutVariant
+  // Step 4 — Essentials
+  bio: string
+  music_url: string
+  links: ArtistLinks
+  booking_email: string
+  achievements: Achievement[]
+  // Step 4b — Próximo show (optional)
+  next_show_date: string
+  next_show_venue: string
+  next_show_city: string
+  next_show_url: string
 }
 
 // ── Derive a full palette from artist's chosen colors ──
@@ -197,7 +202,7 @@ export const LAYOUT_META: Record<LayoutVariant, { label: string; desc: string }>
 }
 
 export const ONBOARDING_STEPS: OnboardingStatus[] = [
-  'identity', 'sound', 'achievements', 'links', 'colors', 'layout',
+  'identity', 'sound', 'achievements', 'links',
 ]
 
 // ── Preset color palettes for inspiration ────────

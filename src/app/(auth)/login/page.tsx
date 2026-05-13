@@ -73,6 +73,7 @@ export default function LoginPage() {
                 placeholder="tu@email.com"
                 required
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 focus:outline-none focus:border-[#C026D3]/60 focus:bg-white/8 transition-all"
+                style={{ fontSize: '16px' }}
               />
             </div>
 
@@ -85,6 +86,7 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 required
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 focus:outline-none focus:border-[#C026D3]/60 transition-all"
+                style={{ fontSize: '16px' }}
               />
             </div>
 

@@ -128,6 +128,7 @@ export default function SignupPage() {
                 placeholder="NXGHT"
                 required
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 focus:outline-none focus:border-[#C026D3]/60 transition-all"
+                style={{ fontSize: '16px' }}
               />
               {artistName && (
                 <p className="mt-1.5 text-xs text-white/30 font-mono">
@@ -145,6 +146,7 @@ export default function SignupPage() {
                 placeholder="tu@email.com"
                 required
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 focus:outline-none focus:border-[#C026D3]/60 transition-all"
+                style={{ fontSize: '16px' }}
               />
             </div>
 
@@ -158,6 +160,7 @@ export default function SignupPage() {
                 minLength={8}
                 required
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 focus:outline-none focus:border-[#C026D3]/60 transition-all"
+                style={{ fontSize: '16px' }}
               />
             </div>
 

@@ -8,6 +8,13 @@ import RichTextEditor from '@/components/shared/RichTextEditor'
 
 type SubTab = 'bio' | 'links' | 'music' | 'rider'
 
+const ROLE_ES: Record<string, string> = {
+  DJ:         'DJ',
+  Producer:   'Productor',
+  Both:       'Ambos (DJ + Productor)',
+  'Live Act': 'Live Act',
+}
+
 const LINK_FIELDS: { key: keyof ArtistLinks; label: string; placeholder: string; icon: string }[] = [
   { key: 'soundcloud', label: 'SoundCloud',  placeholder: 'https://soundcloud.com/tu-nombre',     icon: '☁️' },
   { key: 'spotify',    label: 'Spotify',     placeholder: 'https://open.spotify.com/artist/...',  icon: '💚' },
@@ -153,7 +160,7 @@ export default function ContentTab({ artist, setArtist, palette, supabase }: Tab
             <Section title="Rol">
               <p className="text-sm text-white/50 px-4 py-3 rounded-xl"
                 style={{ background: '#141418', border: '1px solid rgba(255,255,255,0.08)' }}>
-                {artist.role}
+                {ROLE_ES[artist.role] ?? artist.role}
               </p>
             </Section>
 

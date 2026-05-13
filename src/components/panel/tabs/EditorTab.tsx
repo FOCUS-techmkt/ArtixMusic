@@ -149,13 +149,14 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
     return () => window.removeEventListener('beforeunload', handler)
   }, [saveStatus])
 
-  const appUrl     = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-  const previewUrl = `${appUrl}/${artist.slug}`
+  // Use window.location.origin so the preview works on any deployment (Vercel, localhost, etc.)
+  const previewUrl = `/${artist.slug}`
+  const publicUrl  = `${typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL ?? '')}/${artist.slug}`
 
   const reloadPreview = () => iframeRef.current?.contentWindow?.location.reload()
 
   const copyLink = async () => {
-    await navigator.clipboard.writeText(previewUrl)
+    await navigator.clipboard.writeText(publicUrl)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -262,7 +263,7 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
   }
 
   return (
-    <div className="flex h-full flex-col" style={{ minHeight: 'calc(100dvh - 112px)' }}>
+    <div className="flex h-screen flex-col" style={{ height: '100dvh' }}>
 
       {/* Mobile toggle — pill style */}
       <div className="flex lg:hidden items-center justify-center gap-1 px-4 py-2 shrink-0"
@@ -287,22 +288,29 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
       <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
 
         {/* ── LEFT PANEL ──────────────────────────────────────── */}
-        <div className={`w-full lg:w-[300px] shrink-0 flex flex-col ${mobilePane === 'preview' ? 'hidden lg:flex' : 'flex'}`}
+        <div className={`w-full lg:w-[380px] shrink-0 flex flex-col ${mobilePane === 'preview' ? 'hidden lg:flex' : 'flex'}`}
           style={{ background: '#0A0A0E', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
 
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 shrink-0"
+          {/* Header — logo + back to dashboard + save indicator */}
+          <div className="flex items-center justify-between px-3 py-2.5 shrink-0"
             style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
             <div className="flex items-center gap-2">
+              {/* Back to dashboard */}
+              <a href="/dashboard"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-mono transition-all hover:opacity-80"
+                style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)' }}>
+                ← Dashboard
+              </a>
               <SaveIndicator status={saveStatus} />
-              <span className="text-[11px] font-mono text-white/20">·</span>
-              <span className="text-[11px] font-mono" style={{ color: palette.primary }}>/{artist.slug}</span>
             </div>
-            <a href={previewUrl} target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-mono transition-all hover:opacity-80"
-              style={{ background: palette.primary + '18', color: palette.primary, border: `1px solid ${palette.primary}25` }}>
-              <ExternalLink className="w-3 h-3" /> Ver
-            </a>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-mono" style={{ color: palette.primary + 'AA' }}>/{artist.slug}</span>
+              <a href={publicUrl} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-mono transition-all hover:opacity-80"
+                style={{ background: palette.primary + '18', color: palette.primary, border: `1px solid ${palette.primary}25` }}>
+                <ExternalLink className="w-3 h-3" /> Ver
+              </a>
+            </div>
           </div>
 
           {/* Panel tabs */}
@@ -362,7 +370,7 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
                   <EmptySections palette={palette} artistId={artist.id} supabase={supabase} onCreated={setSections} />
                 ) : (
                   <>
-                    <p className="text-[10px] font-mono text-white/25 px-1 mb-1">Arrastra · Click ⚙ para editar · 🎬 para animación</p>
+                    <p className="text-[10px] font-mono text-white/25 px-1 mb-1">⠿ Arrastra para reordenar · ⚙ Editar · 🎬 Animación</p>
                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                       <SortableContext items={sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
                         {[...sections].sort((a, b) => a.sort_order - b.sort_order).map(section => (
@@ -389,11 +397,19 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
             {/* ── SECTION CONFIG ── */}
             {panel === 'sections' && activeSection && (
               <div className="flex-1 overflow-hidden flex flex-col">
-                <button
-                  onClick={() => setActiveSection(null)}
-                  className="flex items-center gap-2 px-4 py-3 text-xs text-white/40 hover:text-white/70 transition-colors shrink-0 border-b border-white/[0.05]">
-                  ← Volver a secciones
-                </button>
+                {/* Breadcrumb + back button */}
+                <div className="flex items-center justify-between px-3 py-2.5 shrink-0"
+                  style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: '#0C0C10' }}>
+                  <button
+                    onClick={() => setActiveSection(null)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all hover:opacity-80"
+                    style={{ background: palette.primary + '18', color: palette.primary, border: `1px solid ${palette.primary}25` }}>
+                    ← Secciones
+                  </button>
+                  <p className="text-[10px] font-mono text-white/30 truncate max-w-[160px]">
+                    {SECTION_LABELS[activeSection.name]?.icon} {SECTION_LABELS[activeSection.name]?.label ?? activeSection.name}
+                  </p>
+                </div>
                 <div className="flex-1 overflow-hidden">
                   <SectionConfigPanel
                     section={activeSection}
@@ -479,26 +495,27 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
                 {/* Colors */}
                 <div className="flex flex-col gap-3">
                   <Label>Colores</Label>
-                  <div className="flex flex-col gap-2">
+                  {/* Color pickers — side by side */}
+                  <div className="grid grid-cols-2 gap-2">
                     {[
-                      { label: 'Color principal',   value: primary,   onChange: handlePrimary },
-                      { label: 'Color secundario',  value: secondary, onChange: handleSecondary },
+                      { label: 'Principal',   value: primary,   onChange: handlePrimary },
+                      { label: 'Secundario',  value: secondary, onChange: handleSecondary },
                     ].map(({ label, value, onChange }) => (
-                      <div key={label} className="flex items-center gap-2 p-2.5 rounded-xl"
+                      <div key={label} className="flex flex-col items-center gap-2 p-3 rounded-xl"
                         style={{ background: '#141418', border: '1px solid rgba(255,255,255,0.06)' }}>
-                        <div className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 shadow-lg cursor-pointer"
-                          style={{ boxShadow: `0 0 16px ${value}50` }}>
+                        <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-lg cursor-pointer"
+                          style={{ boxShadow: `0 0 20px ${value}60` }}>
                           <input type="color" value={value} onChange={e => onChange(e.target.value)}
                             className="absolute inset-0 w-[200%] h-[200%] -translate-x-1/4 -translate-y-1/4 cursor-pointer opacity-0" />
                           <div className="w-full h-full rounded-xl" style={{ background: value }} />
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="text-center w-full">
                           <p className="text-[9px] text-white/30 mb-0.5">{label}</p>
                           <input
                             type="text"
                             value={value.toUpperCase()}
                             onChange={e => { if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) onChange(e.target.value) }}
-                            className="w-full text-[11px] font-mono bg-transparent border-none outline-none"
+                            className="w-full text-[10px] font-mono bg-transparent border-none outline-none text-center"
                             style={{ color: value }}
                             maxLength={7}
                           />
@@ -506,23 +523,27 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
                       </div>
                     ))}
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {COLOR_PRESETS.map(p => (
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {COLOR_PRESETS.map(p => {
+                      const isActive = primary === p.primary
+                      return (
                       <button key={p.name}
                         onClick={() => { handlePrimary(p.primary); handleSecondary(p.secondary) }}
-                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[9px] font-mono border transition-all"
+                        className="flex items-center gap-2 px-2.5 py-2 rounded-xl text-[10px] font-mono border transition-all"
                         style={{
-                          borderColor:     primary === p.primary ? p.primary : 'rgba(255,255,255,0.07)',
-                          color:           primary === p.primary ? p.primary : 'rgba(255,255,255,0.3)',
-                          backgroundColor: primary === p.primary ? p.primary + '15' : 'transparent',
+                          borderColor:     isActive ? p.primary : 'rgba(255,255,255,0.07)',
+                          color:           isActive ? p.primary : 'rgba(255,255,255,0.4)',
+                          backgroundColor: isActive ? p.primary + '15' : 'rgba(255,255,255,0.02)',
                         }}>
-                        <span className="flex rounded-full overflow-hidden w-3 h-3">
+                        <span className="flex rounded-lg overflow-hidden shrink-0"
+                          style={{ width: '28px', height: '18px', boxShadow: `0 0 8px ${p.primary}40` }}>
                           <span className="w-1/2 h-full" style={{ background: p.primary }} />
                           <span className="w-1/2 h-full" style={{ background: p.secondary }} />
                         </span>
-                        {p.name}
+                        <span className="truncate">{p.name}</span>
                       </button>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
 
@@ -614,50 +635,52 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
                   style={{ background: palette.primary + '10', border: `1px solid ${palette.primary}25` }}>
                   <Sparkles className="w-4 h-4 shrink-0" style={{ color: palette.primary }} />
                   <p className="text-[11px] text-white/60 leading-relaxed">
-                    Los efectos se guardan automáticamente al activar.
+                    Se guardan automáticamente al activar.
                   </p>
                 </div>
+                <div className="grid grid-cols-2 gap-2">
                 {EFFECTS.map(({ id, label, desc, emoji }) => {
                   const intensity = effectIntensities[id] ?? 0
                   const isOn = intensity > 0
                   return (
                     <div key={id}
-                      className="rounded-xl transition-all overflow-hidden"
+                      className="rounded-xl transition-all overflow-hidden flex flex-col"
                       style={{
-                        background: isOn ? palette.primary + '0C' : 'rgba(255,255,255,0.02)',
-                        border: `1px solid ${isOn ? palette.primary + '30' : 'rgba(255,255,255,0.05)'}`,
+                        background: isOn ? palette.primary + '0E' : 'rgba(255,255,255,0.02)',
+                        border: `1px solid ${isOn ? palette.primary + '40' : 'rgba(255,255,255,0.05)'}`,
+                        boxShadow: isOn ? `0 0 12px ${palette.primary}12` : 'none',
                       }}>
-                      <div className="flex items-center justify-between p-3.5 cursor-pointer"
+                      {/* Toggle row */}
+                      <div className="flex items-start justify-between p-3 cursor-pointer gap-1"
                         onClick={() => toggleEffect(id)}>
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-base opacity-70">{emoji}</span>
-                          <div>
-                            <p className="text-[12px] font-medium text-white/80">{label}</p>
-                            <p className="text-[10px] text-white/30 mt-0.5">{desc}</p>
+                        <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm opacity-70">{emoji}</span>
+                            <p className="text-[11px] font-semibold truncate" style={{ color: isOn ? palette.primary : 'rgba(255,255,255,0.75)' }}>{label}</p>
                           </div>
+                          <p className="text-[9px] text-white/30 leading-tight">{desc}</p>
                         </div>
                         {isOn
-                          ? <ToggleRight className="w-6 h-6 shrink-0" style={{ color: palette.primary }} />
-                          : <ToggleLeft className="w-6 h-6 shrink-0 text-white/25" />}
+                          ? <ToggleRight className="w-5 h-5 shrink-0 mt-0.5" style={{ color: palette.primary }} />
+                          : <ToggleLeft className="w-5 h-5 shrink-0 mt-0.5 text-white/20" />}
                       </div>
-                      {/* Intensity slider — only shown when effect is on */}
+                      {/* Intensity buttons — shown when on */}
                       <AnimatePresence>
                         {isOn && (
                           <motion.div
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.18 }}
+                            transition={{ duration: 0.15 }}
                             className="overflow-hidden">
-                            <div className="flex gap-1.5 px-3.5 pb-3">
+                            <div className="flex gap-1 px-2.5 pb-2.5">
                               {[1, 2, 3].map(level => (
                                 <button key={level}
-                                  onClick={() => setEffectIntensity(id, level)}
-                                  className="flex-1 py-1.5 rounded-lg text-[10px] font-mono transition-all"
+                                  onClick={e => { e.stopPropagation(); setEffectIntensity(id, level) }}
+                                  className="flex-1 py-1 rounded-md text-[9px] font-mono transition-all"
                                   style={{
                                     background:  intensity === level ? palette.primary : 'rgba(255,255,255,0.05)',
-                                    color:       intensity === level ? '#fff' : 'rgba(255,255,255,0.35)',
-                                    border:      `1px solid ${intensity === level ? palette.primary + '60' : 'transparent'}`,
+                                    color:       intensity === level ? '#fff' : 'rgba(255,255,255,0.3)',
                                   }}>
                                   {INTENSITY_LABELS[level]}
                                 </button>
@@ -669,6 +692,7 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
                     </div>
                   )
                 })}
+                </div>
               </div>
             )}
 
@@ -716,7 +740,7 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
                 {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                 {copied ? 'Copiado' : 'Link'}
               </button>
-              <a href={previewUrl} target="_blank" rel="noopener noreferrer"
+              <a href={publicUrl} target="_blank" rel="noopener noreferrer"
                 className="p-2 rounded-lg transition-colors hover:bg-white/[0.04]"
                 style={{ color: 'rgba(255,255,255,0.3)' }} title="Abrir en nueva pestaña">
                 <Maximize2 className="w-3.5 h-3.5" />
@@ -852,16 +876,29 @@ function SortableSection({ section, palette, toggling, isActive, openAnimPicker,
           <p className="text-[12px] font-medium truncate" style={{ color: isActive ? palette.primary : 'rgba(255,255,255,0.8)' }}>
             {meta.icon} {meta.label}
           </p>
-          <p className="text-[9px] font-mono mt-0.5" style={{ color: isActive ? palette.primary + 'AA' : 'rgba(255,255,255,0.2)' }}>
-            {section.is_enabled ? 'visible' : 'oculta'}
-            {currentAnim !== 'none' && <span className="ml-1.5 opacity-60">· {currentAnim}</span>}
-          </p>
+          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+            <span className="text-[9px] font-mono"
+              style={{ color: isActive ? palette.primary + 'AA' : 'rgba(255,255,255,0.2)' }}>
+              {section.is_enabled ? 'visible' : 'oculta'}
+            </span>
+            {/* Animation badge — visible when non-default animation is active */}
+            {currentAnim !== 'none' && (
+              <span className="text-[8px] font-mono px-1.5 py-0.5 rounded-full"
+                style={{ background: palette.primary + '22', color: palette.primary, border: `1px solid ${palette.primary}35` }}>
+                {currentAnim}
+              </span>
+            )}
+          </div>
         </div>
 
-        {/* Animation picker button */}
+        {/* Animation picker button — highlighted when animation is active */}
         <button onClick={onOpenAnimPicker}
-          className="p-1.5 rounded-lg transition-colors shrink-0 text-[13px]"
-          style={{ color: currentAnim !== 'none' ? palette.primary : 'rgba(255,255,255,0.2)' }}
+          className="p-1.5 rounded-lg transition-all shrink-0 text-[13px]"
+          style={{
+            background: currentAnim !== 'none' ? palette.primary + '18' : 'transparent',
+            color: currentAnim !== 'none' ? palette.primary : 'rgba(255,255,255,0.2)',
+            border: `1px solid ${currentAnim !== 'none' ? palette.primary + '30' : 'transparent'}`,
+          }}
           title="Animación de entrada">
           🎬
         </button>

@@ -96,9 +96,26 @@ function DashboardClientInner({ initialArtist, initialSections, analytics, fans 
 
   const tabProps: TabProps = { artist, setArtist, sections, setSections, analytics, fans, palette, supabase, setTab }
 
+  // Editor tab: renders full-screen over the sidebar (z-[100] > sidebar z-50)
+  if (tab === 'editor') {
+    return (
+      <motion.div
+        key="editor-fullscreen"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.18 }}
+        className="fixed inset-0 z-[100] flex flex-col"
+        style={{ background: '#0A0A0F' }}
+      >
+        <TabErrorBoundary tabKey="editor">
+          <EditorTab {...tabProps} />
+        </TabErrorBoundary>
+      </motion.div>
+    )
+  }
+
   return (
-    <div className={`flex flex-col h-full ${tab === 'editor' ? 'overflow-hidden' : 'overflow-y-auto'}`}
-      style={{ minHeight: 'calc(100dvh - 56px)' }}>
+    <div className="flex flex-col overflow-y-auto" style={{ minHeight: 'calc(100dvh - 56px)' }}>
       <TabErrorBoundary tabKey={tab}>
         <AnimatePresence mode="wait">
           <motion.div
@@ -107,9 +124,7 @@ function DashboardClientInner({ initialArtist, initialSections, analytics, fans 
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className={tab === 'editor' ? 'h-full flex flex-col' : undefined}
           >
-            {tab === 'editor'    && <EditorTab    {...tabProps} />}
             {tab === 'analytics' && <AnalyticsTab {...tabProps} />}
             {tab === 'content'   && <ContentTab   {...tabProps} />}
             {tab === 'fans'      && <FansTab      {...tabProps} />}
