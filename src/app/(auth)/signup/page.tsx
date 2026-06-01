@@ -40,24 +40,10 @@ export default function SignupPage() {
       return
     }
 
-    // If Supabase returned a session immediately (email confirmation off) → go straight to onboarding
-    if (authData.session && authData.user) {
-      const userId = authData.user.id
-      // Try to create artist row now (will succeed since we have a session)
-      await supabase.from('artists').insert({
-        user_id: userId,
-        slug,
-        artist_name: artistName,
-      }).then(({ error: e }) => {
-        if (e && e.code !== '23505') {
-          // slug collision — append suffix
-          supabase.from('artists').insert({
-            user_id: userId,
-            slug: `${slug}-${Math.random().toString(36).slice(2, 6)}`,
-            artist_name: artistName,
-          })
-        }
-      })
+    // If Supabase returned a session immediately (email confirmation off) → go straight to
+    // onboarding. The OnboardingPage server component owns artist-row creation (with proper
+    // slug-collision handling), so we don't insert here to avoid a race / duplicate logic.
+    if (authData.session) {
       router.push('/onboarding')
       return
     }
@@ -127,6 +113,7 @@ export default function SignupPage() {
                 onChange={(e) => setArtistName(e.target.value)}
                 placeholder="NXGHT"
                 required
+                autoComplete="off"
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 focus:outline-none focus:border-[#C026D3]/60 transition-all"
                 style={{ fontSize: '16px' }}
               />
@@ -145,6 +132,9 @@ export default function SignupPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@email.com"
                 required
+                autoComplete="email"
+                inputMode="email"
+                autoCapitalize="none"
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 focus:outline-none focus:border-[#C026D3]/60 transition-all"
                 style={{ fontSize: '16px' }}
               />
@@ -159,6 +149,7 @@ export default function SignupPage() {
                 placeholder="Mín. 8 caracteres"
                 minLength={8}
                 required
+                autoComplete="new-password"
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 focus:outline-none focus:border-[#C026D3]/60 transition-all"
                 style={{ fontSize: '16px' }}
               />

@@ -30,16 +30,15 @@ export default function LoginPage() {
 
     setSuccess(true)
 
-    // Check if artist exists and onboarding is complete → skip straight to panel
+    // Check if artist exists and onboarding is complete → go straight to dashboard.
+    // maybeSingle() returns null (not an error) when the artist row doesn't exist yet.
     const { data: artist } = await supabase
       .from('artists')
       .select('onboarding_step')
       .eq('user_id', data.user.id)
-      .single()
+      .maybeSingle()
 
-    setTimeout(() => {
-      router.push(artist?.onboarding_step === 'complete' ? '/dashboard' : '/onboarding')
-    }, 600)
+    router.push(artist?.onboarding_step === 'complete' ? '/dashboard' : '/onboarding')
   }
 
   return (
@@ -72,6 +71,9 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@email.com"
                 required
+                autoComplete="email"
+                inputMode="email"
+                autoCapitalize="none"
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 focus:outline-none focus:border-[#C026D3]/60 focus:bg-white/8 transition-all"
                 style={{ fontSize: '16px' }}
               />
@@ -85,6 +87,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
+                autoComplete="current-password"
                 className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/20 focus:outline-none focus:border-[#C026D3]/60 transition-all"
                 style={{ fontSize: '16px' }}
               />

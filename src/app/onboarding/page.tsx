@@ -20,7 +20,8 @@ export default async function OnboardingPage() {
   if (!artist) {
     const meta       = user.user_metadata as { artist_name?: string; slug?: string } | undefined
     const artistName = meta?.artist_name || user.email?.split('@')[0] || 'Artist'
-    const baseSlug   = meta?.slug || slugify(artistName)
+    // slugify can return '' (e.g. emoji-only names) — guard so the public URL is never empty
+    const baseSlug   = meta?.slug || slugify(artistName) || `artist-${Math.random().toString(36).slice(2, 6)}`
 
     // Try slug, fallback with random suffix on collision
     let slug = baseSlug
@@ -45,7 +46,7 @@ export default async function OnboardingPage() {
   }
 
   // Already completed onboarding → go to dashboard
-  if (artist.onboarding_step === 'complete') redirect('/panel')
+  if (artist.onboarding_step === 'complete') redirect('/dashboard')
 
   return <OnboardingWizard initialArtist={artist} />
 }

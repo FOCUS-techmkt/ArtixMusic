@@ -51,7 +51,7 @@ export default function StepIdentity({ data, onChange }: Props) {
               onClick={() => onChange({ role: role.value })}
               className={`group relative flex flex-col items-start gap-1 p-4 rounded-2xl border transition-all duration-200 ${
                 data.role === role.value
-                  ? 'border-[#C026D3] bg-[#C026D3]/10 text-white'
+                  ? 'border-transparent text-white'
                   : 'border-white/10 bg-white/[0.03] text-white/60 hover:border-white/20 hover:text-white'
               }`}
             >
