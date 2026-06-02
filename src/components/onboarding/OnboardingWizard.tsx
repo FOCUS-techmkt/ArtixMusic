@@ -13,6 +13,9 @@ import type { Artist, OnboardingData, OnboardingStatus } from '@/types'
 import { ONBOARDING_STEPS, deriveArtistPalette } from '@/types'
 import { DEFAULT_CONFIGS } from '@/types/sections'
 
+// Keep in sync with EditorTab's EmptySections recovery list.
+const DEFAULT_SECTION_NAMES = ['hero', 'bio', 'music', 'live', 'gallery', 'contact', 'links', 'testimonials'] as const
+
 const stepVariants = {
   enter:  { opacity: 0, y: 8 },
   center: { opacity: 1, y: 0 },
@@ -252,36 +255,49 @@ export default function OnboardingWizard({ initialArtist }: { initialArtist: Art
         .from('artists').select('id').eq('user_id', initialArtist.user_id).maybeSingle()
 
       if (artistRow?.id) {
-        // Update section configs
+        // Build the populated config for a section name from onboarding data.
+        const buildConfig = (name: string): Record<string, unknown> => {
+          const base = { ...(DEFAULT_CONFIGS[name] ?? {}) } as Record<string, unknown>
+          if (name === 'hero') {
+            return { ...base, tagline: data.artist_name, sub_tagline: [data.role, data.genre].filter(Boolean).join(' · '), particles: true }
+          }
+          if (name === 'bio') {
+            return { ...base, text: data.bio ? `<p>${data.bio}</p>` : base.text, genres: [data.genre].filter(Boolean) }
+          }
+          if (name === 'contact') {
+            return { ...base, cta_url: data.booking_email ? `mailto:${data.booking_email}` : '' }
+          }
+          if (name === 'music' && data.music_url) {
+            const platform = data.music_url.includes('spotify') ? 'spotify'
+              : data.music_url.includes('soundcloud') ? 'soundcloud'
+              : data.music_url.includes('youtube')    ? 'youtube'
+              : 'link'
+            return { ...base, tracks: [{ id: '1', title: `${data.artist_name} — Mix`, platform, url: data.music_url }] }
+          }
+          return base
+        }
+
         const { data: sections } = await supabase
           .from('sections').select('id, name, config').eq('artist_id', artistRow.id)
 
         if (sections?.length) {
+          // Sections already exist (returning user) — patch only the ones still empty.
           await Promise.all(sections.map(s => {
-            const base = { ...(DEFAULT_CONFIGS[s.name] ?? {}) } as Record<string, unknown>
-            let patch: Record<string, unknown> = {}
-
-            if (s.name === 'hero') {
-              patch = { ...base, tagline: data.artist_name, sub_tagline: [data.role, data.genre].filter(Boolean).join(' · '), particles: true }
-            } else if (s.name === 'bio') {
-              patch = { ...base, text: data.bio ? `<p>${data.bio}</p>` : base.text, genres: [data.genre].filter(Boolean) }
-            } else if (s.name === 'contact') {
-              patch = { ...base, cta_url: data.booking_email ? `mailto:${data.booking_email}` : '' }
-            } else if (s.name === 'music' && data.music_url) {
-              const platform = data.music_url.includes('spotify') ? 'spotify'
-                : data.music_url.includes('soundcloud') ? 'soundcloud'
-                : data.music_url.includes('youtube')    ? 'youtube'
-                : 'link'
-              patch = { ...base, tracks: [{ id: '1', title: `${data.artist_name} — Mix`, platform, url: data.music_url }] }
-            } else {
-              patch = base
-            }
-
             if (!s.config || Object.keys(s.config).length === 0) {
-              return supabase.from('sections').update({ config: patch }).eq('id', s.id)
+              return supabase.from('sections').update({ config: buildConfig(s.name) }).eq('id', s.id)
             }
             return Promise.resolve()
           }))
+        } else {
+          // New user — create the default sections already populated with onboarding data.
+          const rows = DEFAULT_SECTION_NAMES.map((name, i) => ({
+            artist_id:  artistRow.id,
+            name,
+            sort_order: i,
+            is_enabled: true,
+            config:     buildConfig(name),
+          }))
+          await supabase.from('sections').insert(rows)
         }
 
         // Create live_event if next show date is provided

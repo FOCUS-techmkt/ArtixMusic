@@ -367,11 +367,11 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
             {panel === 'sections' && !activeSection && (
               <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 overscroll-contain">
                 {sections.length === 0 ? (
-                  <EmptySections palette={palette} artistId={artist.id} supabase={supabase} onCreated={setSections} />
+                  <EmptySections palette={palette} artistId={artist.id} supabase={supabase} onCreated={(s) => { setSections(s); setTimeout(reloadPreview, 600) }} />
                 ) : (
                   <>
                     <p className="text-[10px] font-mono text-white/25 px-1 mb-1">⠿ Arrastra para reordenar · ⚙ Editar · 🎬 Animación</p>
-                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <DndContext id="editor-sections-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                       <SortableContext items={sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
                         {[...sections].sort((a, b) => a.sort_order - b.sort_order).map(section => (
                           <SortableSection

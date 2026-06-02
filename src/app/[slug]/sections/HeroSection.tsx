@@ -118,58 +118,58 @@ function AnimText({ text, animation = 'slide', delay = 0, className = '', style 
   }
   if (animation === 'reveal') {
     return (
-      <div className="overflow-hidden">
-        <motion.div className={className} style={style}
+      <span className="overflow-hidden inline-block align-bottom">
+        <motion.span className={className} style={{ display: 'inline-block', ...style }}
           initial={{ y: '110%', opacity: 0 }} animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.85, delay, ease: [0.22, 1, 0.36, 1] }}>
           {text}
-        </motion.div>
-      </div>
+        </motion.span>
+      </span>
     )
   }
   if (animation === 'glitch') {
     return (
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay }} className={className} style={style}>
+      <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay }} className={className} style={{ display: 'inline-block', ...style }}>
         <GlitchText text={text} />
-      </motion.div>
+      </motion.span>
     )
   }
   if (animation === 'scale-up') {
     return (
-      <motion.div className={className} style={style}
+      <motion.span className={className} style={{ display: 'inline-block', ...style }}
         initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }}>
         {text}
-      </motion.div>
+      </motion.span>
     )
   }
   if (animation === 'slide-down') {
     return (
-      <motion.div className={className} style={style}
+      <motion.span className={className} style={{ display: 'inline-block', ...style }}
         initial={{ opacity: 0, y: -36 }} animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.85, delay, ease: [0.22, 1, 0.36, 1] }}>
         {text}
-      </motion.div>
+      </motion.span>
     )
   }
   if (animation === 'blur-in') {
     return (
-      <motion.div className={className} style={style}
+      <motion.span className={className} style={{ display: 'inline-block', ...style }}
         initial={{ opacity: 0, filter: 'blur(18px)' }}
         animate={{ opacity: 1, filter: 'blur(0px)' }}
         transition={{ duration: 0.9, delay, ease: [0.22, 1, 0.36, 1] }}>
         {text}
-      </motion.div>
+      </motion.span>
     )
   }
   if (animation === 'float') {
     return (
-      <motion.div className={className} style={style}
+      <motion.span className={className} style={{ display: 'inline-block', ...style }}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: [20, 0, -4, 0] }}
         transition={{ duration: 1.1, delay, ease: [0.22, 1, 0.36, 1] }}>
         {text}
-      </motion.div>
+      </motion.span>
     )
   }
   const variants = {
@@ -178,11 +178,11 @@ function AnimText({ text, animation = 'slide', delay = 0, className = '', style 
   }
   const v = variants[animation as 'fade' | 'slide'] ?? variants.slide
   return (
-    <motion.div className={className} style={style}
+    <motion.span className={className} style={{ display: 'inline-block', ...style }}
       initial={v.initial} animate={v.animate}
       transition={{ duration: 0.85, delay, ease: [0.22, 1, 0.36, 1] }}>
       {text}
-    </motion.div>
+    </motion.span>
   )
 }
 
