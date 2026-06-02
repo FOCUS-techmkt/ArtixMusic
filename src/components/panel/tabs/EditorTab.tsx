@@ -155,6 +155,10 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
 
   const reloadPreview = () => iframeRef.current?.contentWindow?.location.reload()
 
+  // When a section is open for editing we switch the whole content area into a
+  // comfortable full-screen editor (hides the narrow sidebar split + preview).
+  const editingSection = panel === 'sections' && !!activeSection
+
   const copyLink = async () => {
     await navigator.clipboard.writeText(publicUrl)
     setCopied(true)
@@ -288,8 +292,8 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
       <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
 
         {/* ── LEFT PANEL ──────────────────────────────────────── */}
-        <div className={`w-full lg:w-[380px] shrink-0 flex flex-col ${mobilePane === 'preview' ? 'hidden lg:flex' : 'flex'}`}
-          style={{ background: '#0A0A0E', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className={`w-full shrink-0 flex flex-col ${editingSection ? 'lg:w-full lg:flex-1' : 'lg:w-[380px]'} ${mobilePane === 'preview' && !editingSection ? 'hidden lg:flex' : 'flex'}`}
+          style={{ background: '#0A0A0E', borderRight: editingSection ? 'none' : '1px solid rgba(255,255,255,0.05)' }}>
 
           {/* Header — logo + back to dashboard + save indicator */}
           <div className="flex items-center justify-between px-3 py-2.5 shrink-0"
@@ -313,7 +317,8 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
             </div>
           </div>
 
-          {/* Panel tabs */}
+          {/* Panel tabs — hidden while editing a section (full-screen mode) */}
+          {!editingSection && (
           <div className="flex border-b border-white/[0.05] sticky top-0 z-10 shrink-0" style={{ background: '#0A0A0E' }}>
             {([
               { id: 'templates', emoji: '🎨', label: 'Plantillas' },
@@ -335,6 +340,7 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
               </button>
             ))}
           </div>
+          )}
 
           {/* Panel content */}
           <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
@@ -397,24 +403,35 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
             {/* ── SECTION CONFIG ── */}
             {panel === 'sections' && activeSection && (
               <div className="flex-1 overflow-hidden flex flex-col">
-                {/* Breadcrumb + back button */}
-                <div className="flex items-center justify-between px-3 py-2.5 shrink-0"
+                {/* Full-screen editor header */}
+                <div className="flex items-center justify-between px-5 py-3.5 shrink-0"
                   style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: '#0C0C10' }}>
-                  <button
-                    onClick={() => setActiveSection(null)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all hover:opacity-80"
-                    style={{ background: palette.primary + '18', color: palette.primary, border: `1px solid ${palette.primary}25` }}>
-                    ← Secciones
-                  </button>
-                  <p className="text-[10px] font-mono text-white/30 truncate max-w-[160px]">
-                    {SECTION_LABELS[activeSection.name]?.icon} {SECTION_LABELS[activeSection.name]?.label ?? activeSection.name}
-                  </p>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <button
+                      onClick={() => setActiveSection(null)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-semibold transition-all hover:opacity-80 shrink-0"
+                      style={{ background: palette.primary + '18', color: palette.primary, border: `1px solid ${palette.primary}25` }}>
+                      ← Secciones
+                    </button>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-lg leading-none">{SECTION_LABELS[activeSection.name]?.icon}</span>
+                      <h2 className="text-[15px] font-semibold text-white/90 truncate">
+                        {SECTION_LABELS[activeSection.name]?.label ?? activeSection.name}
+                      </h2>
+                    </div>
+                  </div>
+                  <a href={publicUrl} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-mono transition-all hover:opacity-80 shrink-0"
+                    style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.45)' }}>
+                    <ExternalLink className="w-3.5 h-3.5" /> Ver sitio
+                  </a>
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <SectionConfigPanel
                     section={activeSection}
                     palette={palette}
                     supabase={supabase}
+                    fullWidth
                     onSaved={updated => {
                       setSections(prev => prev.map(s => s.id === updated.id ? updated : s))
                       setActiveSection(updated)
@@ -702,7 +719,7 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
         </div>
 
         {/* ── PREVIEW PANE ──────────────────────────────────────── */}
-        <div className={`flex-1 flex flex-col min-h-0 ${mobilePane === 'controls' ? 'hidden lg:flex' : 'flex'}`} style={{ background: '#070709' }}>
+        <div className={`flex-1 flex flex-col min-h-0 ${editingSection ? 'hidden' : mobilePane === 'controls' ? 'hidden lg:flex' : 'flex'}`} style={{ background: '#070709' }}>
 
           {/* Preview toolbar */}
           <div className="flex items-center justify-between px-3 py-2 shrink-0"

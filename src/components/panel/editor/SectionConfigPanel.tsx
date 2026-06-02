@@ -23,9 +23,11 @@ interface Props {
   supabase:        SupabaseClient
   onSaved:         (section: Section) => void
   onPreviewUpdate?: (name: string, config: Record<string, unknown>) => void
+  /** Full-screen mode: center the content in a comfortable max-width column. */
+  fullWidth?:      boolean
 }
 
-export default function SectionConfigPanel({ section, palette, supabase, onSaved, onPreviewUpdate }: Props) {
+export default function SectionConfigPanel({ section, palette, supabase, onSaved, onPreviewUpdate, fullWidth = false }: Props) {
   const [config, setConfig] = useState<Record<string, unknown>>(
     Object.keys(section.config ?? {}).length > 0
       ? section.config as Record<string, unknown>
@@ -64,6 +66,8 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
 
   const accent = palette.primary
 
+  const wrap = fullWidth ? 'max-w-3xl mx-auto w-full' : 'w-full'
+
   // Hero uses its own multi-tab editor (HeroEditorPanel)
   if (section.name === 'hero') {
     return (
@@ -73,7 +77,7 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
         </div>
         <div className="p-4 shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
           <button onClick={save} disabled={saving}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-60 transition-all active:scale-[0.98]"
+            className={`${wrap} flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-60 transition-all active:scale-[0.98]`}
             style={{ background: accent }}>
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar Hero'}
           </button>
@@ -86,7 +90,7 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
     <div className="flex flex-col h-full">
 
       {/* ── Tab bar ── */}
-      <div className="flex shrink-0 px-3 gap-0.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <div className={`flex shrink-0 px-3 gap-0.5 ${wrap}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         {(['content', 'design', 'anim'] as ConfigTab[]).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className="px-3 pt-3 pb-2.5 text-[10px] font-mono uppercase tracking-widest transition-all relative"
@@ -100,7 +104,7 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
       </div>
 
       {/* ── Panel body ── */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-5">
+      <div className={`flex-1 overflow-y-auto p-4 flex flex-col gap-5 ${wrap}`}>
         {section.name === 'bio'         && <BioPanel         config={config as unknown as BioConfig}         set={set} accent={accent} tab={tab} />}
         {section.name === 'music'       && <MusicPanel       config={config as unknown as MusicConfig}       set={set} accent={accent} tab={tab} />}
         {section.name === 'community'   && <CommunityPanel   config={config as unknown as CommunityConfig}   set={set} accent={accent} tab={tab} />}
@@ -117,7 +121,7 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
       {/* ── Save ── */}
       <div className="p-4 shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
         <button onClick={save} disabled={saving}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-60 transition-all active:scale-[0.98]"
+          className={`${wrap} flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-60 transition-all active:scale-[0.98]`}
           style={{ background: accent }}>
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar sección'}
         </button>
