@@ -55,6 +55,30 @@ const LAYOUT_NAMES: Record<string, string> = {
   'presskit-kay': 'PRESS KIT · TECHNO', 'presskit-danny': 'PRESS KIT · AFRO',
 }
 
+// ── Completitud: ¿la sección tiene contenido real o está vacía? ────
+// Permite guiar al artista (checklist) y avisar de secciones que no
+// se mostrarán porque no tienen datos.
+function sectionHasContent(section: Section): boolean {
+  const c = (section.config ?? {}) as Record<string, any>
+  const arr = (k: string) => Array.isArray(c[k]) && c[k].length > 0
+  switch (section.name) {
+    case 'hero':         return !!(c.bg_image || c.tagline || c.sub_tagline || c.logo_url)
+    case 'bio':          return ((c.text ?? '').replace(/<[^>]+>/g, '').trim().length) > 20
+    case 'music':        return arr('tracks')
+    case 'releases':     return arr('releases')
+    case 'live':         return arr('venues')
+    case 'gallery':      return arr('images')
+    case 'rider':        return arr('items')
+    case 'community':    return arr('platforms') && c.platforms.some((p: any) => p.url)
+    case 'supporters':   return arr('ticker_names') || arr('featured')
+    case 'links':        return arr('links') && c.links.some((l: any) => l.url)
+    case 'testimonials': return arr('testimonials')
+    case 'contact':
+    case 'fan-capture':  return true   // funcionan con valores por defecto
+    default:             return true
+  }
+}
+
 // ── Effects catalog ───────────────────────────────────────────────
 const EFFECTS = [
   { id: 'particles', label: 'Partículas', desc: 'Partículas flotantes en hero',   emoji: '✦' },
@@ -311,8 +335,8 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
       <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
 
         {/* ── LEFT PANEL ──────────────────────────────────────── */}
-        <div className={`w-full shrink-0 flex flex-col ${editingSection ? 'lg:w-full lg:flex-1' : 'lg:w-[380px]'} ${mobilePane === 'preview' && !editingSection ? 'hidden lg:flex' : 'flex'}`}
-          style={{ background: '#0A0A0E', borderRight: editingSection ? 'none' : '1px solid rgba(255,255,255,0.05)' }}>
+        <div className={`w-full shrink-0 flex flex-col ${editingSection ? 'lg:w-[440px]' : 'lg:w-[380px]'} ${mobilePane === 'preview' ? 'hidden lg:flex' : 'flex'}`}
+          style={{ background: '#0A0A0E', borderRight: '1px solid rgba(255,255,255,0.05)' }}>
 
           {/* Header — logo + back to dashboard + save indicator */}
           <div className="flex items-center justify-between px-3 py-2.5 shrink-0"
@@ -404,6 +428,11 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
                   />
                 ) : (
                   <>
+                    <CompletionBar
+                      ready={sections.filter(s => s.is_enabled && sectionHasContent(s)).length}
+                      total={sections.filter(s => s.is_enabled).length}
+                      palette={palette}
+                    />
                     <p className="text-[10px] font-mono text-white/25 px-1 mb-1">⠿ Arrastra para reordenar · ⚙ Editar · 🎬 Animación</p>
                     <DndContext id="editor-sections-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                       <SortableContext items={sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
@@ -747,7 +776,7 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
         </div>
 
         {/* ── PREVIEW PANE ──────────────────────────────────────── */}
-        <div className={`flex-1 flex flex-col min-h-0 ${editingSection ? 'hidden' : mobilePane === 'controls' ? 'hidden lg:flex' : 'flex'}`} style={{ background: '#070709' }}>
+        <div className={`flex-1 flex flex-col min-h-0 ${mobilePane === 'controls' ? 'hidden lg:flex' : 'flex'}`} style={{ background: '#070709' }}>
 
           {/* Preview toolbar */}
           <div className="flex items-center justify-between px-3 py-2 shrink-0"
@@ -868,6 +897,27 @@ function SaveIndicator({ status }: { status: SaveStatus }) {
   )
 }
 
+// ── Barra de completitud (checklist) ──────────────────────────────
+function CompletionBar({ ready, total, palette }: {
+  ready: number; total: number; palette: ReturnType<typeof import('@/types').deriveArtistPalette>
+}) {
+  const pct = total > 0 ? Math.round((ready / total) * 100) : 0
+  const done = ready === total
+  return (
+    <div className="px-1 mb-2">
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[10px] font-mono uppercase tracking-wider" style={{ color: palette.textMuted }}>
+          {done ? '✓ Página completa' : `${ready}/${total} secciones con contenido`}
+        </span>
+        <span className="text-[10px] font-mono" style={{ color: done ? '#22C55E' : palette.primary }}>{pct}%</span>
+      </div>
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: done ? '#22C55E' : palette.primary }} />
+      </div>
+    </div>
+  )
+}
+
 // ── Lista de secciones para layouts DEDICADOS (orden fijo) ────────
 function TemplateAwareSections({ sections, layoutSections, layoutName, palette, onEdit }: {
   sections: Section[]
@@ -881,15 +931,24 @@ function TemplateAwareSections({ sections, layoutSections, layoutName, palette, 
     .filter((s): s is Section => !!s)
   const unused = sections.filter(s => !layoutSections.includes(s.name))
 
+  const ready = used.filter(sectionHasContent).length
+
   const Row = ({ section, muted = false }: { section: Section; muted?: boolean }) => {
     const meta = SECTION_LABELS[section.name] ?? { icon: '📄', label: section.name }
+    const empty = !muted && !sectionHasContent(section)
     return (
       <button onClick={() => !muted && onEdit(section)} disabled={muted}
         className="flex items-center justify-between p-3 rounded-xl text-left transition-all w-full group"
-        style={{ background: muted ? 'transparent' : 'rgba(255,255,255,0.03)', border: `1px solid ${palette.border}`, opacity: muted ? 0.4 : 1, cursor: muted ? 'default' : 'pointer' }}>
+        style={{ background: muted ? 'transparent' : 'rgba(255,255,255,0.03)', border: `1px solid ${empty ? '#F59E0B40' : palette.border}`, opacity: muted ? 0.4 : 1, cursor: muted ? 'default' : 'pointer' }}>
         <div className="flex items-center gap-2.5 min-w-0">
-          <span className="text-base">{meta.icon}</span>
+          <span className="relative text-base shrink-0">
+            {meta.icon}
+            {!muted && (
+              <span className="absolute -right-1 -top-0.5 w-2 h-2 rounded-full" style={{ background: empty ? '#F59E0B' : '#22C55E', boxShadow: '0 0 0 2px #0A0A0E' }} />
+            )}
+          </span>
           <span className="text-[13px] font-medium truncate" style={{ color: palette.text }}>{meta.label}</span>
+          {empty && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded-full shrink-0" style={{ background: '#F59E0B1a', color: '#F59E0B' }}>vacía</span>}
         </div>
         {!muted
           ? <span className="flex items-center gap-1 text-[10px] font-mono opacity-0 group-hover:opacity-100 transition-opacity shrink-0" style={{ color: palette.primary }}><Settings2 className="w-3 h-3" /> Editar</span>
@@ -907,6 +966,7 @@ function TemplateAwareSections({ sections, layoutSections, layoutName, palette, 
           Edita el contenido de cada una — el orden y el diseño los pone la plantilla.
         </p>
       </div>
+      <CompletionBar ready={ready} total={used.length} palette={palette} />
       <div className="flex flex-col gap-2">
         {used.map(s => <Row key={s.id} section={s} />)}
       </div>
@@ -980,6 +1040,10 @@ function SortableSection({ section, palette, toggling, isActive, openAnimPicker,
               style={{ color: isActive ? palette.primary + 'AA' : 'rgba(255,255,255,0.2)' }}>
               {section.is_enabled ? 'visible' : 'oculta'}
             </span>
+            {section.is_enabled && !sectionHasContent(section) && (
+              <span className="text-[8px] font-mono px-1.5 py-0.5 rounded-full"
+                style={{ background: '#F59E0B1a', color: '#F59E0B' }}>vacía</span>
+            )}
             {/* Animation badge — visible when non-default animation is active */}
             {currentAnim !== 'none' && (
               <span className="text-[8px] font-mono px-1.5 py-0.5 rounded-full"
