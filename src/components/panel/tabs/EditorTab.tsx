@@ -37,6 +37,7 @@ const SECTION_LABELS: Record<string, { icon: string; label: string }> = {
   'fan-capture':  { icon: '💌', label: 'Fan Database' },
   links:          { icon: '🔗', label: 'Links / Linktree' },
   testimonials:   { icon: '💬', label: 'Testimonios' },
+  rider:          { icon: '🎛️', label: 'Rider Técnico' },
 }
 
 // ── Effects catalog ───────────────────────────────────────────────
@@ -973,7 +974,7 @@ function Label({ children }: { children: React.ReactNode }) {
 }
 
 // ── Empty sections recovery ───────────────────────────────────────
-const DEFAULT_SECTION_NAMES = ['hero', 'bio', 'music', 'live', 'gallery', 'contact', 'links', 'testimonials'] as const
+const DEFAULT_SECTION_NAMES = ['hero', 'bio', 'music', 'live', 'gallery', 'rider', 'contact', 'links', 'testimonials'] as const
 
 function EmptySections({ palette, artistId, supabase, onCreated }: {
   palette:   ReturnType<typeof import('@/types').deriveArtistPalette>

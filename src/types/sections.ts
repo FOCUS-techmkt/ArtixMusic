@@ -259,11 +259,34 @@ export interface ContactConfig {
   overlay_color:   string
 }
 
+export type FanCaptureVariant =
+  | 'minimal'        // limpio, una línea, elegante
+  | 'glass'          // tarjeta glassmorphism con glow
+  | 'gradient-pop'   // fondo gradiente vibrante
+  | 'ticket'         // estilo ticket / guestlist con borde perforado
+  | 'neon'           // híper animado: bordes neón pulsantes, partículas
+  | 'split'          // split con incentivo/imagen + formulario
+
+export type FanCaptureGoal =
+  | 'community'      // club de fans / comunidad
+  | 'gift'           // obtener un regalo / descarga gratis
+  | 'presale'        // acceso anticipado / preventa
+  | 'vip'            // lista VIP
+  | 'guestlist'      // guestlist de evento
+  | 'download'       // descargar pack / track
+
 export interface FanCaptureConfig {
   section_title:   string
   subtitle:        string
   button_text:     string
   privacy_text:    string
+  variant:         FanCaptureVariant
+  goal:            FanCaptureGoal
+  incentive:       string        // texto del gancho/recompensa (ej. "Track gratis al unirte")
+  mode:            'email' | 'link'   // captar email o redirigir a un link externo
+  cta_url:         string        // usado cuando mode = 'link' (regalo, Discord, descarga…)
+  show_name:       boolean       // pedir nombre además del email
+  accent_override: string | null // color de acento opcional (null = palette.primary)
   bg_image:        string | null
   overlay_opacity: number
   overlay_color:   string
@@ -311,10 +334,31 @@ export interface TestimonialsConfig {
   overlay_color:   string
 }
 
+export interface RiderConfig {
+  section_title:   string
+  intro:           string   // texto introductorio (soporta **negrita**)
+  items: {
+    id:       string
+    name:     string   // ej. "PIONEER DJ CDJ-3000"
+    role:     string   // ej. "PLAYER 1" / "MIXER" — opcional
+    image:    string | null
+  }[]
+  notes: {             // bloques extra: Monitores, Extras, etc.
+    id:      string
+    title:   string
+    body:    string
+  }[]
+  cta_text:        string   // ej. "Especificaciones Rider"
+  cta_url:         string
+  bg_image:        string | null
+  overlay_opacity: number
+  overlay_color:   string
+}
+
 export type SectionConfig =
   | HeroConfig | BioConfig | MusicConfig | CommunityConfig | SupportersConfig
   | ReleasesConfig | LiveConfig | ContactConfig | FanCaptureConfig
-  | GalleryConfig | LinksConfig | TestimonialsConfig
+  | GalleryConfig | LinksConfig | TestimonialsConfig | RiderConfig
 
 export const DEFAULT_CONFIGS: Record<string, SectionConfig> = {
   hero: {
@@ -503,6 +547,13 @@ export const DEFAULT_CONFIGS: Record<string, SectionConfig> = {
     subtitle:        'Música exclusiva, primeras escuchas y fechas antes que nadie.',
     button_text:     'Quiero entrar',
     privacy_text:    'Sin spam. Solo buena música.',
+    variant:         'glass',
+    goal:            'community',
+    incentive:       '',
+    mode:            'email',
+    cta_url:         '',
+    show_name:       true,
+    accent_override: null,
     bg_image:        null,
     overlay_opacity: 0.5,
     overlay_color:   '#000000',
@@ -533,4 +584,22 @@ export const DEFAULT_CONFIGS: Record<string, SectionConfig> = {
     overlay_opacity: 0.6,
     overlay_color:   '#000000',
   } as TestimonialsConfig,
+
+  rider: {
+    section_title:   'Rider',
+    intro:           'Para garantizar una experiencia **óptima** en cada presentación, se requiere el siguiente equipamiento técnico:',
+    items: [
+      { id: '1', name: 'PIONEER DJ CDJ-3000',     role: 'PLAYER 1', image: null },
+      { id: '2', name: 'PIONEER DJ CDJ-3000',     role: 'PLAYER 2', image: null },
+      { id: '3', name: 'PIONEER DJ DJM-900NXS2',  role: 'MIXER',    image: null },
+    ],
+    notes: [
+      { id: '1', title: 'Monitores', body: '12" a 15" a la altura de los oídos laterales (en pedestal).' },
+    ],
+    cta_text:        'Especificaciones Rider',
+    cta_url:         '',
+    bg_image:        null,
+    overlay_opacity: 0.6,
+    overlay_color:   '#000000',
+  } as RiderConfig,
 }

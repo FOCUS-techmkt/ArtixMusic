@@ -18,6 +18,10 @@ import ContactSection     from './sections/ContactSection'
 import FanCaptureSection  from './sections/FanCaptureSection'
 import LinksSection       from './sections/LinksSection'
 import TestimonialsSection from './sections/TestimonialsSection'
+import RiderSection        from './sections/RiderSection'
+import MinimalPulse        from './sections/MinimalPulse'
+import PressKitLayout       from './sections/PressKitLayout'
+import type { RiderConfig } from '@/types/sections'
 
 // Legacy — kept for presskit fallback (page.tsx still exports this type)
 export interface ArtistProfile {
@@ -210,6 +214,43 @@ export default function SlugClient({ artist, sections }: Props) {
     ? { '--font-display': `var(${fontEntry.cssVar})` } as React.CSSProperties
     : {}
 
+  // ── Dedicated full-page layout: Minimal Pulse (DJ landing) ───────
+  // Routed via hero config (pageLayout) — avoids the DB enum constraint
+  // on artists.layout_variant.
+  const pageLayout = sections.find(s => s.name === 'hero')?.config?.pageLayout as string | undefined
+  if (pageLayout === 'minimal-pulse') {
+    return (
+      <>
+        {!artist.is_published && (
+          <div className="fixed top-0 left-0 right-0 z-[9999] flex items-center justify-center gap-3 py-2.5 px-4 text-[12px] font-mono"
+            style={{ background: '#F59E0B', color: '#000' }}>
+            <span>⚠</span>
+            <span>Vista previa — tu presskit no está publicado todavía.</span>
+            <a href="/panel" className="underline font-semibold">Ir al editor</a>
+          </div>
+        )}
+        <MinimalPulse artist={artist} sections={sections} palette={palette} />
+      </>
+    )
+  }
+  // Réplicas dj-presskit.com — un solo layout, tres temas (theme via pageLayout)
+  if (pageLayout === 'presskit-pupi' || pageLayout === 'presskit-kay' || pageLayout === 'presskit-danny') {
+    const theme = pageLayout.replace('presskit-', '') as 'pupi' | 'kay' | 'danny'
+    return (
+      <>
+        {!artist.is_published && (
+          <div className="fixed top-0 left-0 right-0 z-[9999] flex items-center justify-center gap-3 py-2.5 px-4 text-[12px] font-mono"
+            style={{ background: '#F59E0B', color: '#000' }}>
+            <span>⚠</span>
+            <span>Vista previa — tu presskit no está publicado todavía.</span>
+            <a href="/panel" className="underline font-semibold">Ir al editor</a>
+          </div>
+        )}
+        <PressKitLayout artist={artist} sections={sections} palette={palette} theme={theme} />
+      </>
+    )
+  }
+
   const heroSection = sections.find(s => s.name === 'hero')
   const effectIntensities = (heroSection?.config?.effectIntensities as Record<string, number>) ?? {}
 
@@ -254,6 +295,10 @@ export default function SlugClient({ artist, sections }: Props) {
         </div>
       )}
 
+      {/* Anchored sections should not hide under the fixed nav */}
+      <style dangerouslySetInnerHTML={{ __html: 'section[id]{scroll-margin-top:68px}html{scroll-behavior:smooth}' }} />
+      <GenericNav artist={artist} sections={sorted} palette={palette} draftOffset={!artist.is_published} />
+
       <main
         className={mainClass}
         style={{ background: palette.bg, color: palette.text, fontFamily: 'var(--font-inter)', position: 'relative', paddingTop: !artist.is_published ? '40px' : undefined, ...fontStyle }}>
@@ -280,6 +325,89 @@ export default function SlugClient({ artist, sections }: Props) {
   )
 }
 
+// ── Generic public nav (todas las plantillas excepto minimal-pulse) ──
+const NAV_LABELS: Record<string, string> = {
+  bio: 'Bio', music: 'Música', releases: 'Releases', live: 'Shows',
+  gallery: 'Galería', community: 'Comunidad', supporters: 'Apoyo',
+  contact: 'Contacto', 'fan-capture': 'Newsletter', links: 'Links',
+  testimonials: 'Reseñas', rider: 'Rider',
+}
+
+function GenericNav({ artist, sections, palette, draftOffset }: {
+  artist: Artist; sections: Section[]; palette: ArtistPalette; draftOffset?: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  const links = sections
+    .filter(s => s.name !== 'hero' && NAV_LABELS[s.name])
+    .map(s => ({ href: `#${s.name}`, label: NAV_LABELS[s.name] }))
+  const hasContact = sections.some(s => s.name === 'contact')
+
+  const hexToRgba = (hex: string, a: number) => {
+    const m = hex.replace('#', '')
+    const n = m.length === 3 ? m.split('').map(c => c + c).join('') : m
+    const r = parseInt(n.slice(0, 2), 16), g = parseInt(n.slice(2, 4), 16), b = parseInt(n.slice(4, 6), 16)
+    return `rgba(${r},${g},${b},${a})`
+  }
+
+  return (
+    <header className="fixed left-0 right-0 z-[80] transition-all duration-300"
+      style={{
+        top: draftOffset ? 40 : 0,
+        fontFamily: 'var(--font-display)',
+        background: scrolled ? hexToRgba(palette.bg, 0.82) : 'transparent',
+        backdropFilter: scrolled ? 'blur(12px)' : undefined,
+        borderBottom: `1px solid ${scrolled ? palette.border : 'transparent'}`,
+      }}>
+      <nav className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <a href="#hero" className="text-[19px] font-bold tracking-wide" style={{ color: palette.text }}>
+          {artist.artist_name}
+        </a>
+        <ul className="hidden md:flex items-center gap-7">
+          {links.map(l => (
+            <li key={l.href}>
+              <a href={l.href} className="text-[13px] transition-opacity hover:opacity-100" style={{ color: palette.textMuted }}>{l.label}</a>
+            </li>
+          ))}
+        </ul>
+        <div className="flex items-center gap-3">
+          {hasContact && (
+            <a href="#contact" className="hidden sm:inline-block text-[13px] px-4 py-2 rounded-full font-semibold transition-transform hover:scale-105"
+               style={{ background: palette.primary, color: '#fff' }}>Contacto</a>
+          )}
+          {links.length > 0 && (
+            <button onClick={() => setOpen(o => !o)} aria-label="Menú" aria-expanded={open}
+              className="md:hidden w-9 h-9 flex flex-col items-center justify-center gap-[5px]">
+              <span className="block w-5 h-[2px] transition-transform" style={{ background: palette.text, transform: open ? 'translateY(7px) rotate(45deg)' : 'none' }} />
+              <span className="block w-5 h-[2px] transition-opacity" style={{ background: palette.text, opacity: open ? 0 : 1 }} />
+              <span className="block w-5 h-[2px] transition-transform" style={{ background: palette.text, transform: open ? 'translateY(-7px) rotate(-45deg)' : 'none' }} />
+            </button>
+          )}
+        </div>
+      </nav>
+
+      {open && (
+        <div className="md:hidden" style={{ background: hexToRgba(palette.bg, 0.97), borderBottom: `1px solid ${palette.border}` }}>
+          <ul className="px-6 py-4 flex flex-col gap-1">
+            {links.map(l => (
+              <li key={l.href}>
+                <a href={l.href} onClick={() => setOpen(false)} className="block py-2.5 text-[15px]" style={{ color: palette.text }}>{l.label}</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </header>
+  )
+}
+
 function SectionRenderer({ section, artist, palette, heroOverride }: {
   section: Section; artist: Artist; palette: ArtistPalette
   heroOverride?: Record<string, unknown> | null
@@ -301,6 +429,7 @@ function SectionRenderer({ section, artist, palette, heroOverride }: {
     case 'fan-capture':  return <FanCaptureSection  config={c as unknown as FanCaptureConfig}   artist={artist} palette={palette} />
     case 'links':        return <LinksSection       config={c as unknown as LinksConfig}        palette={palette} />
     case 'testimonials': return <TestimonialsSection config={c as unknown as TestimonialsConfig} palette={palette} />
+    case 'rider':        return <RiderSection       config={c as unknown as RiderConfig}        palette={palette} />
     default:             return null
   }
 }

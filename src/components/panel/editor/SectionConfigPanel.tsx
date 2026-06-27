@@ -7,7 +7,7 @@ import type { Section, ArtistPalette } from '@/types'
 import type {
   HeroConfig, HeroSocialLink, BioConfig, MusicConfig, CommunityConfig,
   SupportersConfig, ReleasesConfig, LiveConfig, ContactConfig, FanCaptureConfig,
-  GalleryConfig, LinksConfig, TestimonialsConfig,
+  GalleryConfig, LinksConfig, TestimonialsConfig, RiderConfig,
 } from '@/types/sections'
 import { DEFAULT_CONFIGS } from '@/types/sections'
 import ImageUpload from '@/components/shared/ImageUpload'
@@ -116,6 +116,7 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
         {section.name === 'fan-capture'  && <FanCapturePanel   config={config as unknown as FanCaptureConfig}   set={set} accent={accent} tab={tab} />}
         {section.name === 'links'        && <LinksPanel        config={config as unknown as LinksConfig}        set={set} accent={accent} tab={tab} />}
         {section.name === 'testimonials' && <TestimonialsPanel config={config as unknown as TestimonialsConfig} set={set} accent={accent} tab={tab} />}
+        {section.name === 'rider'        && <RiderPanel        config={config as unknown as RiderConfig}        set={set} accent={accent} tab={tab} />}
       </div>
 
       {/* ── Save ── */}
@@ -754,6 +755,88 @@ function ReleasesPanel({ config, set, accent, tab }: { config: ReleasesConfig; s
   return <EmptyTab />
 }
 
+// ── RIDER ────────────────────────────────────────────────────
+
+function RiderPanel({ config, set, accent, tab }: { config: RiderConfig; set: Setter; accent: string; tab: ConfigTab }) {
+  const items = config.items ?? []
+  const notes = config.notes ?? []
+  const updateItem = (i: number, field: string, val: string | null) =>
+    set('items', items.map((it, j) => j === i ? { ...it, [field]: val } : it))
+  const updateNote = (i: number, field: string, val: string) =>
+    set('notes', notes.map((n, j) => j === i ? { ...n, [field]: val } : n))
+
+  if (tab === 'content') return (
+    <>
+      <Field label="Título"><TextInput value={config.section_title ?? 'Rider'} onChange={v => set('section_title', v)} /></Field>
+      <Field label="Texto introductorio (usa **negrita** para resaltar)">
+        <textarea value={config.intro ?? ''} onChange={e => set('intro', e.target.value)}
+          rows={3} placeholder="Para garantizar una experiencia **óptima**..."
+          className="w-full px-3 py-2 rounded-lg text-xs text-white placeholder-white/20 focus:outline-none resize-y"
+          style={{ background: '#0A0A0E', border: '1px solid rgba(255,255,255,0.08)' }} />
+      </Field>
+
+      <Field label="Equipamiento">
+        <div className="flex flex-col gap-3">
+          {items.map((it, i) => (
+            <div key={it.id} className="p-3 rounded-xl flex flex-col gap-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-mono text-white/30">Equipo #{i + 1}</span>
+                <button type="button" onClick={() => set('items', items.filter((_, j) => j !== i))} className="text-white/20 hover:text-red-400 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="max-w-[100px]">
+                <ImageUpload value={it.image} onChange={url => updateItem(i, 'image', url)} onRemove={() => updateItem(i, 'image', null)}
+                  folder="misc" aspect="1/1" accentColor={accent} />
+              </div>
+              <SmallInput value={it.name} onChange={v => updateItem(i, 'name', v)} placeholder="PIONEER DJ CDJ-3000" className="w-full" />
+              <SmallInput value={it.role} onChange={v => updateItem(i, 'role', v)} placeholder="PLAYER 1 / MIXER (opcional)" className="w-full" />
+            </div>
+          ))}
+          <button type="button"
+            onClick={() => set('items', [...items, { id: Date.now().toString(), name: '', role: '', image: null }])}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-mono text-white/30 hover:text-white/60 transition-all"
+            style={{ border: '1px dashed rgba(255,255,255,0.1)' }}>
+            <Plus className="w-3 h-3" /> Añadir equipo
+          </button>
+        </div>
+      </Field>
+
+      <Field label="Notas adicionales (Monitores, Extras...)">
+        <div className="flex flex-col gap-3">
+          {notes.map((n, i) => (
+            <div key={n.id} className="p-3 rounded-xl flex flex-col gap-2" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-mono text-white/30">Nota #{i + 1}</span>
+                <button type="button" onClick={() => set('notes', notes.filter((_, j) => j !== i))} className="text-white/20 hover:text-red-400 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <SmallInput value={n.title} onChange={v => updateNote(i, 'title', v)} placeholder="Monitores" className="w-full" />
+              <textarea value={n.body} onChange={e => updateNote(i, 'body', e.target.value)} rows={2} placeholder="Detalle..."
+                className="w-full px-3 py-2 rounded-lg text-xs text-white placeholder-white/20 focus:outline-none resize-y"
+                style={{ background: '#0A0A0E', border: '1px solid rgba(255,255,255,0.08)' }} />
+            </div>
+          ))}
+          <button type="button"
+            onClick={() => set('notes', [...notes, { id: Date.now().toString(), title: '', body: '' }])}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-mono text-white/30 hover:text-white/60 transition-all"
+            style={{ border: '1px dashed rgba(255,255,255,0.1)' }}>
+            <Plus className="w-3 h-3" /> Añadir nota
+          </button>
+        </div>
+      </Field>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Texto CTA"><TextInput value={config.cta_text ?? ''} onChange={v => set('cta_text', v)} placeholder="Especificaciones Rider" /></Field>
+        <Field label="URL CTA (PDF)"><TextInput value={config.cta_url ?? ''} onChange={v => set('cta_url', v)} placeholder="https://..." /></Field>
+      </div>
+    </>
+  )
+
+  return <EmptyTab />
+}
+
 // ── LIVE ─────────────────────────────────────────────────────
 
 function LivePanel({ config, set, accent, tab }: { config: LiveConfig; set: Setter; accent: string; tab: ConfigTab }) {
@@ -840,21 +923,88 @@ function ContactPanel({ config, set, accent, tab }: { config: ContactConfig; set
 
 // ── FAN CAPTURE ──────────────────────────────────────────────
 
+const FC_VARIANTS: { id: string; label: string; hint: string }[] = [
+  { id: 'minimal',      label: 'Minimal',      hint: 'Limpio, una línea, elegante' },
+  { id: 'glass',        label: 'Glass',        hint: 'Tarjeta glassmorphism con glow' },
+  { id: 'gradient-pop', label: 'Gradient Pop', hint: 'Fondo gradiente vibrante' },
+  { id: 'ticket',       label: 'Ticket',       hint: 'Estilo guestlist perforado' },
+  { id: 'neon',         label: 'Neon ⚡',       hint: 'Híper animado, bordes neón' },
+  { id: 'split',        label: 'Split',        hint: 'Incentivo/imagen + formulario' },
+]
+const FC_GOALS: { id: string; label: string }[] = [
+  { id: 'community', label: '🎧 Club de fans' },
+  { id: 'gift',      label: '🎁 Regalo' },
+  { id: 'presale',   label: '🚀 Preventa' },
+  { id: 'vip',       label: '⭐ Lista VIP' },
+  { id: 'guestlist', label: '🎟️ Guestlist' },
+  { id: 'download',  label: '⬇️ Descarga' },
+]
+
 function FanCapturePanel({ config, set, accent, tab }: { config: FanCaptureConfig; set: Setter; accent: string; tab: ConfigTab }) {
   if (tab === 'content') return (
     <>
-      <Field label="Título"><TextInput value={config.section_title ?? ''} onChange={v => set('section_title', v)} /></Field>
-      <Field label="Subtítulo"><TextInput value={config.subtitle ?? ''} onChange={v => set('subtitle', v)} /></Field>
-      <Field label="Texto del botón"><TextInput value={config.button_text ?? ''} onChange={v => set('button_text', v)} /></Field>
+      <Field label="Plantilla / estilo visual">
+        <div className="grid grid-cols-2 gap-2">
+          {FC_VARIANTS.map(v => {
+            const on = (config.variant ?? 'glass') === v.id
+            return (
+              <button key={v.id} type="button" onClick={() => set('variant', v.id)}
+                className="text-left p-2.5 rounded-xl transition-all"
+                style={{ background: on ? `${accent}22` : 'rgba(255,255,255,0.03)', border: `1px solid ${on ? accent : 'rgba(255,255,255,0.08)'}` }}>
+                <div className="text-[12px] font-semibold" style={{ color: on ? accent : '#fff' }}>{v.label}</div>
+                <div className="text-[10px] text-white/40 mt-0.5 leading-tight">{v.hint}</div>
+              </button>
+            )
+          })}
+        </div>
+      </Field>
+
+      <Field label="Objetivo de captación">
+        <div className="flex flex-wrap gap-2">
+          {FC_GOALS.map(g => {
+            const on = (config.goal ?? 'community') === g.id
+            return (
+              <button key={g.id} type="button" onClick={() => set('goal', g.id)}
+                className="text-[11px] font-mono px-3 py-1.5 rounded-full transition-all"
+                style={{ background: on ? accent : 'transparent', color: on ? '#fff' : 'rgba(255,255,255,0.5)', border: `1px solid ${on ? accent : 'rgba(255,255,255,0.12)'}` }}>
+                {g.label}
+              </button>
+            )
+          })}
+        </div>
+      </Field>
+
+      <Field label="Gancho / incentivo (opcional)"><TextInput value={config.incentive ?? ''} onChange={v => set('incentive', v)} placeholder="Ej: Track gratis al unirte" /></Field>
+      <Field label="Título"><TextInput value={config.section_title ?? ''} onChange={v => set('section_title', v)} placeholder="(vacío usa el del objetivo)" /></Field>
+      <Field label="Subtítulo"><TextInput value={config.subtitle ?? ''} onChange={v => set('subtitle', v)} placeholder="(vacío usa el del objetivo)" /></Field>
+      <Field label="Texto del botón"><TextInput value={config.button_text ?? ''} onChange={v => set('button_text', v)} placeholder="(vacío usa el del objetivo)" /></Field>
+
+      <Toggle value={config.mode === 'link'} onChange={v => set('mode', v ? 'link' : 'email')} accent={accent}
+        label="Redirigir a un link tras suscribir (regalo/Discord/descarga)" />
+      {config.mode === 'link' && (
+        <Field label="URL de destino"><TextInput value={config.cta_url ?? ''} onChange={v => set('cta_url', v)} placeholder="https://..." /></Field>
+      )}
+      <Toggle value={config.show_name ?? true} onChange={v => set('show_name', v)} accent={accent} label="Pedir nombre además del email" />
       <Field label="Texto de privacidad"><TextInput value={config.privacy_text ?? ''} onChange={v => set('privacy_text', v)} placeholder="Sin spam. Solo buena música." /></Field>
     </>
   )
 
   if (tab === 'design') return (
-    <Field label="Imagen de fondo">
-      <ImageUpload value={config.bg_image} onChange={url => set('bg_image', url)} onRemove={() => set('bg_image', null)}
-        folder="hero" aspect="16/9" accentColor={accent} />
-    </Field>
+    <>
+      <Field label="Color de acento (opcional)">
+        <div className="flex items-center gap-2">
+          <input type="color" value={config.accent_override || accent} onChange={e => set('accent_override', e.target.value)}
+            className="w-10 h-10 rounded-lg bg-transparent cursor-pointer" />
+          {config.accent_override && (
+            <button type="button" onClick={() => set('accent_override', null)} className="text-[11px] font-mono text-white/40 hover:text-white/70">Usar color del tema</button>
+          )}
+        </div>
+      </Field>
+      <Field label="Imagen de fondo">
+        <ImageUpload value={config.bg_image} onChange={url => set('bg_image', url)} onRemove={() => set('bg_image', null)}
+          folder="hero" aspect="16/9" accentColor={accent} />
+      </Field>
+    </>
   )
 
   return <EmptyTab />

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Check, Trash2, Plus, Loader2, Sparkles } from 'lucide-react'
 import type { LayoutVariant, Section } from '@/types'
 import type { TabProps } from '../DashboardClient'
+import { DEFAULT_CONFIGS } from '@/types/sections'
 
 // ── Template type ─────────────────────────────────────────────────
 export interface Template {
@@ -20,10 +21,58 @@ export interface Template {
   effects: string[]
   effectIntensities: Record<string, number>
   visibleSections: string[]
+  // Optional dedicated full-page public layout (stored in hero config,
+  // not in the DB-constrained artists.layout_variant column).
+  pageLayout?: string
 }
 
-// ── 8 built-in templates ──────────────────────────────────────────
+// ── 9 built-in templates ──────────────────────────────────────────
 export const BUILTIN_TEMPLATES: Template[] = [
+  {
+    // Réplica de https://landing-dj.vercel.app/dj/demodj — minimal techno,
+    // fondo casi negro azulado, acento terracota + rojo, Bebas Neue display,
+    // orbs de glow difuso. Secciones en el orden del sitio original.
+    id: 'minimal-pulse', name: 'MINIMAL PULSE', tag: 'MINIMAL / TECHNO',
+    desc: 'Underground premium, acento terracota, estilo DJ landing',
+    fontId: 'bebas-neue', fontCssVar: '--font-bebas-neue', layout: 'centered',
+    primary: '#D45137', secondary: '#FF0000', bgDark: true,
+    effects: [], effectIntensities: {},
+    visibleSections: ['hero', 'bio', 'releases', 'live', 'gallery', 'music', 'contact'],
+    pageLayout: 'minimal-pulse',
+  },
+  {
+    // Réplica de pupijaet.dj-presskit.com — monocromo B&N, Bebas Neue,
+    // hero gigante + ticker de géneros, bio con stats y marquee vertical.
+    id: 'presskit-mono', name: 'PRESS KIT · MONO', tag: 'URBANO / B&N',
+    desc: 'Réplica dj-presskit monocromo: hero gigante, ticker, rider',
+    fontId: 'bebas-neue', fontCssVar: '--font-bebas-neue', layout: 'centered',
+    primary: '#F5F5F5', secondary: '#9CA3AF', bgDark: true,
+    effects: [], effectIntensities: {},
+    visibleSections: ['hero', 'bio', 'live', 'gallery', 'rider', 'contact'],
+    pageLayout: 'presskit-pupi',
+  },
+  {
+    // Réplica de kay-wagner.dj-presskit.com — rojo + naranja, nombre apilado,
+    // hero con stats, estilo techno corporativo.
+    id: 'presskit-red', name: 'PRESS KIT · TECHNO', tag: 'TECHNO / MELODIC',
+    desc: 'Réplica dj-presskit rojo: nombre apilado, hero con stats',
+    fontId: 'space-grotesk', fontCssVar: '--font-display', layout: 'split',
+    primary: '#8F1919', secondary: '#FF5500', bgDark: true,
+    effects: [], effectIntensities: {},
+    visibleSections: ['hero', 'bio', 'music', 'gallery', 'rider', 'contact'],
+    pageLayout: 'presskit-kay',
+  },
+  {
+    // Réplica de dannykhas.dj-presskit.com — teal, con sección música
+    // (SoundCloud) + últimos lanzamientos, rider con monitores/extras.
+    id: 'presskit-teal', name: 'PRESS KIT · AFRO', tag: 'AFRO / LATIN HOUSE',
+    desc: 'Réplica dj-presskit teal: música SoundCloud, eventos, rider',
+    fontId: 'bebas-neue', fontCssVar: '--font-bebas-neue', layout: 'centered',
+    primary: '#59C6BA', secondary: '#2DD4BF', bgDark: true,
+    effects: [], effectIntensities: {},
+    visibleSections: ['hero', 'bio', 'live', 'music', 'gallery', 'rider', 'contact'],
+    pageLayout: 'presskit-danny',
+  },
   {
     id: 'noir-underground', name: 'NOIR UNDERGROUND', tag: 'TECHNO / INDUSTRIAL',
     desc: 'Oscuro, sucio, underground',
@@ -90,75 +139,130 @@ export const BUILTIN_TEMPLATES: Template[] = [
   },
 ]
 
-// ── Mini preview card ─────────────────────────────────────────────
+// ── Mini preview card — mockup profesional de la landing ──────────
 function TemplatePreview({ tpl }: { tpl: Template }) {
+  const isPresskit = tpl.pageLayout?.startsWith('presskit-')
+  const layout = tpl.pageLayout === 'minimal-pulse' ? 'minimal-pulse' : isPresskit ? 'presskit' : tpl.layout
+  const dark   = tpl.bgDark
+  const bg      = dark ? '#08080d' : '#f4f3ee'
+  const ink     = dark ? '#f6f6f8' : '#17171c'
+  const inkDim  = dark ? 'rgba(246,246,248,0.42)' : 'rgba(23,23,28,0.45)'
+  const surface = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'
+  const border  = dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.09)'
+  const font    = `var(${tpl.fontCssVar})`
+  const title   = 'AURORA'
+
+  // Bloque de imagen/retrato (gradiente con el acento)
+  const ImagePanel = ({ className = '', radius = 0 }: { className?: string; radius?: number }) => (
+    <div className={`absolute overflow-hidden ${className}`} style={{ borderRadius: radius }}>
+      <div className="absolute inset-0" style={{ background: `linear-gradient(150deg, ${tpl.primary}55, ${tpl.secondary}33 55%, ${dark ? '#000' : '#fff'}10)` }} />
+      <div className="absolute inset-0" style={{ background: dark ? 'linear-gradient(to top, rgba(0,0,0,0.45), transparent 60%)' : 'none' }} />
+    </div>
+  )
+
+  const Pill = ({ className = '' }: { className?: string }) => (
+    <div className={`rounded-full ${className}`} style={{ background: tpl.primary, width: 26, height: 9 }} />
+  )
+  const Eyebrow = () => <div className="rounded-full" style={{ width: 18, height: 3, background: tpl.primary }} />
+  const Title = ({ size = 19, color = ink, align = 'center' as const }: { size?: number; color?: string; align?: 'center' | 'left' }) => (
+    <div style={{ fontFamily: font, fontSize: size, lineHeight: 1, color, fontWeight: 700, letterSpacing: '-0.02em', textAlign: align }}>{title}</div>
+  )
+  const SubLine = ({ w = 40 }: { w?: number }) => <div className="rounded-full" style={{ width: w, height: 3, background: inkDim }} />
+  const BrandDot = ({ color }: { color: string }) => <div className="rounded-full" style={{ width: 8, height: 8, border: `1.5px solid ${color}` }} />
+
   return (
-    <div className="relative rounded-xl overflow-hidden w-full select-none"
-      style={{ aspectRatio: '16/9', background: tpl.bgDark ? '#0a0a0f' : '#f5f5f0' }}>
-      {/* Background glow */}
-      <div className="absolute inset-0 opacity-20" style={{ background: `radial-gradient(ellipse at 50% 0%, ${tpl.primary}, transparent 70%)` }} />
+    <div className="relative rounded-xl overflow-hidden w-full select-none" style={{ aspectRatio: '16/9', background: bg }}>
+      {/* Glow de acento */}
+      <div className="absolute inset-0" style={{ background: `radial-gradient(120% 80% at 50% -10%, ${tpl.primary}38, transparent 55%)` }} />
+      {/* Imagen de fondo en layouts inmersivos */}
+      {(layout === 'raw' || layout === 'minimal-pulse' || layout === 'presskit') && <ImagePanel className="inset-0" />}
 
-      {/* Layout-specific elements */}
-      {tpl.layout === 'centered' && (
-        <>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[55%] w-10 h-10 rounded-full"
-            style={{ background: tpl.primary + '40', border: `1.5px solid ${tpl.primary}80` }} />
-          <div className="absolute bottom-[28%] left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
-            <div className="h-[4px] rounded-full" style={{ width: 48, background: tpl.primary }} />
-            <div className="h-[2.5px] rounded-full opacity-50" style={{ width: 32, background: tpl.secondary }} />
-          </div>
-        </>
-      )}
-      {tpl.layout === 'editorial' && (
-        <>
-          <div className="absolute left-[8%] top-[15%] flex flex-col gap-1">
-            <div className="h-[5px] rounded-sm" style={{ width: 52, background: tpl.primary }} />
-            <div className="h-[3px] rounded-sm opacity-60" style={{ width: 38, background: tpl.secondary }} />
-            <div className="h-[2px] rounded-sm opacity-30 mt-1" style={{ width: 44, background: 'white' }} />
-            <div className="h-[2px] rounded-sm opacity-25" style={{ width: 36, background: 'white' }} />
-          </div>
-          <div className="absolute right-[6%] top-[10%] bottom-[10%] w-[32%] rounded-lg"
-            style={{ background: tpl.primary + '25', border: `1px solid ${tpl.primary}40` }} />
-        </>
-      )}
-      {tpl.layout === 'split' && (
-        <>
-          <div className="absolute left-0 top-0 bottom-0 w-[50%] flex flex-col justify-center pl-[8%] gap-1.5">
-            <div className="h-[5px] rounded-sm" style={{ width: 44, background: tpl.primary }} />
-            <div className="h-[2.5px] rounded-sm opacity-50" style={{ width: 32, background: tpl.secondary }} />
-            <div className="h-[2px] opacity-25 mt-1" style={{ width: 40, background: 'white' }} />
-          </div>
-          <div className="absolute right-0 top-0 bottom-0 w-[48%]"
-            style={{ background: `linear-gradient(135deg, ${tpl.primary}20, ${tpl.secondary}10)`, borderLeft: `1px solid ${tpl.primary}30` }}>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-10 h-10 rounded-full" style={{ background: tpl.primary + '30', border: `1px solid ${tpl.primary}60` }} />
-            </div>
-          </div>
-        </>
-      )}
-      {tpl.layout === 'raw' && (
-        <>
-          <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${tpl.primary}15, ${tpl.secondary}08)` }} />
-          <div className="absolute bottom-[12%] left-[8%] flex flex-col gap-1">
-            <div className="h-[5px] rounded-sm" style={{ width: 56, background: tpl.primary }} />
-            <div className="h-[3px] rounded-sm opacity-50" style={{ width: 36, background: 'rgba(255,255,255,0.6)' }} />
-          </div>
-        </>
-      )}
-
-      {/* Font name preview */}
-      <div className="absolute top-[8%] right-[6%]">
-        <span className="text-[7px] font-mono opacity-40" style={{ color: tpl.primary }}>{tpl.fontId.toUpperCase()}</span>
+      {/* Nav superior */}
+      <div className="absolute top-0 inset-x-0 h-[18px] px-[8px] flex items-center justify-between"
+        style={{ borderBottom: `1px solid ${border}` }}>
+        <div style={{ fontFamily: font, fontSize: 8, color: ink, fontWeight: 700, letterSpacing: '0.02em' }}>{title}</div>
+        <div className="flex items-center gap-[5px]">
+          <div style={{ width: 9, height: 2, background: inkDim, borderRadius: 2 }} />
+          <div style={{ width: 9, height: 2, background: inkDim, borderRadius: 2 }} />
+          <div style={{ width: 9, height: 2, background: inkDim, borderRadius: 2 }} />
+          <div className="rounded-full" style={{ width: 16, height: 6, background: tpl.primary }} />
+        </div>
       </div>
 
-      {/* Effects dots */}
-      {tpl.effects.length > 0 && (
-        <div className="absolute bottom-[8%] right-[6%] flex gap-1">
-          {tpl.effects.slice(0, 3).map(e => (
-            <div key={e} className="w-1.5 h-1.5 rounded-full opacity-60" style={{ background: tpl.primary }} />
-          ))}
+      {/* Composición del hero según layout */}
+      {layout === 'centered' && (
+        <div className="absolute inset-0 pt-[18px] flex flex-col items-center justify-center gap-[6px]">
+          <Eyebrow />
+          <Title size={20} />
+          <SubLine w={46} />
+          <Pill className="mt-[2px]" />
         </div>
       )}
+
+      {layout === 'minimal-pulse' && (
+        <div className="absolute inset-0 pt-[18px] flex flex-col items-center justify-center gap-[6px]">
+          <SubLine w={30} />
+          <Title size={22} color="#f6f6f8" />
+          <SubLine w={40} />
+          <Pill className="mt-[2px]" />
+        </div>
+      )}
+
+      {/* Press kit — nombre gigante abajo a la izq + línea de ticker (firma dj-presskit) */}
+      {layout === 'presskit' && (
+        <>
+          <div className="absolute left-[7%] bottom-[24%] right-[7%]">
+            <div style={{ fontFamily: font, fontSize: 26, lineHeight: 0.82, color: '#f6f6f8', fontWeight: 800, letterSpacing: '-0.02em', textTransform: 'uppercase' }}>{title}</div>
+            <div className="flex items-center gap-[5px] mt-[5px]">
+              {[0,1,2].map(i => <BrandDot key={i} color={tpl.primary} />)}
+            </div>
+          </div>
+          {/* ticker de géneros */}
+          <div className="absolute left-0 right-0 bottom-[8%] flex items-center gap-[7px] px-[8px] overflow-hidden"
+            style={{ borderTop: `1px solid ${border}`, borderBottom: `1px solid ${border}`, height: 16 }}>
+            {['TECH','•','HOUSE','•','RKT','•','GUARACHA'].map((g, i) => (
+              <span key={i} style={{ fontFamily: font, fontSize: 8, fontWeight: 700, color: g === '•' ? tpl.primary : ink, whiteSpace: 'nowrap', textTransform: 'uppercase' }}>{g}</span>
+            ))}
+          </div>
+        </>
+      )}
+
+      {layout === 'editorial' && (
+        <>
+          <ImagePanel className="right-[7%] top-[26%] bottom-[14%] w-[34%]" radius={6} />
+          <div className="absolute left-[8%] bottom-[16%] flex flex-col gap-[5px]">
+            <Eyebrow />
+            <Title size={20} align="left" />
+            <SubLine w={50} />
+            <Pill className="mt-[3px]" />
+          </div>
+        </>
+      )}
+
+      {layout === 'split' && (
+        <>
+          <ImagePanel className="right-0 top-[18px] bottom-0 w-[46%]" />
+          <div className="absolute left-[8%] top-[18px] bottom-0 w-[44%] flex flex-col justify-center gap-[5px]">
+            <Eyebrow />
+            <Title size={18} align="left" />
+            <SubLine w={42} />
+            <Pill className="mt-[3px]" />
+          </div>
+        </>
+      )}
+
+      {layout === 'raw' && (
+        <div className="absolute left-[8%] bottom-[14%] flex flex-col gap-[5px]">
+          <Eyebrow />
+          <Title size={21} align="left" color="#f6f6f8" />
+          <SubLine w={48} />
+        </div>
+      )}
+
+      {/* Etiqueta de fuente */}
+      <div className="absolute bottom-[6px] right-[7px]">
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 6.5, letterSpacing: '0.08em', color: inkDim, textTransform: 'uppercase' }}>{tpl.fontId.replace('-', ' ')}</span>
+      </div>
     </div>
   )
 }
@@ -255,12 +359,34 @@ export default function TemplatesPanel({
       // 2. Save effects to hero section config
       const hero = sections.find(s => s.name === 'hero')
       if (hero) {
-        const newHeroConfig = { ...hero.config, effects: tpl.effects, effectIntensities: tpl.effectIntensities }
+        const newHeroConfig = {
+          ...hero.config,
+          effects: tpl.effects,
+          effectIntensities: tpl.effectIntensities,
+          pageLayout: tpl.pageLayout ?? null,   // dedicated public layout (or clear it)
+        }
         await supabase.from('sections').update({ config: newHeroConfig }).eq('id', hero.id)
+        setSections(prev => prev.map(s => s.id === hero.id ? { ...s, config: newHeroConfig } : s))
+      }
+
+      // 2b. Create any sections the template needs that don't exist yet
+      //     (e.g. 'rider' for los press kits). Se insertan con su config por defecto.
+      const existingNames = new Set(sections.map(s => s.name))
+      const missing = tpl.visibleSections.filter(n => !existingNames.has(n))
+      let sectionsCopy = [...sections]
+      if (missing.length > 0) {
+        const rows = missing.map(name => ({
+          artist_id:  artist.id,
+          name,
+          sort_order: 99,
+          is_enabled: true,
+          config:     (DEFAULT_CONFIGS[name] ?? {}) as unknown as Record<string, unknown>,
+        }))
+        const { data: inserted } = await supabase.from('sections').insert(rows).select()
+        if (inserted) sectionsCopy = [...sectionsCopy, ...(inserted as unknown as Section[])]
       }
 
       // 3. Update section visibility + order
-      const sectionsCopy = [...sections]
       const updated = sectionsCopy.map(s => {
         const idx = tpl.visibleSections.indexOf(s.name)
         return { ...s, is_enabled: idx >= 0, sort_order: idx >= 0 ? idx : 99 }
