@@ -191,17 +191,26 @@ function ScrollProgressBar({ palette }: { palette: ArtistPalette }) {
 }
 
 export default function SlugClient({ artist, sections }: Props) {
-  const [heroOverride, setHeroOverride] = useState<Record<string, unknown> | null>(null)
+  // Estado vivo de las secciones: permite que el editor refleje en vivo
+  // CUALQUIER edición (cualquier sección, cualquier layout) vía postMessage.
+  const [liveSections, setLiveSections] = useState(sections)
+  useEffect(() => { setLiveSections(sections) }, [sections])
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
-      if (e.data?.type === 'ARTIX_PREVIEW_UPDATE' && e.data?.section === 'hero') {
-        setHeroOverride(prev => ({ ...prev, ...e.data.config }))
-      }
+      if (e.data?.type !== 'ARTIX_PREVIEW_UPDATE' || !e.data?.section) return
+      setLiveSections(prev => prev.map(s =>
+        s.name === e.data.section
+          ? { ...s, config: { ...s.config, ...e.data.config } }
+          : s,
+      ))
     }
     window.addEventListener('message', handler)
     return () => window.removeEventListener('message', handler)
   }, [])
+
+  // A partir de aquí todo el render usa `sections` = liveSections.
+  sections = liveSections
 
   const palette = deriveArtistPalette(
     artist.primary_color   ?? '#C026D3',
@@ -309,7 +318,6 @@ export default function SlugClient({ artist, sections }: Props) {
               section={section}
               artist={artist}
               palette={palette}
-              heroOverride={section.name === 'hero' ? heroOverride : null}
             />
           </AnimatedSection>
         ))}
@@ -408,16 +416,14 @@ function GenericNav({ artist, sections, palette, draftOffset }: {
   )
 }
 
-function SectionRenderer({ section, artist, palette, heroOverride }: {
+function SectionRenderer({ section, artist, palette }: {
   section: Section; artist: Artist; palette: ArtistPalette
-  heroOverride?: Record<string, unknown> | null
 }) {
   const c = (section.config ?? {}) as Record<string, unknown>
   switch (section.name) {
-    case 'hero': {
-      const heroConfig = heroOverride ? { ...c, ...heroOverride } : c
-      return <HeroSection config={heroConfig as unknown as HeroConfig} artist={artist} palette={palette} />
-    }
+    case 'hero':
+      return <HeroSection config={c as unknown as HeroConfig} artist={artist} palette={palette} />
+
     case 'bio':          return <BioSection         config={c as unknown as BioConfig}          artist={artist} palette={palette} />
     case 'music':        return <MusicSection       config={c as unknown as MusicConfig}        palette={palette} />
     case 'community':    return <CommunitySection   config={c as unknown as CommunityConfig}    palette={palette} />

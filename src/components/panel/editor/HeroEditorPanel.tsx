@@ -268,8 +268,13 @@ interface Props {
   accent:          string
 }
 
+// En modo "Esencial" solo mostramos lo que la mayoría necesita.
+// "Avanzado" revela tipografía fina, efectos y extras.
+const ESSENTIAL_TABS: HeroTab[] = ['layout', 'content', 'bg']
+
 export default function HeroEditorPanel({ config, set, accent }: Props) {
   const [tab, setTab] = useState<HeroTab>('layout')
+  const [mode, setMode] = useState<'esencial' | 'avanzado'>('esencial')
 
   const heroLayout     = config.hero_layout ?? 'fullscreen-centered'
   const bgType         = config.bg_type ?? (config.video_url ? 'video' : config.bg_image ? 'image' : 'none')
@@ -293,12 +298,28 @@ export default function HeroEditorPanel({ config, set, accent }: Props) {
     { id: 'fx',      label: 'FX'     },
     { id: 'extras',  label: '+'      },
   ]
+  const visibleTabs = mode === 'esencial' ? TABS.filter(t => ESSENTIAL_TABS.includes(t.id)) : TABS
+
+  const switchMode = (m: 'esencial' | 'avanzado') => {
+    setMode(m)
+    if (m === 'esencial' && !ESSENTIAL_TABS.includes(tab)) setTab('layout')
+  }
 
   return (
     <div className="flex flex-col h-full">
+      {/* Modo Esencial / Avanzado */}
+      <div className="flex items-center gap-1 p-2 shrink-0" style={{ background: '#0A0A0E', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        {(['esencial', 'avanzado'] as const).map(m => (
+          <button key={m} onClick={() => switchMode(m)}
+            className="flex-1 py-1.5 rounded-lg text-[11px] font-semibold capitalize transition-all"
+            style={{ background: mode === m ? accent : 'transparent', color: mode === m ? '#fff' : 'rgba(255,255,255,0.4)' }}>
+            {m === 'esencial' ? '◐ Esencial' : '⚙ Avanzado'}
+          </button>
+        ))}
+      </div>
       {/* Tab bar */}
       <div className="flex shrink-0 border-b border-white/[0.05] overflow-x-auto" style={{ background: '#0A0A0E' }}>
-        {TABS.map(({ id, label }) => (
+        {visibleTabs.map(({ id, label }) => (
           <button key={id} onClick={() => setTab(id)}
             className="flex-1 min-w-[42px] py-2.5 text-[10px] font-mono uppercase tracking-wider transition-all relative whitespace-nowrap"
             style={{ color: tab === id ? accent : 'rgba(255,255,255,0.22)' }}>

@@ -35,6 +35,8 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
   )
   const [saving, setSaving] = useState(false)
   const [tab,    setTab]    = useState<ConfigTab>('content')
+  // Esencial = solo Contenido · Avanzado = Diseño + Animación visibles
+  const [mode,   setMode]   = useState<'esencial' | 'avanzado'>('esencial')
 
   useEffect(() => {
     setConfig(
@@ -43,6 +45,7 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
         : (DEFAULT_CONFIGS[section.name] as unknown as Record<string, unknown>) ?? {}
     )
     setTab('content')
+    setMode('esencial')
   }, [section.id])
 
   // Real-time preview via postMessage
@@ -86,22 +89,41 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
     )
   }
 
+  const visibleTabs: ConfigTab[] = mode === 'esencial' ? ['content'] : ['content', 'design', 'anim']
+  const switchMode = (m: 'esencial' | 'avanzado') => {
+    setMode(m)
+    if (m === 'esencial') setTab('content')
+  }
+
   return (
     <div className="flex flex-col h-full">
 
-      {/* ── Tab bar ── */}
-      <div className={`flex shrink-0 px-3 gap-0.5 ${wrap}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-        {(['content', 'design', 'anim'] as ConfigTab[]).map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className="px-3 pt-3 pb-2.5 text-[10px] font-mono uppercase tracking-widest transition-all relative"
-            style={{ color: tab === t ? accent : 'rgba(255,255,255,0.22)' }}>
-            {t === 'content' ? 'Contenido' : t === 'design' ? 'Diseño' : 'Animación'}
-            {tab === t && (
-              <span className="absolute bottom-0 left-1 right-1 h-[2px] rounded-full" style={{ background: accent }} />
-            )}
+      {/* ── Modo Esencial / Avanzado ── */}
+      <div className={`flex items-center gap-1 p-2 shrink-0 ${wrap}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        {(['esencial', 'avanzado'] as const).map(m => (
+          <button key={m} onClick={() => switchMode(m)}
+            className="flex-1 py-1.5 rounded-lg text-[11px] font-semibold transition-all"
+            style={{ background: mode === m ? accent : 'transparent', color: mode === m ? '#fff' : 'rgba(255,255,255,0.4)' }}>
+            {m === 'esencial' ? '◐ Esencial' : '⚙ Avanzado'}
           </button>
         ))}
       </div>
+
+      {/* ── Tab bar (solo si hay más de una pestaña visible) ── */}
+      {visibleTabs.length > 1 && (
+        <div className={`flex shrink-0 px-3 gap-0.5 ${wrap}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          {visibleTabs.map(t => (
+            <button key={t} onClick={() => setTab(t)}
+              className="px-3 pt-3 pb-2.5 text-[10px] font-mono uppercase tracking-widest transition-all relative"
+              style={{ color: tab === t ? accent : 'rgba(255,255,255,0.22)' }}>
+              {t === 'content' ? 'Contenido' : t === 'design' ? 'Diseño' : 'Animación'}
+              {tab === t && (
+                <span className="absolute bottom-0 left-1 right-1 h-[2px] rounded-full" style={{ background: accent }} />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Panel body ── */}
       <div className={`flex-1 overflow-y-auto p-4 flex flex-col gap-5 ${wrap}`}>

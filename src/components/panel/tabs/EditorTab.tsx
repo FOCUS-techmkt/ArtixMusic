@@ -40,6 +40,21 @@ const SECTION_LABELS: Record<string, { icon: string; label: string }> = {
   rider:          { icon: '🎛️', label: 'Rider Técnico' },
 }
 
+// Secciones (en orden) que cada layout DEDICADO renderiza realmente.
+// Permite que el editor solo muestre lo relevante y respete el orden fijo
+// del layout (en estos layouts no se puede reordenar ni ocultar a mano).
+const LAYOUT_SECTIONS: Record<string, string[]> = {
+  'minimal-pulse':  ['hero', 'bio', 'releases', 'live', 'gallery', 'music', 'contact'],
+  'presskit-pupi':  ['hero', 'bio', 'live', 'music', 'gallery', 'rider', 'contact'],
+  'presskit-kay':   ['hero', 'bio', 'live', 'music', 'gallery', 'rider', 'contact'],
+  'presskit-danny': ['hero', 'bio', 'live', 'music', 'gallery', 'rider', 'contact'],
+}
+// Etiqueta amigable del nombre de plantilla activa
+const LAYOUT_NAMES: Record<string, string> = {
+  'minimal-pulse': 'MINIMAL PULSE', 'presskit-pupi': 'PRESS KIT · MONO',
+  'presskit-kay': 'PRESS KIT · TECHNO', 'presskit-danny': 'PRESS KIT · AFRO',
+}
+
 // ── Effects catalog ───────────────────────────────────────────────
 const EFFECTS = [
   { id: 'particles', label: 'Partículas', desc: 'Partículas flotantes en hero',   emoji: '✦' },
@@ -119,6 +134,9 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
 
   // Effects: intensities 0=off, 1-3=on
   const heroSection = sections.find(s => s.name === 'hero')
+  // Layout dedicado activo (press kit / minimal pulse) → editor template-aware
+  const activeLayout = heroSection?.config?.pageLayout as string | undefined
+  const layoutSections = activeLayout ? LAYOUT_SECTIONS[activeLayout] : undefined
   const [effectIntensities, setEffectIntensities] = useState<Record<string, number>>(
     () => (heroSection?.config?.effectIntensities as Record<string, number>) ?? {}
   )
@@ -375,6 +393,15 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
               <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 overscroll-contain">
                 {sections.length === 0 ? (
                   <EmptySections palette={palette} artistId={artist.id} supabase={supabase} onCreated={(s) => { setSections(s); setTimeout(reloadPreview, 600) }} />
+                ) : layoutSections ? (
+                  /* ── Layout dedicado: orden fijo, solo secciones que usa ── */
+                  <TemplateAwareSections
+                    sections={sections}
+                    layoutSections={layoutSections}
+                    layoutName={LAYOUT_NAMES[activeLayout!] ?? 'esta plantilla'}
+                    palette={palette}
+                    onEdit={(s) => { setActiveSection(s); setLastEditedId(s.id) }}
+                  />
                 ) : (
                   <>
                     <p className="text-[10px] font-mono text-white/25 px-1 mb-1">⠿ Arrastra para reordenar · ⚙ Editar · 🎬 Animación</p>
@@ -838,6 +865,60 @@ function SaveIndicator({ status }: { status: SaveStatus }) {
       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
       <span className="text-[11px] font-mono text-white/40">Mi Sitio</span>
     </span>
+  )
+}
+
+// ── Lista de secciones para layouts DEDICADOS (orden fijo) ────────
+function TemplateAwareSections({ sections, layoutSections, layoutName, palette, onEdit }: {
+  sections: Section[]
+  layoutSections: string[]
+  layoutName: string
+  palette: ReturnType<typeof import('@/types').deriveArtistPalette>
+  onEdit: (s: Section) => void
+}) {
+  const used = layoutSections
+    .map(name => sections.find(s => s.name === name))
+    .filter((s): s is Section => !!s)
+  const unused = sections.filter(s => !layoutSections.includes(s.name))
+
+  const Row = ({ section, muted = false }: { section: Section; muted?: boolean }) => {
+    const meta = SECTION_LABELS[section.name] ?? { icon: '📄', label: section.name }
+    return (
+      <button onClick={() => !muted && onEdit(section)} disabled={muted}
+        className="flex items-center justify-between p-3 rounded-xl text-left transition-all w-full group"
+        style={{ background: muted ? 'transparent' : 'rgba(255,255,255,0.03)', border: `1px solid ${palette.border}`, opacity: muted ? 0.4 : 1, cursor: muted ? 'default' : 'pointer' }}>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="text-base">{meta.icon}</span>
+          <span className="text-[13px] font-medium truncate" style={{ color: palette.text }}>{meta.label}</span>
+        </div>
+        {!muted
+          ? <span className="flex items-center gap-1 text-[10px] font-mono opacity-0 group-hover:opacity-100 transition-opacity shrink-0" style={{ color: palette.primary }}><Settings2 className="w-3 h-3" /> Editar</span>
+          : <span className="text-[9px] font-mono shrink-0" style={{ color: palette.textMuted }}>oculta</span>}
+      </button>
+    )
+  }
+
+  return (
+    <>
+      <div className="flex items-start gap-2 p-3 rounded-xl mb-1" style={{ background: palette.primary + '0E', border: `1px solid ${palette.primary}28` }}>
+        <LayoutTemplate className="w-4 h-4 mt-0.5 shrink-0" style={{ color: palette.primary }} />
+        <p className="text-[11px] leading-relaxed" style={{ color: palette.textMuted }}>
+          <span style={{ color: palette.text, fontWeight: 600 }}>{layoutName}</span> ordena las secciones por ti.
+          Edita el contenido de cada una — el orden y el diseño los pone la plantilla.
+        </p>
+      </div>
+      <div className="flex flex-col gap-2">
+        {used.map(s => <Row key={s.id} section={s} />)}
+      </div>
+      {unused.length > 0 && (
+        <div className="mt-3">
+          <p className="text-[10px] font-mono uppercase tracking-wider px-1 mb-1.5" style={{ color: palette.textMuted }}>No se muestran en esta plantilla</p>
+          <div className="flex flex-col gap-1.5">
+            {unused.map(s => <Row key={s.id} section={s} muted />)}
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 
