@@ -60,7 +60,7 @@ const NAV = [
   { href: '/dashboard?tab=analytics', tab: 'analytics', icon: BarChart2,       label: 'Analíticas' },
   { href: '/dashboard?tab=content',   tab: 'content',   icon: FileText,        label: 'Contenido'  },
   { href: '/dashboard?tab=fans',      tab: 'fans',      icon: Users,           label: 'Fans'       },
-  { href: '/dashboard?tab=email',     tab: 'email',     icon: Mail,            label: 'Email',      badge: 'PRONTO' },
+  { href: '/dashboard?tab=email',     tab: 'email',     icon: Mail,            label: 'Email',      badge: 'NUEVO'  },
   { href: '/dashboard?tab=booker',    tab: 'booker',    icon: Briefcase,       label: 'Booker',     badge: 'NUEVO'  },
   { href: '/dashboard?tab=ai',        tab: 'ai',        icon: Sparkles,        label: 'AI',         badge: 'IA'     },
   { href: '/dashboard/settings',      tab: null,        icon: Settings,        label: 'Configuración' },

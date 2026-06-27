@@ -4,11 +4,11 @@ import { createClient } from '@/lib/supabase/server'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { email, artistSlug, name } = body as {
-      email: string
-      artistSlug: string
-      name?: string
-    }
+    // Acepta tanto artistSlug (legacy) como artist_slug (FanCaptureSection),
+    // y propaga `source` (ej. "presskit:gift") para poder segmentar luego.
+    const { email, name } = body as { email: string; name?: string }
+    const artistSlug: string | undefined = body.artistSlug ?? body.artist_slug
+    const source: string = typeof body.source === 'string' && body.source ? body.source : 'presskit'
 
     // Basic validation
     if (!email || !artistSlug) {
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
         artist_slug: artistSlug.toLowerCase().trim(),
         email:       email.toLowerCase().trim(),
         name:        name?.trim() ?? null,
-        source:      'presskit',
+        source,
       })
 
     if (error) {
