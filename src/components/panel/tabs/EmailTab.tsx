@@ -21,7 +21,7 @@ interface EmailStore {
 }
 const EMPTY_STORE: EmailStore = { sequences: {}, content: {} }
 
-export default function EmailTab({ palette, fans, artist, sections, setSections, supabase }: TabProps) {
+export default function EmailTab({ palette, fans, artist, sections, setSections, supabase, analytics }: TabProps) {
   const heroSection = sections.find(s => s.name === 'hero')
   const stored = (heroSection?.config?.emailMarketing as EmailStore) ?? EMPTY_STORE
   const [store, setStore] = useState<EmailStore>({ ...EMPTY_STORE, ...stored })
@@ -77,11 +77,19 @@ export default function EmailTab({ palette, fans, artist, sections, setSections,
   const activeSeqCount = Object.values(store.sequences).filter(s => s.active).length
   const editTpl = editing ? TEMPLATE_BY_ID[editing] : null
 
+  // Métricas reales de email desde analytics (alimentadas por el webhook de Resend)
+  const emailCount = (t: string) => analytics.filter(a => a.event_type === t).length
+  const sent = emailCount('email_sent')
+  const opened = emailCount('email_opened')
+  const clicked = emailCount('email_clicked')
+  const openRate = sent > 0 ? Math.round((opened / sent) * 100) : 0
+  const clickRate = sent > 0 ? Math.round((clicked / sent) * 100) : 0
+
   const STATS = [
     { label: 'Suscriptores', value: fans.length || '—', Icon: Users,     color: palette.primary, live: fans.length > 0 },
-    { label: 'Secuencias',   value: activeSeqCount || '—', Icon: Zap,     color: '#22C55E', live: activeSeqCount > 0 },
-    { label: 'Plantillas',   value: EMAIL_TEMPLATES.length, Icon: Mail,   color: '#38BDF8', live: true },
-    { label: 'Personalizadas', value: Object.keys(store.content).length || '—', Icon: Sparkles, color: '#F59E0B', live: Object.keys(store.content).length > 0 },
+    { label: 'Enviados',     value: sent || '—',        Icon: Send,      color: '#38BDF8', live: sent > 0 },
+    { label: 'Aperturas',    value: sent > 0 ? `${openRate}%` : '—', Icon: Mail, color: '#22C55E', live: sent > 0 },
+    { label: 'Clics',        value: sent > 0 ? `${clickRate}%` : '—', Icon: BarChart2, color: '#F59E0B', live: sent > 0 },
   ]
 
   return (

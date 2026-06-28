@@ -1,6 +1,6 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { Loader2, Plus, Trash2, ChevronUp, ChevronDown } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Loader2, Plus, Trash2, ChevronUp, ChevronDown, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Section, ArtistPalette } from '@/types'
@@ -34,9 +34,11 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
       : (DEFAULT_CONFIGS[section.name] as unknown as Record<string, unknown>) ?? {}
   )
   const [saving, setSaving] = useState(false)
+  const [autoState, setAutoState] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [tab,    setTab]    = useState<ConfigTab>('content')
   // Esencial = solo Contenido · Avanzado = Diseño + Animación visibles
   const [mode,   setMode]   = useState<'esencial' | 'avanzado'>('esencial')
+  const skipAutosave = useRef(true)   // evita guardar al cargar / cambiar de sección
 
   useEffect(() => {
     setConfig(
@@ -46,11 +48,24 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
     )
     setTab('content')
     setMode('esencial')
+    skipAutosave.current = true
   }, [section.id])
 
   // Real-time preview via postMessage
   useEffect(() => {
     onPreviewUpdate?.(section.name, config)
+  }, [config]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Autoguardado con debounce (900ms). Silencioso, sin toast.
+  useEffect(() => {
+    if (skipAutosave.current) { skipAutosave.current = false; return }
+    setAutoState('saving')
+    const id = setTimeout(async () => {
+      const { error } = await supabase.from('sections').update({ config }).eq('id', section.id)
+      if (!error) { onSaved({ ...section, config }); setAutoState('saved'); setTimeout(() => setAutoState('idle'), 1600) }
+      else setAutoState('idle')
+    }, 900)
+    return () => clearTimeout(id)
   }, [config]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = <T,>(key: string, value: T) => setConfig(prev => ({ ...prev, [key]: value }))
@@ -78,12 +93,8 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
         <div className="flex-1 overflow-hidden">
           <HeroEditorPanel config={config as unknown as HeroConfig} set={set} accent={accent} />
         </div>
-        <div className="p-4 shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          <button onClick={save} disabled={saving}
-            className={`${wrap} flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-60 transition-all active:scale-[0.98]`}
-            style={{ background: accent }}>
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar Hero'}
-          </button>
+        <div className="p-3 shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className={wrap}><AutoStatus state={autoState} accent={accent} /></div>
         </div>
       </div>
     )
@@ -127,6 +138,14 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
 
       {/* ── Panel body ── */}
       <div className={`flex-1 overflow-y-auto p-4 flex flex-col gap-5 ${wrap}`}>
+        {tab === 'content' && sectionLooksEmpty(section.name, config) && (
+          <div className="flex items-start gap-2 p-3 rounded-xl" style={{ background: '#F59E0B12', border: '1px solid #F59E0B33' }}>
+            <span className="text-sm shrink-0">⚠️</span>
+            <p className="text-[11px] leading-relaxed" style={{ color: '#F59E0B' }}>
+              Esta sección está <strong>vacía</strong>, así que no aparecerá en tu sitio. Añade contenido abajo para mostrarla.
+            </p>
+          </div>
+        )}
         {section.name === 'bio'         && <BioPanel         config={config as unknown as BioConfig}         set={set} accent={accent} tab={tab} />}
         {section.name === 'music'       && <MusicPanel       config={config as unknown as MusicConfig}       set={set} accent={accent} tab={tab} />}
         {section.name === 'community'   && <CommunityPanel   config={config as unknown as CommunityConfig}   set={set} accent={accent} tab={tab} />}
@@ -141,13 +160,9 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
         {section.name === 'rider'        && <RiderPanel        config={config as unknown as RiderConfig}        set={set} accent={accent} tab={tab} />}
       </div>
 
-      {/* ── Save ── */}
-      <div className="p-4 shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-        <button onClick={save} disabled={saving}
-          className={`${wrap} flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-60 transition-all active:scale-[0.98]`}
-          style={{ background: accent }}>
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar sección'}
-        </button>
+      {/* ── Autoguardado ── */}
+      <div className="p-3 shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className={wrap}><AutoStatus state={autoState} accent={accent} /></div>
       </div>
     </div>
   )
@@ -1233,4 +1248,41 @@ function GalleryPanel({ config, set, accent, tab }: { config: GalleryConfig; set
   )
 
   return <EmptyTab />
+}
+
+// ── Indicador de autoguardado ──────────────────────────────────────
+function AutoStatus({ state, accent }: { state: 'idle' | 'saving' | 'saved'; accent: string }) {
+  if (state === 'saving') return (
+    <div className="flex items-center justify-center gap-2 py-2 text-[12px] font-mono" style={{ color: 'rgba(255,255,255,0.45)' }}>
+      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando…
+    </div>
+  )
+  if (state === 'saved') return (
+    <div className="flex items-center justify-center gap-2 py-2 text-[12px] font-mono" style={{ color: '#22C55E' }}>
+      <Check className="w-3.5 h-3.5" /> Guardado
+    </div>
+  )
+  return (
+    <div className="flex items-center justify-center gap-2 py-2 text-[12px] font-mono" style={{ color: 'rgba(255,255,255,0.3)' }}>
+      <span className="w-1.5 h-1.5 rounded-full" style={{ background: accent }} /> Los cambios se guardan solos
+    </div>
+  )
+}
+
+// ── ¿La sección está vacía (no aparecerá en el sitio)? ─────────────
+function sectionLooksEmpty(name: string, c: Record<string, unknown>): boolean {
+  const arr = (k: string) => Array.isArray(c[k]) && (c[k] as unknown[]).length > 0
+  switch (name) {
+    case 'bio':          return ((((c.text as string) ?? '').replace(/<[^>]+>/g, '').trim().length) <= 20)
+    case 'music':        return !arr('tracks')
+    case 'releases':     return !arr('releases')
+    case 'live':         return !arr('venues')
+    case 'gallery':      return !arr('images')
+    case 'rider':        return !arr('items')
+    case 'community':    return !arr('platforms')
+    case 'supporters':   return !arr('ticker_names') && !arr('featured')
+    case 'links':        return !arr('links')
+    case 'testimonials': return !arr('testimonials')
+    default:             return false   // hero/contact/fan-capture nunca "vacías"
+  }
 }
