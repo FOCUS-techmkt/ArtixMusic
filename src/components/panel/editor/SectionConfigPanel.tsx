@@ -34,7 +34,7 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
       : (DEFAULT_CONFIGS[section.name] as unknown as Record<string, unknown>) ?? {}
   )
   const [saving, setSaving] = useState(false)
-  const [autoState, setAutoState] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const [autoState, setAutoState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [tab,    setTab]    = useState<ConfigTab>('content')
   // Esencial = solo Contenido · Avanzado = Diseño + Animación visibles
   const [mode,   setMode]   = useState<'esencial' | 'avanzado'>('esencial')
@@ -56,15 +56,19 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
     onPreviewUpdate?.(section.name, config)
   }, [config]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Guardado silencioso (lo usa el autoguardado y el reintento manual).
+  const persist = async (cfg: Record<string, unknown>) => {
+    setAutoState('saving')
+    const { error } = await supabase.from('sections').update({ config: cfg }).eq('id', section.id)
+    if (!error) { onSaved({ ...section, config: cfg }); setAutoState('saved'); setTimeout(() => setAutoState('idle'), 1600) }
+    else setAutoState('error')
+  }
+
   // Autoguardado con debounce (900ms). Silencioso, sin toast.
   useEffect(() => {
     if (skipAutosave.current) { skipAutosave.current = false; return }
+    const id = setTimeout(() => { void persist(config) }, 900)
     setAutoState('saving')
-    const id = setTimeout(async () => {
-      const { error } = await supabase.from('sections').update({ config }).eq('id', section.id)
-      if (!error) { onSaved({ ...section, config }); setAutoState('saved'); setTimeout(() => setAutoState('idle'), 1600) }
-      else setAutoState('idle')
-    }, 900)
     return () => clearTimeout(id)
   }, [config]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -94,7 +98,7 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
           <HeroEditorPanel config={config as unknown as HeroConfig} set={set} accent={accent} />
         </div>
         <div className="p-3 shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-          <div className={wrap}><AutoStatus state={autoState} accent={accent} /></div>
+          <div className={wrap}><AutoStatus state={autoState} accent={accent} onRetry={() => persist(config)} /></div>
         </div>
       </div>
     )
@@ -162,7 +166,7 @@ export default function SectionConfigPanel({ section, palette, supabase, onSaved
 
       {/* ── Autoguardado ── */}
       <div className="p-3 shrink-0" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-        <div className={wrap}><AutoStatus state={autoState} accent={accent} /></div>
+        <div className={wrap}><AutoStatus state={autoState} accent={accent} onRetry={() => persist(config)} /></div>
       </div>
     </div>
   )
@@ -1251,7 +1255,7 @@ function GalleryPanel({ config, set, accent, tab }: { config: GalleryConfig; set
 }
 
 // ── Indicador de autoguardado ──────────────────────────────────────
-function AutoStatus({ state, accent }: { state: 'idle' | 'saving' | 'saved'; accent: string }) {
+function AutoStatus({ state, accent, onRetry }: { state: 'idle' | 'saving' | 'saved' | 'error'; accent: string; onRetry: () => void }) {
   if (state === 'saving') return (
     <div className="flex items-center justify-center gap-2 py-2 text-[12px] font-mono" style={{ color: 'rgba(255,255,255,0.45)' }}>
       <Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando…
@@ -1261,6 +1265,13 @@ function AutoStatus({ state, accent }: { state: 'idle' | 'saving' | 'saved'; acc
     <div className="flex items-center justify-center gap-2 py-2 text-[12px] font-mono" style={{ color: '#22C55E' }}>
       <Check className="w-3.5 h-3.5" /> Guardado
     </div>
+  )
+  if (state === 'error') return (
+    <button onClick={onRetry}
+      className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-[12px] font-mono transition-all"
+      style={{ color: '#F87171', background: '#F8717112', border: '1px solid #F8717133' }}>
+      No se pudo guardar — reintentar
+    </button>
   )
   return (
     <div className="flex items-center justify-center gap-2 py-2 text-[12px] font-mono" style={{ color: 'rgba(255,255,255,0.3)' }}>

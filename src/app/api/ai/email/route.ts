@@ -28,7 +28,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'rate_limit', message: `Límite diario alcanzado (${DAILY_LIMIT}/día).`, remaining: 0 }, { status: 429 })
     }
 
-    const { artistName, goal, layout, genres, tone, instruction } = await request.json()
+    const { artistName, goal, layout, genres, tone, instruction, context } = await request.json()
+    const ctx = (context ?? {}) as { bio?: string; nextShow?: string; city?: string; latestRelease?: string }
 
     const prompt = `Eres un copywriter experto en email marketing musical. Escribes emails que los fans ABREN y en los que hacen CLIC — cálidos, directos, con la voz auténtica de un artista, nunca corporativos.
 
@@ -37,7 +38,13 @@ GÉNEROS: ${Array.isArray(genres) ? genres.join(', ') : (genres || 'música elec
 OBJETIVO DEL EMAIL: ${goal || 'conectar con fans'}
 TIPO/PLANTILLA: ${layout || 'general'}
 TONO DESEADO: ${tone || 'cercano, auténtico, con energía'}
+${ctx.bio ? `BIO DEL ARTISTA (úsala para captar su voz y datos reales): ${String(ctx.bio).slice(0, 600)}` : ''}
+${ctx.city ? `UBICACIÓN: ${ctx.city}` : ''}
+${ctx.nextShow ? `PRÓXIMO SHOW (menciónalo si encaja con el objetivo): ${ctx.nextShow}` : ''}
+${ctx.latestRelease ? `ÚLTIMO LANZAMIENTO: ${ctx.latestRelease}` : ''}
 ${instruction ? `INSTRUCCIÓN ESPECÍFICA DEL ARTISTA: ${instruction}` : ''}
+
+Usa los datos reales de arriba cuando sean relevantes — nada de placeholders genéricos si tienes el dato.
 
 Escribe el copy en ESPAÑOL (a menos que la instrucción pida otro idioma). Reglas:
 - Asunto: máx 50 caracteres, que genere curiosidad o urgencia real. Sin clickbait barato.

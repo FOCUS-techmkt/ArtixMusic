@@ -432,6 +432,8 @@ export default function EditorTab({ artist, setArtist, sections, setSections, pa
                       ready={sections.filter(s => s.is_enabled && sectionHasContent(s)).length}
                       total={sections.filter(s => s.is_enabled).length}
                       palette={palette}
+                      empty={sections.filter(s => s.is_enabled && !sectionHasContent(s))}
+                      onEdit={(s) => { setActiveSection(s); setLastEditedId(s.id) }}
                     />
                     <p className="text-[10px] font-mono text-white/25 px-1 mb-1">⠿ Arrastra para reordenar · ⚙ Editar · 🎬 Animación</p>
                     <DndContext id="editor-sections-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -897,9 +899,10 @@ function SaveIndicator({ status }: { status: SaveStatus }) {
   )
 }
 
-// ── Barra de completitud (checklist) ──────────────────────────────
-function CompletionBar({ ready, total, palette }: {
+// ── Barra de completitud (checklist accionable) ───────────────────
+function CompletionBar({ ready, total, palette, empty = [], onEdit }: {
   ready: number; total: number; palette: ReturnType<typeof import('@/types').deriveArtistPalette>
+  empty?: Section[]; onEdit?: (s: Section) => void
 }) {
   const pct = total > 0 ? Math.round((ready / total) * 100) : 0
   const done = ready === total
@@ -914,6 +917,21 @@ function CompletionBar({ ready, total, palette }: {
       <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: done ? '#22C55E' : palette.primary }} />
       </div>
+      {!done && empty.length > 0 && onEdit && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <span className="text-[10px] font-mono shrink-0" style={{ color: palette.textMuted }}>Te falta:</span>
+          {empty.slice(0, 4).map(s => {
+            const meta = SECTION_LABELS[s.name] ?? { icon: '📄', label: s.name }
+            return (
+              <button key={s.id} onClick={() => onEdit(s)}
+                className="flex items-center gap-1 text-[10px] font-mono px-2 py-1 rounded-full transition-all hover:opacity-80"
+                style={{ background: '#F59E0B16', color: '#F59E0B', border: '1px solid #F59E0B33' }}>
+                {meta.icon} {meta.label} →
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -966,7 +984,7 @@ function TemplateAwareSections({ sections, layoutSections, layoutName, palette, 
           Edita el contenido de cada una — el orden y el diseño los pone la plantilla.
         </p>
       </div>
-      <CompletionBar ready={ready} total={used.length} palette={palette} />
+      <CompletionBar ready={ready} total={used.length} palette={palette} empty={used.filter(s => !sectionHasContent(s))} onEdit={onEdit} />
       <div className="flex flex-col gap-2">
         {used.map(s => <Row key={s.id} section={s} />)}
       </div>

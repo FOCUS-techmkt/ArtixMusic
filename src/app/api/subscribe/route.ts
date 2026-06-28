@@ -22,17 +22,21 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createClient()
 
+    const row = {
+      artist_slug: artistSlug.toLowerCase().trim(),
+      email:       email.toLowerCase().trim(),
+      name:        name?.trim() ?? null,
+      source,
+    }
+
+    // Upsert: evita duplicados por (artist_slug, email) y refresca name/source
+    // si el fan vuelve a suscribirse. Idempotente por diseño.
     const { error } = await supabase
       .from('fan_subscribers')
-      .insert({
-        artist_slug: artistSlug.toLowerCase().trim(),
-        email:       email.toLowerCase().trim(),
-        name:        name?.trim() ?? null,
-        source,
-      })
+      .upsert(row, { onConflict: 'artist_slug,email' })
 
     if (error) {
-      // Unique constraint: already subscribed — treat as success (idempotent)
+      // Si la constraint no coincide, tratamos el duplicado como éxito (idempotente)
       if (error.code === '23505') {
         return NextResponse.json({ ok: true, message: 'Ya estás suscrito' })
       }

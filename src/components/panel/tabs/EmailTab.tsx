@@ -77,6 +77,23 @@ export default function EmailTab({ palette, fans, artist, sections, setSections,
   const activeSeqCount = Object.values(store.sequences).filter(s => s.active).length
   const editTpl = editing ? TEMPLATE_BY_ID[editing] : null
 
+  // Contexto real del artista para la IA de copy (bio, ciudad, próximo show, release)
+  const aiContext = useMemo(() => {
+    const bioCfg = sections.find(s => s.name === 'bio')?.config as any
+    const liveCfg = sections.find(s => s.name === 'live')?.config as any
+    const relCfg = sections.find(s => s.name === 'releases')?.config as any
+    const bio = (bioCfg?.text ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+    const venues = (liveCfg?.venues ?? []) as { name: string; city: string; date: string }[]
+    const next = [...venues].filter(v => v.date).sort((a, b) => a.date.localeCompare(b.date))[0]
+    const rel = (relCfg?.releases ?? [])[0] as { title: string; label: string } | undefined
+    return {
+      bio: bio || undefined,
+      city: bioCfg?.city ? [bioCfg.city, bioCfg.country].filter(Boolean).join(', ') : undefined,
+      nextShow: next ? `${next.name} — ${next.city} (${next.date})` : undefined,
+      latestRelease: rel ? `${rel.title}${rel.label ? ` (${rel.label})` : ''}` : undefined,
+    }
+  }, [sections])
+
   // Métricas reales de email desde analytics (alimentadas por el webhook de Resend)
   const emailCount = (t: string) => analytics.filter(a => a.event_type === t).length
   const sent = emailCount('email_sent')
@@ -131,6 +148,35 @@ export default function EmailTab({ palette, fans, artist, sections, setSections,
           </div>
         ))}
       </div>
+
+      {/* Embudo de conversión (cuando hay envíos) */}
+      {sent > 0 && (
+        <div className="p-5 rounded-2xl" style={{ background: '#0E0E12', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <p className="text-[10px] font-mono uppercase tracking-wider mb-4" style={{ color: palette.textMuted }}>Embudo de conversión</p>
+          <div className="flex flex-col gap-2.5">
+            {[
+              { label: 'Enviados',   n: sent,                       c: '#38BDF8' },
+              { label: 'Entregados', n: emailCount('email_delivered') || sent, c: '#818CF8' },
+              { label: 'Aperturas',  n: opened,                     c: '#22C55E' },
+              { label: 'Clics',      n: clicked,                    c: '#F59E0B' },
+            ].map(row => {
+              const w = sent > 0 ? Math.max(4, Math.round((row.n / sent) * 100)) : 0
+              return (
+                <div key={row.label} className="flex items-center gap-3">
+                  <span className="text-[11px] font-mono w-20 shrink-0" style={{ color: palette.textMuted }}>{row.label}</span>
+                  <div className="flex-1 h-6 rounded-lg overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)' }}>
+                    <div className="h-full rounded-lg flex items-center justify-end px-2 transition-all duration-700"
+                      style={{ width: `${w}%`, background: row.c + '33', borderRight: `2px solid ${row.c}` }}>
+                      <span className="text-[10px] font-mono font-bold" style={{ color: row.c }}>{row.n}</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono w-9 text-right shrink-0" style={{ color: palette.textMuted }}>{w}%</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── SEQUENCES VIEW ──────────────────────────────────── */}
       {view === 'sequences' && (
@@ -250,6 +296,7 @@ export default function EmailTab({ palette, fans, artist, sections, setSections,
             palette={palette}
             artist={artist}
             fans={fans}
+            aiContext={aiContext}
             onClose={() => setEditing(null)}
             onSave={(c) => { saveContent(editTpl.id, c); }}
           />
@@ -278,9 +325,11 @@ function SendNote({ palette }: { palette: TabProps['palette'] }) {
 // ════════════════════════════════════════════════════════════════
 // EDITOR — formulario + preview en vivo (iframe) + IA + export
 // ════════════════════════════════════════════════════════════════
-function EmailEditor({ tpl, content, brand, palette, artist, fans, onClose, onSave }: {
+function EmailEditor({ tpl, content, brand, palette, artist, fans, aiContext, onClose, onSave }: {
   tpl: EmailTemplateDef; content: EmailContent; brand: EmailBrand; palette: TabProps['palette']
-  artist: TabProps['artist']; fans: FanSubscriber[]; onClose: () => void; onSave: (c: EmailContent) => void
+  artist: TabProps['artist']; fans: FanSubscriber[]
+  aiContext: { bio?: string; city?: string; nextShow?: string; latestRelease?: string }
+  onClose: () => void; onSave: (c: EmailContent) => void
 }) {
   const [c, setC] = useState<EmailContent>(content)
   const [aiLoading, setAiLoading] = useState(false)
@@ -299,7 +348,7 @@ function EmailEditor({ tpl, content, brand, palette, artist, fans, onClose, onSa
     try {
       const res = await fetch('/api/ai/email', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ artistName: artist.artist_name, goal: tpl.goal, layout: tpl.layout, genres: artist.sound_words ?? artist.genre }),
+        body: JSON.stringify({ artistName: artist.artist_name, goal: tpl.goal, layout: tpl.layout, genres: artist.sound_words ?? artist.genre, context: aiContext }),
       })
       if (res.status === 429) { setAiError('Límite de IA diario alcanzado. Vuelve mañana.'); return }
       if (!res.ok) { setAiError('No se pudo generar. Intenta de nuevo.'); return }
@@ -458,16 +507,29 @@ function SendModal({ palette, fans, subject, html, artist, onClose }: {
   const [state, setState] = useState<'idle' | 'sending' | 'done' | 'error'>('idle')
   const [msg, setMsg] = useState<string | null>(null)
   const [result, setResult] = useState<{ sent: number; test: boolean } | null>(null)
+  const [abSubject, setAbSubject] = useState('')   // A/B: asunto B (opcional)
+
+  const postSend = (s: string, to: string[], test: boolean) =>
+    fetch('/api/email/send', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subject: s, html, recipients: to, test }),
+    }).then(r => r.json().then(d => ({ ok: r.ok, d })))
 
   const send = async (test: boolean) => {
     setState('sending'); setMsg(null)
     try {
-      const res = await fetch('/api/email/send', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject, html, recipients, test }),
-      })
-      const d = await res.json()
-      if (!res.ok) { setState('error'); setMsg(d.message || d.error || 'No se pudo enviar'); return }
+      const ab = !test && abSubject.trim()
+      if (ab) {
+        // A/B: divide los destinatarios 50/50 entre asunto A y B
+        const half = Math.ceil(recipients.length / 2)
+        const [rA, rB] = [recipients.slice(0, half), recipients.slice(half)]
+        const [a, b] = await Promise.all([postSend(subject, rA, false), postSend(abSubject.trim(), rB, false)])
+        if (!a.ok && !b.ok) { setState('error'); setMsg(a.d.message || a.d.error || 'No se pudo enviar'); return }
+        setState('done'); setResult({ sent: (a.d.sent ?? 0) + (b.d.sent ?? 0), test: false })
+        return
+      }
+      const { ok, d } = await postSend(subject, recipients, test)
+      if (!ok) { setState('error'); setMsg(d.message || d.error || 'No se pudo enviar'); return }
       setState('done'); setResult({ sent: d.sent, test: d.test })
     } catch { setState('error'); setMsg('Error de red.') }
   }
@@ -515,9 +577,22 @@ function SendModal({ palette, fans, subject, html, artist, onClose }: {
               })}
             </div>
 
-            <div className="p-3 rounded-xl mb-4" style={{ background: 'rgba(255,255,255,0.03)' }}>
-              <p className="text-[11px]" style={{ color: palette.textMuted }}>Asunto</p>
+            <div className="p-3 rounded-xl mb-3" style={{ background: 'rgba(255,255,255,0.03)' }}>
+              <p className="text-[11px]" style={{ color: palette.textMuted }}>Asunto {abSubject.trim() ? 'A' : ''}</p>
               <p className="text-[13px] truncate" style={{ color: palette.text }}>{subject}</p>
+            </div>
+
+            {/* A/B test de asunto (opcional) */}
+            <div className="mb-4">
+              <input value={abSubject} onChange={e => setAbSubject(e.target.value)}
+                placeholder="Asunto B para A/B test (opcional)"
+                className="w-full px-3 py-2.5 rounded-xl text-[13px] text-white placeholder-white/25 focus:outline-none"
+                style={{ background: '#0A0A0E', border: '1px solid rgba(255,255,255,0.08)' }} />
+              {abSubject.trim() && (
+                <p className="text-[10px] font-mono mt-1.5" style={{ color: palette.primary }}>
+                  A/B activo: {Math.ceil(recipients.length / 2)} reciben A · {Math.floor(recipients.length / 2)} reciben B
+                </p>
+              )}
             </div>
 
             {msg && <p className="text-[11px] mb-3" style={{ color: state === 'error' ? '#F87171' : palette.textMuted }}>{msg}</p>}
