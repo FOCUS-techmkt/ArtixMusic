@@ -18,6 +18,7 @@ interface SendBody {
   recipients: string[]      // emails del segmento (calculados en cliente)
   test?:      boolean       // si true, ignora recipients y envía solo a testEmail
   testEmail?: string
+  variant?:   'A' | 'B'     // A/B test: etiqueta la variante para el tracking
 }
 
 export async function POST(req: NextRequest) {
@@ -64,8 +65,11 @@ export async function POST(req: NextRequest) {
       to: [to],
       subject: body.subject,
       html: body.html.replace(/\{\{unsubscribe_url\}\}/g, `https://artistpulse.io/u/${artist.slug}?e=${encodeURIComponent(to)}`),
-      // Tag para atribuir aperturas/clics al artista en el webhook
-      tags: [{ name: 'artist', value: artist.slug }],
+      // Tags para atribuir aperturas/clics al artista (y variante A/B) en el webhook
+      tags: [
+        { name: 'artist', value: artist.slug },
+        ...(body.variant ? [{ name: 'variant', value: body.variant }] : []),
+      ],
     }))
 
     // Resend procesa hasta 100 por batch

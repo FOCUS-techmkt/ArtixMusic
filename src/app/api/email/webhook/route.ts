@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
 
     const tags = (body?.data?.tags ?? []) as { name: string; value: string }[]
     const slug = Array.isArray(tags) ? tags.find(t => t.name === 'artist')?.value : undefined
+    const variant = Array.isArray(tags) ? tags.find(t => t.name === 'variant')?.value : undefined
     if (!slug) return NextResponse.json({ ok: true, note: 'sin artist tag' })
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -76,8 +77,13 @@ export async function POST(req: NextRequest) {
     const { data: artist } = await supabase.from('artists').select('id').eq('slug', slug).maybeSingle()
     if (!artist) return NextResponse.json({ ok: true, note: 'artista no encontrado' })
 
-    await supabase.from('analytics').insert({ artist_id: artist.id, event_type: eventType as never })
-    return NextResponse.json({ ok: true, logged: eventType })
+    // La variante A/B se guarda en `referrer` (sin migración de schema)
+    await supabase.from('analytics').insert({
+      artist_id: artist.id,
+      event_type: eventType as never,
+      ...(variant ? { referrer: variant } : {}),
+    } as never)
+    return NextResponse.json({ ok: true, logged: eventType, variant })
   } catch (err) {
     console.error('[email/webhook]', err)
     return NextResponse.json({ error: 'Error interno' }, { status: 500 })

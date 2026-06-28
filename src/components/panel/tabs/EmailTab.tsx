@@ -102,6 +102,16 @@ export default function EmailTab({ palette, fans, artist, sections, setSections,
   const openRate = sent > 0 ? Math.round((opened / sent) * 100) : 0
   const clickRate = sent > 0 ? Math.round((clicked / sent) * 100) : 0
 
+  // Reporte A/B: aperturas/clics por variante (guardada en referrer)
+  const byVariant = (t: string, v: string) => analytics.filter(a => a.event_type === t && a.referrer === v).length
+  const ab = {
+    A: { sent: byVariant('email_sent', 'A'), opened: byVariant('email_opened', 'A'), clicked: byVariant('email_clicked', 'A') },
+    B: { sent: byVariant('email_sent', 'B'), opened: byVariant('email_opened', 'B'), clicked: byVariant('email_clicked', 'B') },
+  }
+  const hasAB = ab.A.sent + ab.B.sent + ab.A.opened + ab.B.opened > 0
+  const rate = (x: { sent: number; opened: number }) => x.sent > 0 ? Math.round((x.opened / x.sent) * 100) : 0
+  const abWinner = !hasAB ? null : rate(ab.A) === rate(ab.B) ? 'empate' : rate(ab.A) > rate(ab.B) ? 'A' : 'B'
+
   const STATS = [
     { label: 'Suscriptores', value: fans.length || '—', Icon: Users,     color: palette.primary, live: fans.length > 0 },
     { label: 'Enviados',     value: sent || '—',        Icon: Send,      color: '#38BDF8', live: sent > 0 },
@@ -171,6 +181,38 @@ export default function EmailTab({ palette, fans, artist, sections, setSections,
                     </div>
                   </div>
                   <span className="text-[10px] font-mono w-9 text-right shrink-0" style={{ color: palette.textMuted }}>{w}%</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Reporte A/B de asuntos */}
+      {hasAB && (
+        <div className="p-5 rounded-2xl" style={{ background: '#0E0E12', border: '1px solid rgba(255,255,255,0.05)' }}>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-[10px] font-mono uppercase tracking-wider" style={{ color: palette.textMuted }}>A/B de asunto</p>
+            {abWinner && abWinner !== 'empate' && (
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full" style={{ background: '#22C55E1a', color: '#22C55E' }}>
+                🏆 Gana la variante {abWinner}
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {(['A', 'B'] as const).map(v => {
+              const d = ab[v]
+              const open = d.sent > 0 ? Math.round((d.opened / d.sent) * 100) : 0
+              const click = d.sent > 0 ? Math.round((d.clicked / d.sent) * 100) : 0
+              const win = abWinner === v
+              return (
+                <div key={v} className="p-3 rounded-xl" style={{ background: win ? '#22C55E10' : 'rgba(255,255,255,0.03)', border: `1px solid ${win ? '#22C55E40' : 'rgba(255,255,255,0.06)'}` }}>
+                  <p className="text-[12px] font-bold mb-2" style={{ color: win ? '#22C55E' : palette.text }}>Variante {v}</p>
+                  <div className="flex flex-col gap-1 text-[11px] font-mono" style={{ color: palette.textMuted }}>
+                    <div className="flex justify-between"><span>Enviados</span><span style={{ color: palette.text }}>{d.sent}</span></div>
+                    <div className="flex justify-between"><span>Aperturas</span><span style={{ color: palette.text }}>{d.opened} ({open}%)</span></div>
+                    <div className="flex justify-between"><span>Clics</span><span style={{ color: palette.text }}>{d.clicked} ({click}%)</span></div>
+                  </div>
                 </div>
               )
             })}
@@ -509,10 +551,10 @@ function SendModal({ palette, fans, subject, html, artist, onClose }: {
   const [result, setResult] = useState<{ sent: number; test: boolean } | null>(null)
   const [abSubject, setAbSubject] = useState('')   // A/B: asunto B (opcional)
 
-  const postSend = (s: string, to: string[], test: boolean) =>
+  const postSend = (s: string, to: string[], test: boolean, variant?: 'A' | 'B') =>
     fetch('/api/email/send', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject: s, html, recipients: to, test }),
+      body: JSON.stringify({ subject: s, html, recipients: to, test, variant }),
     }).then(r => r.json().then(d => ({ ok: r.ok, d })))
 
   const send = async (test: boolean) => {
@@ -523,7 +565,7 @@ function SendModal({ palette, fans, subject, html, artist, onClose }: {
         // A/B: divide los destinatarios 50/50 entre asunto A y B
         const half = Math.ceil(recipients.length / 2)
         const [rA, rB] = [recipients.slice(0, half), recipients.slice(half)]
-        const [a, b] = await Promise.all([postSend(subject, rA, false), postSend(abSubject.trim(), rB, false)])
+        const [a, b] = await Promise.all([postSend(subject, rA, false, 'A'), postSend(abSubject.trim(), rB, false, 'B')])
         if (!a.ok && !b.ok) { setState('error'); setMsg(a.d.message || a.d.error || 'No se pudo enviar'); return }
         setState('done'); setResult({ sent: (a.d.sent ?? 0) + (b.d.sent ?? 0), test: false })
         return
