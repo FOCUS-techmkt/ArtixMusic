@@ -47,6 +47,24 @@ export default function SettingsContent({
   const [isPending, startTransition] = useTransition()
   const [saveError, setSaveError] = useState<string | null>(null)
 
+  // Dominio propio (funcional contra /api/domains)
+  const [domainInput, setDomainInput] = useState('')
+  const [domainState, setDomainState] = useState<'idle' | 'saving' | 'saved' | 'error' | 'need_migration'>('idle')
+  const [domainDns, setDomainDns] = useState<{ type: string; name: string; value: string }[]>([])
+  const [domainMsg, setDomainMsg] = useState<string | null>(null)
+
+  async function connectDomain() {
+    setDomainState('saving'); setDomainMsg(null)
+    try {
+      const res = await fetch('/api/domains', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ domain: domainInput }) })
+      const d = await res.json()
+      if (d.dns) setDomainDns(d.dns)
+      if (res.ok) { setDomainState('saved') }
+      else if (d.error === 'no_column') { setDomainState('need_migration'); setDomainMsg(d.message) }
+      else { setDomainState('error'); setDomainMsg(d.message || d.error || 'No se pudo conectar el dominio') }
+    } catch { setDomainState('error'); setDomainMsg('Error de red.') }
+  }
+
   const [profile, setProfile] = useState({
     artistName:   initialData.artistName,
     bio:          initialData.bio,
@@ -393,20 +411,38 @@ export default function SettingsContent({
                     <Zap className="w-2.5 h-2.5" /> PRO
                   </span>
                 </div>
-                <input placeholder="presskit.tudominio.com" className={`${inputCls} font-mono`} />
-                <div className="mt-4 p-4 rounded-xl" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                  <p className="font-mono text-[10px] text-white/40 mb-3">Agrega estos registros DNS en tu proveedor:</p>
-                  {[
-                    { type: 'CNAME', name: 'presskit', value: 'cname.presskit.pro' },
-                    { type: 'TXT',   name: '_verify',  value: 'pk_verify_xxx' },
-                  ].map(r => (
-                    <div key={r.type} className="grid grid-cols-3 gap-2 font-mono text-[10px] mb-1.5">
-                      <span className="text-center rounded px-2 py-1" style={{ background: 'rgba(192,38,211,0.12)', color: '#C026D3' }}>{r.type}</span>
-                      <span className="px-2 py-1 rounded truncate text-white/50" style={{ background: 'rgba(255,255,255,0.04)' }}>{r.name}</span>
-                      <span className="px-2 py-1 rounded truncate text-white/50" style={{ background: 'rgba(255,255,255,0.04)' }}>{r.value}</span>
-                    </div>
-                  ))}
+                <div className="flex items-center gap-2">
+                  <input value={domainInput} onChange={e => setDomainInput(e.target.value)} placeholder="presskit.tudominio.com" className={`${inputCls} font-mono`} />
+                  <button onClick={connectDomain} disabled={domainState === 'saving' || !domainInput.trim()}
+                    className="shrink-0 px-4 py-2.5 rounded-xl text-[13px] font-semibold text-white disabled:opacity-50"
+                    style={{ background: '#C026D3' }}>
+                    {domainState === 'saving' ? '…' : 'Conectar'}
+                  </button>
                 </div>
+
+                {domainState === 'saved' && (
+                  <p className="mt-2 text-[11px] text-emerald-400">✓ Dominio guardado. Configura el DNS abajo; la activación tarda unos minutos.</p>
+                )}
+                {domainState === 'error' && <p className="mt-2 text-[11px] text-red-400">{domainMsg}</p>}
+                {domainState === 'need_migration' && (
+                  <div className="mt-3 p-3 rounded-xl" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}>
+                    <p className="text-[11px] text-amber-400 mb-1.5">Falta preparar la base de datos. Ejecuta este SQL en Supabase:</p>
+                    <code className="block font-mono text-[10px] text-amber-300/80 px-2 py-1.5 rounded" style={{ background: 'rgba(0,0,0,0.3)' }}>ALTER TABLE artists ADD COLUMN custom_domain text UNIQUE;</code>
+                  </div>
+                )}
+
+                {domainDns.length > 0 && (
+                  <div className="mt-4 p-4 rounded-xl" style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                    <p className="font-mono text-[10px] text-white/40 mb-3">Agrega estos registros DNS en tu proveedor:</p>
+                    {domainDns.map(r => (
+                      <div key={r.type + r.name} className="grid grid-cols-3 gap-2 font-mono text-[10px] mb-1.5">
+                        <span className="text-center rounded px-2 py-1" style={{ background: 'rgba(192,38,211,0.12)', color: '#C026D3' }}>{r.type}</span>
+                        <span className="px-2 py-1 rounded truncate text-white/50" style={{ background: 'rgba(255,255,255,0.04)' }}>{r.name}</span>
+                        <span className="px-2 py-1 rounded truncate text-white/50" style={{ background: 'rgba(255,255,255,0.04)' }}>{r.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className={cardCls} style={cardStyle}>
