@@ -12,6 +12,7 @@ import {
 } from '@/lib/email/catalog'
 import { renderEmail, type EmailBrand } from '@/lib/email/renderEmail'
 import { buildSegments, segmentRecipients } from '@/lib/email/segments'
+import { checkEmailHealth } from '@/lib/email/healthCheck'
 import type { FanSubscriber } from '@/types'
 
 // ── Estado persistido en hero.config.emailMarketing ───────────────
@@ -380,8 +381,11 @@ function EmailEditor({ tpl, content, brand, palette, artist, fans, aiContext, on
   const [copied, setCopied] = useState(false)
   const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop')
   const [sendOpen, setSendOpen] = useState(false)
+  const [healthOpen, setHealthOpen] = useState(false)
 
   const html = useMemo(() => renderEmail(tpl.layout, c, brand), [tpl.layout, c, brand])
+  const health = useMemo(() => checkEmailHealth(c, html), [c, html])
+  const healthColor = health.score >= 85 ? '#22C55E' : health.score >= 60 ? '#F59E0B' : '#F87171'
   const set = (k: keyof EmailContent, v: string) => setC(prev => ({ ...prev, [k]: v }))
   const dirty = JSON.stringify(c) !== JSON.stringify(content)
 
@@ -457,6 +461,31 @@ function EmailEditor({ tpl, content, brand, palette, artist, fans, aiContext, on
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Salud del email */}
+            <div className="relative">
+              <button onClick={() => setHealthOpen(o => !o)}
+                className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg font-semibold"
+                style={{ background: healthColor + '1a', color: healthColor, border: `1px solid ${healthColor}40` }}>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: healthColor }} /> Salud {health.score}
+              </button>
+              {healthOpen && (
+                <div className="absolute right-0 top-full mt-2 w-72 p-3 rounded-xl z-10 flex flex-col gap-2"
+                  style={{ background: '#16161c', border: `1px solid ${palette.border}`, boxShadow: '0 12px 40px rgba(0,0,0,0.5)' }}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono uppercase tracking-wider" style={{ color: palette.textMuted }}>Deliverability</span>
+                    <span className="text-sm font-bold" style={{ color: healthColor }}>{health.score}/100</span>
+                  </div>
+                  <div className="flex flex-col gap-1.5 max-h-60 overflow-y-auto">
+                    {health.issues.map((iss, i) => (
+                      <div key={i} className="flex items-start gap-2 text-[11px] leading-snug">
+                        <span className="shrink-0">{iss.level === 'error' ? '⛔' : iss.level === 'warn' ? '⚠️' : '💡'}</span>
+                        <span style={{ color: iss.level === 'error' ? '#F87171' : iss.level === 'warn' ? '#F59E0B' : palette.textMuted }}>{iss.msg}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             <button onClick={copyHtml} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg font-medium" style={{ background: 'rgba(255,255,255,0.05)', color: palette.textMuted }}>
               {copied ? <><Check className="w-3.5 h-3.5" /> Copiado</> : <><Code2 className="w-3.5 h-3.5" /> Copiar HTML</>}
             </button>
